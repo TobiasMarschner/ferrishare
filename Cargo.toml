@@ -10,8 +10,5 @@ serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 tower = { version = "0", features = ["util"] }
 tower-http = { version = "0", features = [ "fs", "compression-gzip", "compression-br", "compression-deflate", "compression-zstd" ] }
-askama = "0"
+tera = "1"
 minify-html = "0"
-
-[profile.dev.package.askama_derive]
-opt-level = 3

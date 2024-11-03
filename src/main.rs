@@ -1,10 +1,10 @@
-use askama::Template;
+use tera::{Tera, Context};
 use axum::{response::Html, routing::get, Router};
 use minify_html::minify;
 use tower::ServiceBuilder;
 use tower_http::{compression::CompressionLayer, services::ServeDir};
 // use serde::{Deserialize, Serialize};
-use std::sync::LazyLock;
+use std::sync::{LazyLock, Mutex};
 
 static HTML_MINIFY_CFG: LazyLock<minify_html::Cfg> = LazyLock::new(|| {
     let mut cfg = minify_html::Cfg::spec_compliant();
@@ -16,11 +16,22 @@ static HTML_MINIFY_CFG: LazyLock<minify_html::Cfg> = LazyLock::new(|| {
     cfg
 });
 
-#[derive(Template)]
-#[template(path = "index.html")]
-struct IndexTemplate<'a> {
-    title: &'a str,
-}
+// #[derive(Template)]
+// #[template(path = "index.html")]
+// struct IndexTemplate<'a> {
+//     title: &'a str,
+// }
+
+pub static TEMPLATES: LazyLock<Mutex<Tera>> = LazyLock::new(|| {
+    let tera = match Tera::new("templates/**/*.html") {
+        Ok(t) => t,
+        Err(e) => {
+            println!("Parsing error(s): {}", e);
+            panic!();
+        }
+    };
+    Mutex::new(tera)
+});
 
 #[tokio::main]
 async fn main() {
@@ -42,10 +53,10 @@ async fn main() {
 }
 
 async fn root() -> Html<String> {
-    let h = IndexTemplate {
-        title: "Cool Title",
-    };
-    Html(String::from_utf8(minify(h.render().unwrap().as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+    TEMPLATES.lock().unwrap().full_reload().unwrap();
+    let context = Context::new();
+    let h = TEMPLATES.lock().unwrap().render("index.html", &context).unwrap();
+    Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
 }
 
 // async fn create_user(Json(payload): Json<CreateUser>) -> (StatusCode, Json<User>) {
