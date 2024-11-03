@@ -4,6 +4,7 @@
 
 /* Add this in base so that Tailwind's classed can override properties */
 @layer base {
+  /* MATERIAL SYMBOLS */
   @font-face {
     font-family: 'Material Symbols Rounded';
     font-style: normal;
@@ -25,4 +26,39 @@
     white-space: nowrap;
     direction: ltr;
   }
+
+  /* PROPER CHECKBOXES */
+  input[type="checkbox"] {
+    /* Use tailwind classes for the optics ... */
+    @apply min-w-8 min-h-8 rounded-md border border-gray-200 bg-white shadow-inner flex items-center justify-center;
+    /* ... and manual CSS for the checkmark. */
+    appearance: none;
+  }
+
+  input[type="checkbox"]:hover {
+    @apply shadow-none;
+  }
+
+  input[type="checkbox"]:active {
+    @apply bg-gray-50 shadow-inner;
+  }
+
+  input[type="checkbox"]::before {
+    font-family: 'Material Symbols Rounded';
+    content: '';
+    font-weight: 500;
+    font-style: normal;
+    font-size: 30px;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+  }
+
+  input[type="checkbox"]:checked::before {
+    content: 'check';
+  }
 }
+

@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 axum = "0.7"
+axum-extra = { version = "0", features = ["cookie"]}
 itertools = "0"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }

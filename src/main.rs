@@ -22,7 +22,7 @@ static HTML_MINIFY_CFG: LazyLock<minify_html::Cfg> = LazyLock::new(|| {
 //     title: &'a str,
 // }
 
-pub static TEMPLATES: LazyLock<Mutex<Tera>> = LazyLock::new(|| {
+pub static TERA: LazyLock<Mutex<Tera>> = LazyLock::new(|| {
     let tera = match Tera::new("templates/**/*.html") {
         Ok(t) => t,
         Err(e) => {
@@ -39,6 +39,7 @@ async fn main() {
     let app = Router::new()
         // Main routes
         .route("/", get(root))
+        .route("/admin", get(admin))
         // Serve static assets from the 'static'-folder.
         .nest_service("/static", ServeDir::new("static"))
         // Enable response compression.
@@ -53,9 +54,16 @@ async fn main() {
 }
 
 async fn root() -> Html<String> {
-    TEMPLATES.lock().unwrap().full_reload().unwrap();
+    TERA.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
-    let h = TEMPLATES.lock().unwrap().render("index.html", &context).unwrap();
+    let h = TERA.lock().unwrap().render("index.html", &context).unwrap();
+    Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+}
+
+async fn admin() -> Html<String> {
+    TERA.lock().unwrap().full_reload().unwrap();
+    let context = Context::new();
+    let h = TERA.lock().unwrap().render("admin.html", &context).unwrap();
     Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
 }
 
