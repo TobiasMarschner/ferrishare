@@ -10,21 +10,23 @@
 </head>
 
 <body>
-  <div class="flex items-center p-4 gap-2 border-b-2 border-gray-100">
-    <span class="matsym text-4xl">lock</span>
-    <h1 class="text-2xl leading-none font-light">
-      E2EE<br>Fileshare
-    </h1>
-    <nav class="flex items-center gap-2 ml-auto">
-      <a class="font-bold p-4 rounded-md hover:bg-gray-200 flex gap-2 hover:shadow-lg active:shadow-none" href="/">
-        <span class="matsym">upload_file</span>
-        Upload
-      </a>
-      <a class="font-bold p-4 rounded-md hover:bg-gray-200 flex gap-2 hover:shadow-lg active:shadow-none" href="/admin">
-        <span class="matsym">manage_accounts</span>
-        Administration
-      </a>
-    </nav>
+  <div class="border-b-2 border-gray-100">
+    <div class="flex items-center p-4 gap-2 max-w-5xl mx-auto">
+      <span class="matsym text-4xl">lock</span>
+      <h1 class="text-2xl leading-none font-light">
+        E2EE<br>Fileshare
+      </h1>
+      <nav class="flex items-center gap-2 ml-auto">
+        <a class="font-bold p-4 rounded-md hover:bg-gray-200 flex gap-2 hover:shadow-lg active:shadow-none" href="/">
+          <span class="matsym">upload_file</span>
+          Upload
+        </a>
+        <a class="font-bold p-4 rounded-md hover:bg-gray-200 flex gap-2 hover:shadow-lg active:shadow-none" href="/admin">
+          <span class="matsym">manage_accounts</span>
+          Administration
+        </a>
+      </nav>
+    </div>
   </div>
   {% block content %}{% endblock %}
 </body>
