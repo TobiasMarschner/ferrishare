@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+#content {
+  max-width: 32rem;
+  padding: 1rem;
+  margin: 1rem auto;
+  background-color: #eeeeee;
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+h2 {
+  font-size: 2rem;
+  text-align: center;
+}
+
+h2 .matsym {
+  font-size: 2rem;
+}
+
+ul {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+ul li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+</style>
+{% endblock %}
+
+
+{% block content %}
+<h2>
+  <span class="matsym">upload_file</span>
+  Upload a File
+</h2>
+<ul>
+  <li>
+    <span class="matsym">clock_loader_90</span>
+    <span>
+      100 MB File Size Limit
+    </span>
+  </li>
+  <li>
+    <span class="matsym">lock</span>
+    <span>
+      Files are encrypted in your browser before upload
+    </span>
+  </li>
+  <li>
+    <span class="matsym">visibility_off</span>
+    <span>
+      The server cannot view your unencrypted file
+    </span>
+  </li>
+  <li>
+    <span class="matsym">key</span>
+    <span>
+      The decryption key is part of the download-link
+    </span>
+  </li>
+</ul>
+<button>
+  <span class="matsym">folder_open</span>
+  Select a File
+</button>
+<button>
+  <span class="matsym">upload_file</span>
+  Upload
+</button>
+{% endblock %}

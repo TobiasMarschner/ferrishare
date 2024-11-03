@@ -1,0 +1,17 @@
+[package]
+name = "e2ee-fileshare-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.7"
+itertools = "0"
+serde = { version = "1", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+tower = { version = "0", features = ["util"] }
+tower-http = { version = "0", features = [ "fs", "compression-gzip", "compression-br", "compression-deflate", "compression-zstd" ] }
+askama = "0"
+minify-html = "0"
+
+[profile.dev.package.askama_derive]
+opt-level = 3
