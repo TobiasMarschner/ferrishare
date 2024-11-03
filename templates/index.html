@@ -1,79 +1,49 @@
 {% extends "base.html" %}
 
-{% block head %}
-<style>
-#content {
-  max-width: 32rem;
-  padding: 1rem;
-  margin: 1rem auto;
-  background-color: #eeeeee;
-  border-radius: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-h2 {
-  font-size: 2rem;
-  text-align: center;
-}
-
-h2 .matsym {
-  font-size: 2rem;
-}
-
-ul {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-ul li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-</style>
+{% block title %}
+Upload a File - E2EE Fileshare
 {% endblock %}
 
-
 {% block content %}
-<h2>
-  <span class="matsym">upload_file</span>
+<div class="max-w-lg mx-auto shadow-lg bg-gray-100 rounded-xl flex flex-col p-8 gap-8 m-8">
+<h2 class="flex gap-4 text-2xl self-center">
+  <span class="matsym text-3xl">upload_file</span>
   Upload a File
 </h2>
-<ul>
-  <li>
+<ul class="flex flex-col gap-4">
+  <li class="flex gap-4">
     <span class="matsym">clock_loader_90</span>
     <span>
       100 MB File Size Limit
     </span>
   </li>
-  <li>
+  <li class="flex gap-4">
     <span class="matsym">lock</span>
     <span>
       Files are encrypted in your browser before upload
     </span>
   </li>
-  <li>
+  <li class="flex gap-4">
     <span class="matsym">visibility_off</span>
     <span>
       The server cannot view your unencrypted file
     </span>
   </li>
-  <li>
+  <li class="flex gap-4">
     <span class="matsym">key</span>
     <span>
       The decryption key is part of the download-link
     </span>
   </li>
 </ul>
-<button>
+<input class="hidden" type="file" id="fileselect">
+<label for="fileselect" class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold shadow-sm hover:shadow-lg active:shadow-sm">
   <span class="matsym">folder_open</span>
   Select a File
-</button>
-<button>
+</label>
+<button class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-200 text-xl font-bold shadow-sm hover:shadow-lg active:shadow-sm text-gray-500">
   <span class="matsym">upload_file</span>
   Upload
 </button>
+</div>
 {% endblock %}

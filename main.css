@@ -1,3 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Add this in base so that Tailwind's classed can override properties */
+@layer base {
+  @font-face {
+    font-family: 'Material Symbols Rounded';
+    font-style: normal;
+    src: url('/static/font/MaterialSymbolsRounded.woff2') format('woff2');
+  }
+
+  .matsym {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+  }
+}

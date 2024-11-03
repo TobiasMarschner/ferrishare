@@ -4,153 +4,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/static/main.css">
   <title>{% block title %}E2EE Fileshare{% endblock %}</title>
-  <style>
-/* --- RESET.CSS --- */
-
-/* Ensure that border-box is indeed the default for all boxes everywhere. */
-*, *:before, *:after {
-  box-sizing: inherit;
-}
-
-/* Use border-box by default and set 16px as the default font size. */
-html {
-  box-sizing: border-box;
-  font-size: 16px;
-  font-family: sans-serif;
-}
-
-/* Reset margin and padding for all elements.
- * `break-word` eliminates unwanted overflow by allowing hard-breaks on very long words (such as URLs) */
-* {
-  margin: 0;
-  padding: 0;
-  overflow-wrap: break-word;
-}
-
-/* Use normal font weight by default on headings. */
-h1, h2, h3, h4, h5, h6 {
-  font-size: 16px;
-  font-weight: normal;
-}
-
-/* Use a sensible and legible line-height everywhere. */
-body {
-  line-height: 1.5;
-}
-
-/* Ensure form elements inherit font settings.
- * Prevents, for instance, weird monospace font on textarea or serif on text-input.
- * Also helps with weird zoom-in on mobile if the font within the form element is <16px
- * (which it would be if it didn't inherit the 16px). */
-input, button, textarea, select {
-  font: inherit;
-}
-
-/* Media elements should always behave as block elements
- * and never be wieder than their parent container. */
-img, picture, video, canvas, svg {
-/* picture, video, canvas, svg { */
-  display: block;
-  /* Make sure images are constrainted to the max-width and preserve their aspect ratio. */
-  max-width: 100%;
-  height: auto;
-  /* For very small images they are allowed to be smaller than full width and simply center themselves. */
-  margin: 0 auto;
-}
-
-/* No bullet points on lists by default. */
-ol, ul {
-  list-style: none;
-}
-
-/* --- MATERIAL SYMBOLS --- */
-
-@font-face {
-  font-family: 'Material Symbols Rounded';
-  font-style: normal;
-  src: url('/static/font/MaterialSymbolsRounded.woff2') format('woff2');
-}
-
-.matsym {
-  font-family: 'Material Symbols Rounded';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;  /* Preferred icon size */
-  display: inline-block;
-  line-height: 1;
-  text-transform: none;
-  letter-spacing: normal;
-  word-wrap: normal;
-  white-space: nowrap;
-  direction: ltr;
-}
-
-/* --- ACTUAL STYLES --- */
-
-/* Unstyle links, we'll apply our own. */
-a {
-  color: black;
-  text-decoration: none;
-}
-
-.topbar {
-  display: flex;
-  padding: 1rem;
-  gap: 0.5rem;
-  align-items: center;
-  border-bottom: solid black 1px;
-}
-
-.topbar > .matsym {
-  font-size: 2.5rem;
-  font-variation-settings: 'opsz' 40px;
-}
-
-.topbar nav {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-h1 {
-  font-size: 1.25rem;
-  font-weight: 300;
-  line-height: 1;
-}
-
-.btn-secondary {
-  display: flex;
-  gap: 0.25rem;
-  font-weight: 700;
-  padding: 1rem;
-  border-radius: 0.25rem;
-}
-
-.btn-secondary:hover {
-  background-color: gray;
-}
-  </style>
   {% block head %}{% endblock %}
 </head>
 
 <body>
-  <div class="topbar">
-    <span class="matsym">lock</span>
-    <h1>
+  <div class="flex items-center p-4 gap-2 border-b-2 border-gray-100">
+    <span class="matsym text-4xl">lock</span>
+    <h1 class="text-2xl leading-none font-light">
       E2EE<br>Fileshare
     </h1>
-    <nav class="navbar">
-      <a class="btn-secondary" href="#"><span class="matsym">upload_file</span> Upload</a>
-      <a class="btn-secondary" href="#"><span class="matsym">settings</span> Administration</a>
+    <nav class="flex items-center gap-2 ml-auto">
+      <a class="font-bold p-4 rounded-md hover:bg-gray-200 flex gap-2 hover:shadow-lg active:shadow-none" href="#">
+        <span class="matsym">upload_file</span>
+        Upload
+      </a>
+      <a class="font-bold p-4 rounded-md hover:bg-gray-200 flex gap-2 hover:shadow-lg active:shadow-none" href="#">
+        <span class="matsym">settings</span>
+        Administration
+      </a>
     </nav>
   </div>
-  <div id="content">
-    {% block content %}
-    <p>Placeholder content</p>
-    {% endblock %}
-  </div>
+  {% block content %}{% endblock %}
 </body>
 
 </html>
