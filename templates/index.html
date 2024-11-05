@@ -42,6 +42,28 @@ Upload a File - E2EE Fileshare
     <span class="matsym">folder_open</span>
     Select a File
   </label>
+  <fieldset>
+    <legend>Expires in</legend>
+    <div class="flex gap-4 items-stretch">
+      <label class="flex-1 p-4 rounded-md bg-gray-200 flex justify-content gap-1 text-lg">
+        <input type="radio" name="expires" value="hour" class="">
+        <span class="mx-auto">1 hour</span>
+      </label>
+      <label class="flex-1 p-4 rounded-md bg-gray-200 flex justify-content gap-1 text-lg">
+        <input type="radio" name="expires" value="day" class="">
+        <span class="mx-auto">1 day</span>
+      </label>
+      <label class="flex-1 p-4 rounded-md bg-gray-200 flex justify-content gap-1 text-lg">
+        <input type="radio" name="expires" value="week" class="">
+        <span class="mx-auto">1 week</span>
+      </label>
+      <!-- <input type="radio" name="expires" value="day" id="expires-day" class="hidden appearance-none peer/day"> -->
+      <!-- <input type="radio" name="expires" value="week" id="expires-week" class="hidden appearance-none peer/week"> -->
+      <!-- <label for="expires-hour" class="flex-1 text-xl rounded-lg shadow-sm flex items-center justify-center bg-gray-300 border-gray-300 border-4 cursor-pointer peer-hover/hour:shadow-lg peer-checked/hour:shadow-inner peer-checked/hour:hover:shadow-none peer-checked/hour:bg-white peer-checked/hour:border-gray-400 peer-checked/hour:font-bold">1 hour</label> -->
+      <!-- <label for="expires-day"  class="flex-1 text-xl rounded-lg shadow-sm flex items-center justify-center bg-gray-300 border-gray-300 border-4 cursor-pointer peer-hover/day:shadow-lg peer-checked/day:shadow-inner peer-checked/day:hover:shadow-none peer-checked/day:bg-white peer-checked/day:border-gray-400 peer-checked/day:font-bold">1 day</label> -->
+      <!-- <label for="expires-week" class="flex-1 text-xl rounded-lg shadow-sm flex items-center justify-center bg-gray-300 border-gray-300 border-4 cursor-pointer peer-hover/week:shadow-lg peer-checked/week:shadow-inner peer-checked/week:hover:shadow-none peer-checked/week:bg-white peer-checked/week:border-gray-400 peer-checked/week:font-bold">1 week</label> -->
+    </div>
+  </fieldset>
   <button type="submit" id="fs-submit" class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-200 text-xl font-bold shadow-sm hover:shadow-lg active:shadow-sm text-gray-500">
     <span class="matsym">upload_file</span>
     Upload
@@ -52,7 +74,7 @@ Upload a File - E2EE Fileshare
   <span id="fs-status-text"></span>
 </p>
 <div class="flex h-4 bg-gray-200 rounded-full">
-  <div id="fs-pbar" class="mr-auto bg-gray-400 rounded-full" style="width: 0%;"></div>
+  <div id="fs-pbar" class="mr-auto bg-gray-400 rounded-full transition-width duration-500 ease-out" style="width: 0%;"></div>
 </div>
 </div>
 <script>

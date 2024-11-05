@@ -27,7 +27,7 @@
     direction: ltr;
   }
 
-  /* PROPER CHECKBOXES */
+  /* PROPER CHECKBOXES AND RADIO BUTTONS */
   input[type="checkbox"] {
     /* Use tailwind classes for the optics ... */
     @apply min-w-8 min-h-8 rounded-md border border-gray-200 bg-white shadow-inner flex items-center justify-center;
@@ -61,9 +61,23 @@
     content: 'check';
   }
 
-  /* ANIMATED PROGRESS BAR */
-  #fs-pbar {
-    transition: all 0.5s ease-out;
+  input[type="radio"] {
+    /* Use tailwind classes for the optics ... */
+    @apply min-w-8 min-h-8 max-w-8 max-h-8 rounded-full border-gray-600 bg-white shadow-inner flex items-center justify-center;
+    /* ... and manual CSS for the checkmark. */
+    appearance: none;
+  }
+
+  input[type="radio"]:hover {
+    @apply shadow-none;
+  }
+
+  input[type="radio"]:active {
+    @apply bg-gray-50 shadow-inner;
+  }
+
+  input[type="radio"]:checked {
+    @apply border-[0.7rem];
   }
 }
 
