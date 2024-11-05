@@ -1,10 +1,15 @@
-use tera::{Tera, Context};
-use axum::{response::Html, routing::get, Router};
+use axum::{
+    extract::Multipart,
+    response::{Html, IntoResponse},
+    routing::{get, post},
+    Router,
+};
 use minify_html::minify;
+use tera::{Context, Tera};
 use tower::ServiceBuilder;
 use tower_http::{compression::CompressionLayer, services::ServeDir};
 // use serde::{Deserialize, Serialize};
-use std::sync::{LazyLock, Mutex};
+use std::{fs::File, io::prelude::*, sync::{LazyLock, Mutex}};
 
 static HTML_MINIFY_CFG: LazyLock<minify_html::Cfg> = LazyLock::new(|| {
     let mut cfg = minify_html::Cfg::spec_compliant();
@@ -13,17 +18,12 @@ static HTML_MINIFY_CFG: LazyLock<minify_html::Cfg> = LazyLock::new(|| {
     cfg.keep_html_and_head_opening_tags = true;
     // Very useful, minify all the CSS here, too.
     cfg.minify_css = true;
+    cfg.minify_js = true;
     cfg
 });
 
-// #[derive(Template)]
-// #[template(path = "index.html")]
-// struct IndexTemplate<'a> {
-//     title: &'a str,
-// }
-
 pub static TERA: LazyLock<Mutex<Tera>> = LazyLock::new(|| {
-    let tera = match Tera::new("templates/**/*.html") {
+    let tera = match Tera::new("templates/**/*.{html,js}") {
         Ok(t) => t,
         Err(e) => {
             println!("Parsing error(s): {}", e);
@@ -40,6 +40,7 @@ async fn main() {
         // Main routes
         .route("/", get(root))
         .route("/admin", get(admin))
+        .route("/upload_endpoint", post(upload_endpoint))
         // Serve static assets from the 'static'-folder.
         .nest_service("/static", ServeDir::new("static"))
         // Enable response compression.
@@ -53,18 +54,37 @@ async fn main() {
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn root() -> Html<String> {
+async fn root() -> impl IntoResponse {
     TERA.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
     let h = TERA.lock().unwrap().render("index.html", &context).unwrap();
     Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
 }
 
-async fn admin() -> Html<String> {
+async fn admin() -> impl IntoResponse {
     TERA.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
     let h = TERA.lock().unwrap().render("admin.html", &context).unwrap();
     Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+}
+
+async fn upload_endpoint(mut multipart: Multipart) {
+    println!("endpoint reached");
+    // dbg!(&multipart);
+
+    while let Some(field) = multipart.next_field().await.unwrap() {
+        dbg!(&field);
+
+        let name = field.name().unwrap().to_string();
+        let ct = field.content_type().unwrap().to_string();
+        let filename = field.file_name().unwrap().to_string();
+        let data = field.bytes().await.unwrap();
+
+        println!("Length of `{}` is {} bytes, content-type {}", name, data.len(), ct);
+
+        let mut file = File::create(format!("data/{filename}")).unwrap();
+        file.write_all(&data).unwrap();
+    }
 }
 
 // async fn create_user(Json(payload): Json<CreateUser>) -> (StatusCode, Json<User>) {

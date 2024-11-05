@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}
+{% block title -%}
 Upload a File - E2EE Fileshare
-{% endblock %}
+{%- endblock %}
 
 {% block content %}
 <div class="max-w-lg mx-auto shadow-lg bg-gray-100 rounded-xl flex flex-col p-8 gap-8 m-8">
@@ -36,14 +36,26 @@ Upload a File - E2EE Fileshare
     </span>
   </li>
 </ul>
-<input class="hidden" type="file" id="fileselect">
-<label for="fileselect" class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-lg active:shadow-sm">
-  <span class="matsym">folder_open</span>
-  Select a File
-</label>
-<button class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-200 text-xl font-bold shadow-sm hover:shadow-lg active:shadow-sm text-gray-500">
-  <span class="matsym">upload_file</span>
-  Upload
-</button>
+<form id="filesubmit" class="flex flex-col gap-4">
+  <input class="hidden" type="file" id="fs-file">
+  <label for="fs-file" class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-lg active:shadow-sm">
+    <span class="matsym">folder_open</span>
+    Select a File
+  </label>
+  <button type="submit" id="fs-submit" class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-200 text-xl font-bold shadow-sm hover:shadow-lg active:shadow-sm text-gray-500">
+    <span class="matsym">upload_file</span>
+    Upload
+  </button>
+</form>
+<p class="flex gap-4 p-4 rounded-md bg-gray-200" id="fs-status">
+  <span class="matsym" id="fs-status-icon"></span>
+  <span id="fs-status-text"></span>
+</p>
+<div class="flex h-4 bg-gray-200 rounded-full">
+  <div id="fs-pbar" class="mr-auto bg-gray-400 rounded-full" style="width: 0%;"></div>
 </div>
+</div>
+<script>
+{% include "uploadscript.js" %}
+</script>
 {% endblock %}

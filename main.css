@@ -60,5 +60,10 @@
   input[type="checkbox"]:checked::before {
     content: 'check';
   }
+
+  /* ANIMATED PROGRESS BAR */
+  #fs-pbar {
+    transition: all 0.5s ease-out;
+  }
 }
 
