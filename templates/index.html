@@ -5,79 +5,141 @@ Upload a File - E2EE Fileshare
 {%- endblock %}
 
 {% block content %}
-<div class="max-w-lg mx-auto shadow-lg bg-gray-100 rounded-xl flex flex-col p-8 gap-8 m-8">
-<h2 class="flex gap-4 text-2xl self-center">
-  <span class="matsym text-3xl">upload_file</span>
-  Upload a File
-</h2>
-<ul class="flex flex-col gap-4">
-  <li class="flex gap-4">
-    <span class="matsym">clock_loader_90</span>
-    <span>
-      Files up to 100 MB supported
-    </span>
-  </li>
-  <li class="flex gap-4">
-    <span class="matsym">lock</span>
-    <span>
-      Files are encrypted in your browser before upload
-    </span>
-  </li>
-  <li class="flex gap-4">
-    <span class="matsym">visibility_off</span>
-    <span>
-      The server cannot view your unencrypted file
-    </span>
-  </li>
-  <li class="flex gap-4">
-    <span class="matsym">key</span>
-    <span>
-      The decryption key is part of the download-link
-    </span>
-  </li>
-</ul>
-<form id="filesubmit" class="flex flex-col gap-4">
-  <input class="hidden" type="file" id="fs-file">
-  <label for="fs-file" class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-lg active:shadow-sm">
-    <span class="matsym">folder_open</span>
-    Select a File
-  </label>
-  <fieldset>
-    <legend>Expires in</legend>
-    <div class="flex gap-4 items-stretch">
-      <label class="flex-1 p-4 rounded-md bg-gray-200 flex justify-content gap-1 text-lg">
-        <input type="radio" name="expires" value="hour" class="">
-        <span class="mx-auto">1 hour</span>
-      </label>
-      <label class="flex-1 p-4 rounded-md bg-gray-200 flex justify-content gap-1 text-lg">
-        <input type="radio" name="expires" value="day" class="">
-        <span class="mx-auto">1 day</span>
-      </label>
-      <label class="flex-1 p-4 rounded-md bg-gray-200 flex justify-content gap-1 text-lg">
-        <input type="radio" name="expires" value="week" class="">
-        <span class="mx-auto">1 week</span>
-      </label>
-      <!-- <input type="radio" name="expires" value="day" id="expires-day" class="hidden appearance-none peer/day"> -->
-      <!-- <input type="radio" name="expires" value="week" id="expires-week" class="hidden appearance-none peer/week"> -->
-      <!-- <label for="expires-hour" class="flex-1 text-xl rounded-lg shadow-sm flex items-center justify-center bg-gray-300 border-gray-300 border-4 cursor-pointer peer-hover/hour:shadow-lg peer-checked/hour:shadow-inner peer-checked/hour:hover:shadow-none peer-checked/hour:bg-white peer-checked/hour:border-gray-400 peer-checked/hour:font-bold">1 hour</label> -->
-      <!-- <label for="expires-day"  class="flex-1 text-xl rounded-lg shadow-sm flex items-center justify-center bg-gray-300 border-gray-300 border-4 cursor-pointer peer-hover/day:shadow-lg peer-checked/day:shadow-inner peer-checked/day:hover:shadow-none peer-checked/day:bg-white peer-checked/day:border-gray-400 peer-checked/day:font-bold">1 day</label> -->
-      <!-- <label for="expires-week" class="flex-1 text-xl rounded-lg shadow-sm flex items-center justify-center bg-gray-300 border-gray-300 border-4 cursor-pointer peer-hover/week:shadow-lg peer-checked/week:shadow-inner peer-checked/week:hover:shadow-none peer-checked/week:bg-white peer-checked/week:border-gray-400 peer-checked/week:font-bold">1 week</label> -->
+<div class="m-8">
+  <div class="max-w-lg shadow-lg bg-gray-100 rounded-xl flex flex-col p-8 gap-8 mx-auto">
+    <h2 class="flex gap-4 text-2xl self-center">
+      <span class="matsym text-3xl">upload_file</span>
+      Upload a File
+    </h2>
+    <ul class="flex flex-col gap-4">
+      <li class="flex gap-4">
+        <span class="matsym">clock_loader_90</span>
+        <span>
+          Files up to 10 MB supported
+        </span>
+      </li>
+      <li class="flex gap-4">
+        <span class="matsym">lock</span>
+        <span>
+          Files are encrypted in your browser before upload
+        </span>
+      </li>
+      <li class="flex gap-4">
+        <span class="matsym">visibility_off</span>
+        <span>
+          The server cannot view your unencrypted file
+        </span>
+      </li>
+      <li class="flex gap-4">
+        <span class="matsym">key</span>
+        <span>
+          The decryption key is part of the download-link
+        </span>
+      </li>
+    </ul>
+    <form id="filesubmit" class="flex flex-col gap-4">
+      <input class="hidden" type="file" id="fs-file">
+      <button type="button" id="fs-filebutton"
+        class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+        <span class="matsym">folder_open</span>
+        Select a File
+      </button>
+      <div id="filesubmit-details" class="hidden flex-col gap-4">
+        <p class="flex flex-col">
+          <span class="text-gray-500">Selected File</span>
+          <span id="fs-filename" class="text-xl">cool_file.txt</span>
+        </p>
+        <p class="flex flex-col">
+          <span class="text-gray-500">Size</span>
+          <span id="fs-filesize" class="text-xl">4.56 MB</span>
+        </p>
+        <fieldset>
+          <legend class="text-gray-500 mb-1">Expires in</legend>
+          <div class="flex gap-4 items-stretch">
+            <label
+              class="flex-1 p-2 rounded-md bg-gray-200 flex items-center justify-content gap-1 text-lg border-4 border-gray-200 has-[:checked]:shadow-inner has-[:checked]:bg-gray-50 hover:shadow-md active:shadow-none has-[:disabled]:bg-gray-200 has-[:disabled]:text-gray-400 has-[:disabled]:shadow-none">
+              <input type="radio" name="expires" value="hour" class="">
+              <span class="mx-auto">1 hour</span>
+            </label>
+            <label
+              class="flex-1 p-2 rounded-md bg-gray-200 flex items-center justify-content gap-1 text-lg border-4 border-gray-200 has-[:checked]:shadow-inner has-[:checked]:bg-gray-50 hover:shadow-md active:shadow-none has-[:disabled]:bg-gray-200 has-[:disabled]:text-gray-400 has-[:disabled]:shadow-none">
+              <input type="radio" name="expires" value="day" checked class="">
+              <span class="mx-auto">1 day</span>
+            </label>
+            <label
+              class="flex-1 p-2 rounded-md bg-gray-200 flex items-center justify-content gap-1 text-lg border-4 border-gray-200 has-[:checked]:shadow-inner has-[:checked]:bg-gray-50 hover:shadow-md active:shadow-none has-[:disabled]:bg-gray-200 has-[:disabled]:text-gray-400 has-[:disabled]:shadow-none">
+              <input type="radio" name="expires" value="week" class="">
+              <span class="mx-auto">1 week</span>
+            </label>
+          </div>
+        </fieldset>
+        <button type="submit" id="fs-submit"
+          class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm mt-4">
+          <span class="flex justify-center items-center gap-4">
+            <span class="matsym">upload_file</span> Encrypt and Upload
+          </span>
+        </button>
+      </div>
+    </form>
+    <div id="filesubmit-progress" class="hidden flex-col gap-4 p-4 rounded-md bg-gray-200">
+      <div class="flex flex-row gap-4">
+        <span class="matsym text-4xl" id="fs-status-icon"></span>
+        <div class="flex-1 flex flex-col items-stretch gap-2">
+          <div id="fs-status-text" class="text-lg font-bold"></div>
+          <div class="flex min-h-2 bg-gray-200 rounded-full">
+            <div id="fs-pbar" class="mr-auto bg-gray-400 rounded-full transition-width duration-500 ease-out"
+              style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col items-center rounded-lg shadow-md bg-gray-200 py-2 gap-2">
+        <span class="center text-gray-800 font-bold text-xl p-2 flex gap-2">
+          <span class="matsym">public</span>
+          <span>
+            Public Download Link
+          </span>
+        </span>
+        <input class="self-stretch text-md p-2 shadow-inner border-2 border-gray-200" type="text"
+          value="http://localhost/p/f85a4e#key=123456" id="admin-link" readonly>
+        <div class="flex gap-4 p-2">
+          <button type="button"
+            class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+            <span class="matsym">open_in_new</span>
+            <span>Open</span>
+          </button>
+          <button type="button"
+            class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+            <span class="matsym">content_paste</span>
+            <span>Copy to Clipboard</span>
+          </button>
+        </div>
+      </div>
+      <div class="flex flex-col items-center rounded-lg shadow-md bg-gray-200 py-2 gap-2">
+        <span class="center text-gray-800 font-bold text-xl p-2 flex gap-2">
+          <span class="matsym">security</span>
+          <span>
+            Administration Link
+          </span>
+        </span>
+        <input class="self-stretch text-md p-2 shadow-inner border-2 border-gray-200" type="text"
+          value="http://localhost/p/f85a4e#key=123456" id="admin-link" readonly>
+        <div class="flex gap-4 p-2">
+          <button type="button"
+            class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+            <span class="matsym">open_in_new</span>
+            <span>Open</span>
+          </button>
+          <button type="button"
+            class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+            <span class="matsym">content_paste</span>
+            <span>Copy to Clipboard</span>
+          </button>
+        </div>
+      </div>
     </div>
-  </fieldset>
-  <button type="submit" id="fs-submit" class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-200 text-xl font-bold shadow-sm hover:shadow-lg active:shadow-sm text-gray-500">
-    <span class="matsym">upload_file</span>
-    Upload
-  </button>
-</form>
-<p class="flex gap-4 p-4 rounded-md bg-gray-200" id="fs-status">
-  <span class="matsym" id="fs-status-icon"></span>
-  <span id="fs-status-text"></span>
-</p>
-<div class="flex h-4 bg-gray-200 rounded-full">
-  <div id="fs-pbar" class="mr-auto bg-gray-400 rounded-full transition-width duration-500 ease-out" style="width: 0%;"></div>
-</div>
+  </div>
 </div>
 <script>
-{% include "uploadscript.js" %}
+  {% include "uploadscript.js" %}
 </script>
 {% endblock %}

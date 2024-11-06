@@ -1,9 +1,12 @@
+
+let selectedFile = null;
+
 /*
   * type: One of "success", "error"
   * message: The actual text to display
 */
 function updateFsStatus(type, message) {
-  let fsStatus = document.getElementById("fs-status");
+  let fsStatus = document.getElementById("filesubmit-progress");
   let fsIcon = document.getElementById("fs-status-icon");
   let fsText = document.getElementById("fs-status-text");
 
@@ -42,6 +45,9 @@ async function uploadFile() {
   // We're hijacking the form's submit event.
   // Ensure the browser doesn't get any funny ideas and submits the data for us.
 
+  // Turn the status-display visible.
+  document.getElementById("filesubmit-progress").style.display = "flex";
+
   // Grab the file selected by the user.
   let file = document.getElementById("fs-file").files[0];
   let formData = new FormData();
@@ -61,9 +67,9 @@ async function uploadFile() {
 
   xhr.onload = () => {
     if (xhr.status == 200) {
-      updateFsStatus("success", "Upload successful");
+      updateFsStatus("success", "Upload successful!");
     } else {
-      updateFsStatus("error", "Error uploading file, Status " + xhr.status);
+      updateFsStatus("error", "Error uploading file! Status " + xhr.status);
     }
   }
 
@@ -80,3 +86,17 @@ document.getElementById("filesubmit").addEventListener("submit", (event) => {
   event.preventDefault();
   uploadFile();
 });
+
+// Pass through click events on the "select a file" button to the actual file input that is hidden.
+document.getElementById("fs-filebutton").addEventListener("click", (event) => {
+  document.getElementById("fs-file").click();
+});
+
+document.getElementById("fs-file").addEventListener("change", (e) => {
+  if (e.target.files[0]) {
+    document.getElementById("filesubmit-details").style.display = "flex";
+    document.getElementById("fs-filename").textContent = e.target.files[0].name;
+    document.getElementById("fs-filesize").textContent = (e.target.files[0].size / 1000000).toFixed(2) + " MB";
+  }
+});
+
