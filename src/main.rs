@@ -40,6 +40,8 @@ async fn main() {
         // Main routes
         .route("/", get(root))
         .route("/admin", get(admin))
+        .route("/download", get(download))
+        .route("/admin_link", get(admin_link))
         .route("/upload_endpoint", post(upload_endpoint))
         // Serve static assets from the 'static'-folder.
         .nest_service("/static", ServeDir::new("static"))
@@ -58,6 +60,20 @@ async fn root() -> impl IntoResponse {
     TERA.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
     let h = TERA.lock().unwrap().render("index.html", &context).unwrap();
+    Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+}
+
+async fn download() -> impl IntoResponse {
+    TERA.lock().unwrap().full_reload().unwrap();
+    let context = Context::new();
+    let h = TERA.lock().unwrap().render("download.html", &context).unwrap();
+    Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+}
+
+async fn admin_link() -> impl IntoResponse {
+    TERA.lock().unwrap().full_reload().unwrap();
+    let context = Context::new();
+    let h = TERA.lock().unwrap().render("admin_link.html", &context).unwrap();
     Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
 }
 
@@ -87,24 +103,3 @@ async fn upload_endpoint(mut multipart: Multipart) {
     }
 }
 
-// async fn create_user(Json(payload): Json<CreateUser>) -> (StatusCode, Json<User>) {
-//     let user = User {
-//         id: 1337,
-//         username: payload.username,
-//     };
-//
-//     println!("{:?}", user);
-//
-//     (StatusCode::CREATED, Json(user))
-// }
-//
-// #[derive(Deserialize)]
-// struct CreateUser {
-//     username: String,
-// }
-//
-// #[derive(Serialize, Debug)]
-// struct User {
-//     id: u64,
-//     username: String,
-// }

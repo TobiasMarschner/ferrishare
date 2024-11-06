@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title -%}
+Download a File - E2EE Fileshare
+{%- endblock %}
+
+{% block content %}
+<div class="m-8">
+  <div class="max-w-lg shadow-lg bg-gray-100 rounded-xl flex flex-col p-8 gap-8 mx-auto">
+    <!-- <h2 class="flex gap-4 text-2xl self-center"> -->
+    <!--   <span class="matsym text-3xl">download_for_offline</span> -->
+    <!--   Download a File -->
+    <!-- </h2> -->
+    <div class="flex items-center gap-4 p-4 rounded-md bg-gray-200">
+      <span class="matsym text-4xl animate-spin" id="fs-status-icon">progress_activity</span>
+      <span class="text-lg font-bold">
+        Fetching information...
+      </span>
+    </div>
+    <ul class="flex flex-col gap-4">
+      <li class="flex gap-4">
+        <span class="matsym text-2xl text-gray-500">draft</span>
+        <div class="flex flex-col">
+          <span class="text-gray-500">Filename</span>
+          <span class="text-xl">cool_file.txt</span>
+        </div>
+      </li>
+      <li class="flex gap-4">
+        <span class="matsym text-2xl text-gray-500">clock_loader_90</span>
+        <div class="flex flex-col">
+          <span class="text-gray-500">Size</span>
+          <span class="text-xl">4.56 MB</span>
+        </div>
+      </li>
+    </ul>
+    <button type="button" id="dl-button"
+      class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+      <span class="matsym">download</span>
+      Download and Decrypt
+    </button>
+  </div>
+</div>
+{% endblock %}

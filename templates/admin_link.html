@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title -%}
+Download a File - E2EE Fileshare
+{%- endblock %}
+
+{% block content %}
+<div class="m-8">
+  <div class="max-w-lg shadow-lg bg-gray-100 rounded-xl flex flex-col p-8 gap-8 mx-auto">
+    <h2 class="flex gap-4 text-2xl self-center">
+      <span class="matsym text-3xl">security</span>
+      Admin Page
+    </h2>
+    <div class="flex items-center gap-4 p-4 rounded-md bg-gray-200">
+      <span class="matsym text-4xl animate-spin" id="fs-status-icon">progress_activity</span>
+      <span class="text-lg font-bold">
+        Fetching information...
+      </span>
+    </div>
+    <ul class="flex flex-col gap-6">
+      <li class="flex gap-4">
+        <span class="matsym text-2xl text-gray-500">draft</span>
+        <div class="flex flex-col">
+          <span class="text-gray-500">Filename</span>
+          <span class="text-xl">cool_file.txt</span>
+        </div>
+      </li>
+      <li class="flex gap-4">
+        <span class="matsym text-2xl text-gray-500">clock_loader_90</span>
+        <div class="flex flex-col">
+          <span class="text-gray-500">Size</span>
+          <span class="text-xl">4.56 MB</span>
+        </div>
+      </li>
+      <li class="flex gap-4">
+        <span class="matsym text-2xl text-gray-500">note_add</span>
+        <div class="flex flex-col">
+          <span class="text-gray-500">Created</span>
+          <div class="flex items-baseline gap-2">
+            <span class="text-xl">14h 32m ago</span>
+            <span class="text-gray-500">(4:32 PM GMT, Oct 22, 2024)</span>
+          </div>
+        </div>
+      </li>
+      <li class="flex gap-4">
+        <span class="matsym text-2xl text-gray-500">auto_delete</span>
+        <div class="flex flex-col">
+          <span class="text-gray-500">Expires in</span>
+          <div class="flex items-baseline gap-2">
+            <span class="text-xl">4d 14h 32m</span>
+            <span class="text-gray-500">(4:32 PM GMT, Oct 27, 2024)</span>
+          </div>
+        </div>
+      </li>
+      <li class="flex gap-4">
+        <span class="matsym text-2xl text-gray-500">visibility</span>
+        <div class="flex flex-col">
+          <span class="text-gray-500">Views</span>
+          <span class="text-xl">23</span>
+        </div>
+      </li>
+      <li class="flex gap-4">
+        <span class="matsym text-2xl text-gray-500">download</span>
+        <div class="flex flex-col">
+          <span class="text-gray-500">Downloads</span>
+          <span class="text-xl">7</span>
+        </div>
+      </li>
+    </ul>
+    <div class="flex flex-col items-center rounded-lg shadow-md bg-gray-200 py-2 gap-2">
+      <span class="center text-gray-800 font-bold text-xl p-2 flex gap-2">
+        <span class="matsym">public</span>
+        <span>
+          Public Download Link
+        </span>
+      </span>
+      <input class="self-stretch text-md p-2 shadow-inner border-2 border-gray-200" type="text"
+        value="http://localhost/p/f85a4e#key=123456" id="admin-link" readonly>
+      <div class="flex gap-4 p-2">
+        <button type="button"
+          class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+          <span class="matsym">open_in_new</span>
+          <span>Open</span>
+        </button>
+        <button type="button"
+          class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+          <span class="matsym">content_paste</span>
+          <span>Copy to Clipboard</span>
+        </button>
+      </div>
+    </div>
+    <button type="button" id="dl-button"
+      class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+      <span class="matsym">delete</span>
+      Delete from Server
+    </button>
+  </div>
+</div>
+{% endblock %}

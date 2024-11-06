@@ -13,25 +13,25 @@ Upload a File - E2EE Fileshare
     </h2>
     <ul class="flex flex-col gap-4">
       <li class="flex gap-4">
-        <span class="matsym">clock_loader_90</span>
+        <span class="matsym text-gray-500">clock_loader_90</span>
         <span>
           Files up to 10 MB supported
         </span>
       </li>
       <li class="flex gap-4">
-        <span class="matsym">lock</span>
+        <span class="matsym text-gray-500">lock</span>
         <span>
           Files are encrypted in your browser before upload
         </span>
       </li>
       <li class="flex gap-4">
-        <span class="matsym">visibility_off</span>
+        <span class="matsym text-gray-500">visibility_off</span>
         <span>
           The server cannot view your unencrypted file
         </span>
       </li>
       <li class="flex gap-4">
-        <span class="matsym">key</span>
+        <span class="matsym text-gray-500">key</span>
         <span>
           The decryption key is part of the download-link
         </span>
@@ -45,14 +45,22 @@ Upload a File - E2EE Fileshare
         Select a File
       </button>
       <div id="filesubmit-details" class="hidden flex-col gap-4">
-        <p class="flex flex-col">
-          <span class="text-gray-500">Selected File</span>
-          <span id="fs-filename" class="text-xl">cool_file.txt</span>
-        </p>
-        <p class="flex flex-col">
-          <span class="text-gray-500">Size</span>
-          <span id="fs-filesize" class="text-xl">4.56 MB</span>
-        </p>
+        <ul class="flex flex-col gap-4">
+          <li class="flex gap-4">
+            <span class="matsym text-2xl text-gray-500">draft</span>
+            <div class="flex flex-col">
+              <span class="text-gray-500">Filename</span>
+              <span id="fs-filename" class="text-xl">cool_file.txt</span>
+            </div>
+          </li>
+          <li class="flex gap-4">
+            <span class="matsym text-2xl text-gray-500">clock_loader_90</span>
+            <div class="flex flex-col">
+              <span class="text-gray-500">Size</span>
+              <span id="fs-filesize" class="text-xl">4.56 MB</span>
+            </div>
+          </li>
+        </ul>
         <fieldset>
           <legend class="text-gray-500 mb-1">Expires in</legend>
           <div class="flex gap-4 items-stretch">
