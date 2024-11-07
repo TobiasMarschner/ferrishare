@@ -42,6 +42,7 @@ async fn main() {
         .route("/admin", get(admin))
         .route("/download", get(download))
         .route("/admin_link", get(admin_link))
+        .route("/admin_overview", get(admin_overview))
         .route("/upload_endpoint", post(upload_endpoint))
         // Serve static assets from the 'static'-folder.
         .nest_service("/static", ServeDir::new("static"))
@@ -74,6 +75,13 @@ async fn admin_link() -> impl IntoResponse {
     TERA.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
     let h = TERA.lock().unwrap().render("admin_link.html", &context).unwrap();
+    Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+}
+
+async fn admin_overview() -> impl IntoResponse {
+    TERA.lock().unwrap().full_reload().unwrap();
+    let context = Context::new();
+    let h = TERA.lock().unwrap().render("admin_overview.html", &context).unwrap();
     Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
 }
 
