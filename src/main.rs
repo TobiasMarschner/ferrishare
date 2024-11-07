@@ -100,14 +100,14 @@ async fn upload_endpoint(mut multipart: Multipart) {
         dbg!(&field);
 
         let name = field.name().unwrap().to_string();
-        let ct = field.content_type().unwrap().to_string();
-        let filename = field.file_name().unwrap().to_string();
+        // let ct = field.content_type().unwrap().to_string();
+        // let filename = field.file_name().unwrap().to_string();
         let data = field.bytes().await.unwrap();
+        
+        println!("Length of `{}` is {} bytes", name, data.len());
 
-        println!("Length of `{}` is {} bytes, content-type {}", name, data.len(), ct);
-
-        let mut file = File::create(format!("data/{filename}")).unwrap();
-        file.write_all(&data).unwrap();
+        // let mut file = File::create(format!("data/{filename}")).unwrap();
+        // file.write_all(&data).unwrap();
     }
 }
 
