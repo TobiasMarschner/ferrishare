@@ -21,26 +21,26 @@ Upload a File - E2EE Fileshare
       <li class="flex gap-4">
         <span class="matsym text-gray-500">lock</span>
         <span>
-          Files are encrypted in your browser before upload
+          File and filename are encrypted in your browser
         </span>
       </li>
       <li class="flex gap-4">
         <span class="matsym text-gray-500">visibility_off</span>
         <span>
-          The server cannot view your unencrypted file
+          The server receives and stores the encrypted data
         </span>
       </li>
       <li class="flex gap-4">
         <span class="matsym text-gray-500">key</span>
         <span>
-          The decryption key is part of the download-link
+          The download-link contains the key to decrypt the file
         </span>
       </li>
     </ul>
     <form id="filesubmit" class="flex flex-col gap-4">
       <input class="hidden" type="file" id="fs-file">
       <button type="button" id="fs-filebutton"
-        class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+        class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200">
         <span class="matsym">folder_open</span>
         Select a File
       </button>
@@ -61,7 +61,7 @@ Upload a File - E2EE Fileshare
             </div>
           </li>
         </ul>
-        <fieldset>
+        <fieldset id="fs-expiry-fieldset">
           <legend class="text-gray-500 mb-1">Expires in</legend>
           <div class="flex gap-4 items-stretch">
             <label
@@ -82,7 +82,7 @@ Upload a File - E2EE Fileshare
           </div>
         </fieldset>
         <button type="submit" id="fs-submit"
-          class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm mt-4">
+          class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm mt-4 disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200">
           <span class="flex justify-center items-center gap-4">
             <span class="matsym">upload_file</span> Encrypt and Upload
           </span>
@@ -100,21 +100,22 @@ Upload a File - E2EE Fileshare
           </div>
         </div>
       </div>
-      <div class="flex flex-col items-center rounded-lg shadow-md bg-gray-200 py-2 gap-2">
+      <div id="fs-success-download-box"
+        class="hidden flex-col items-center rounded-lg shadow-md bg-gray-200 py-2 gap-2">
         <span class="center text-gray-800 font-bold text-xl p-2 flex gap-2">
           <span class="matsym">public</span>
           <span>
             Public Download Link
           </span>
         </span>
-        <input class="self-stretch text-md p-2 shadow-inner border-2 border-gray-200" type="text"
-          value="http://localhost/p/f85a4e#key=123456" id="admin-link" readonly>
+        <input id="fs-success-download-input" class="self-stretch text-md p-2 shadow-inner border-2 border-gray-200"
+          type="text" readonly>
         <div class="flex gap-4 p-2">
-          <button type="button"
+          <a id="fs-success-download-link" target="_blank"
             class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
             <span class="matsym">open_in_new</span>
             <span>Open</span>
-          </button>
+          </a>
           <button type="button"
             class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
             <span class="matsym">content_paste</span>
@@ -122,21 +123,21 @@ Upload a File - E2EE Fileshare
           </button>
         </div>
       </div>
-      <div class="flex flex-col items-center rounded-lg shadow-md bg-gray-200 py-2 gap-2">
+      <div id="fs-success-admin-box" class="hidden flex-col items-center rounded-lg shadow-md bg-gray-200 py-2 gap-2">
         <span class="center text-gray-800 font-bold text-xl p-2 flex gap-2">
           <span class="matsym">security</span>
           <span>
             Administration Link
           </span>
         </span>
-        <input class="self-stretch text-md p-2 shadow-inner border-2 border-gray-200" type="text"
-          value="http://localhost/p/f85a4e#key=123456" id="admin-link" readonly>
+        <input id="fs-success-admin-input" class="self-stretch text-md p-2 shadow-inner border-2 border-gray-200"
+          type="text" readonly>
         <div class="flex gap-4 p-2">
-          <button type="button"
+          <a id="fs-success-admin-link" target="_blank"
             class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
             <span class="matsym">open_in_new</span>
             <span>Open</span>
-          </button>
+          </a>
           <button type="button"
             class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
             <span class="matsym">content_paste</span>

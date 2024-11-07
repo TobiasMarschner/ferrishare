@@ -1,3 +1,13 @@
+// We'll use base64 to encode the key with as few characters as possible.
+// To make this URL-safe we'll use `base64url`, which replaces + and / with - and _ respectively.
+function base64url_encode(str) {
+  return str.replaceAll('+', '-').replaceAll('/', '_');
+}
+
+function base64url_decode(str) {
+  return str.replaceAll('-', '+').replaceAll('_', '/');
+}
+
 /*
   * type: One of "success", "error"
   * message: The actual text to display
@@ -50,6 +60,11 @@ async function uploadFile() {
     updateFsStatus("error", "No file selected");
     return;
   }
+
+  // Disable the form from here on out.
+  document.getElementById("fs-expiry-fieldset").disabled = true;
+  document.getElementById("fs-filebutton").disabled = true;
+  document.getElementById("fs-submit").disabled = true;
 
   updateFsStatus("uploading", "Encrypting");
 
@@ -120,9 +135,18 @@ async function uploadFile() {
   // link.setAttribute('download', dfile.name);
   // link.click();
 
-  // Append the encrypted filendata and filename, for now.
+  // Export the AES-GCM key to base64url.
+  let key_b64url = base64url_encode(new Uint8Array(
+    await window.crypto.subtle.exportKey("raw", key)
+  ).toBase64());
+
+  // Append the encrypted filendata and filename.
   formData.append("e_filedata", new Blob([e_filedata]));
   formData.append("e_filename", new Blob([e_filename]));
+
+  // Append the IVs, too.
+  formData.append("iv_fd", new Blob([iv_fd]));
+  formData.append("iv_fn", new Blob([iv_fn]));
 
   // I'd love to use fetch for modern posting,
   // but if we want a regularly updating progress indicator we're stuck with XHR.
@@ -132,6 +156,21 @@ async function uploadFile() {
   xhr.onload = () => {
     if (xhr.status == 200) {
       updateFsStatus("success", "Upload successful!");
+
+      // Construct the download and admin links.
+      const dl_link = `${location.protocol}//${location.host}/file/XXX#key=${key_b64url}`;
+      const adm_link = `${location.protocol}//${location.host}/file/XXX?adm=XXX#key=${key_b64url}`;
+
+      // Set them up in the result boxes.
+      document.getElementById("fs-success-download-input").value = dl_link;
+      document.getElementById("fs-success-download-link").href = dl_link;
+
+      document.getElementById("fs-success-admin-input").value = adm_link;
+      document.getElementById("fs-success-admin-link").href = adm_link;
+
+      // And make those boxes visible.
+      document.getElementById("fs-success-download-box").style.display = "flex";
+      document.getElementById("fs-success-admin-box").style.display = "flex";
     } else {
       updateFsStatus("error", "Error uploading file! Status " + xhr.status);
     }
