@@ -1,5 +1,5 @@
 use axum::{
-    extract::Multipart,
+    extract::{Multipart, State},
     response::{Html, IntoResponse},
     routing::{get, post},
     Router,
@@ -9,7 +9,12 @@ use tera::{Context, Tera};
 use tower::ServiceBuilder;
 use tower_http::{compression::CompressionLayer, services::ServeDir};
 // use serde::{Deserialize, Serialize};
-use std::{fs::File, io::prelude::*, sync::{LazyLock, Mutex}};
+use std::{
+    fs::File,
+    io::prelude::*,
+    sync::{LazyLock, Mutex},
+};
+// use sqlx::sqlite::SqlitePool;
 
 static HTML_MINIFY_CFG: LazyLock<minify_html::Cfg> = LazyLock::new(|| {
     let mut cfg = minify_html::Cfg::spec_compliant();
@@ -33,8 +38,21 @@ pub static TERA: LazyLock<Mutex<Tera>> = LazyLock::new(|| {
     Mutex::new(tera)
 });
 
+// const DB_URL: &str = "sqlite://sqlite.db3";
+
 #[tokio::main]
 async fn main() {
+    // let pool = SqlitePool::connect(DB_URL).await.unwrap();
+    // let mut conn = pool.acquire().await.unwrap();
+
+    //     let id = sqlx::query!(
+    //         r#"
+    // INSERT INTO todos ( description )
+    // VALUES ( ?1 )
+    //         "#,
+    //         description
+    //     );
+
     // Define the app's routes.
     let app = Router::new()
         // Main routes
@@ -54,7 +72,20 @@ async fn main() {
         .await
         .unwrap();
 
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_handler())
+        .await
+        .unwrap();
+}
+
+async fn shutdown_handler() {
+    // Wait for the CTRL+C signal
+    tokio::signal::ctrl_c()
+        .await
+        .expect("failed to install CTRL+C handler");
+
+    // Received one? Print that, then hyper will shut down the server.
+    println!("Received shutdown signal ...");
 }
 
 async fn root() -> impl IntoResponse {
@@ -67,21 +98,33 @@ async fn root() -> impl IntoResponse {
 async fn download() -> impl IntoResponse {
     TERA.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
-    let h = TERA.lock().unwrap().render("download.html", &context).unwrap();
+    let h = TERA
+        .lock()
+        .unwrap()
+        .render("download.html", &context)
+        .unwrap();
     Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
 }
 
 async fn admin_link() -> impl IntoResponse {
     TERA.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
-    let h = TERA.lock().unwrap().render("admin_link.html", &context).unwrap();
+    let h = TERA
+        .lock()
+        .unwrap()
+        .render("admin_link.html", &context)
+        .unwrap();
     Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
 }
 
 async fn admin_overview() -> impl IntoResponse {
     TERA.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
-    let h = TERA.lock().unwrap().render("admin_overview.html", &context).unwrap();
+    let h = TERA
+        .lock()
+        .unwrap()
+        .render("admin_overview.html", &context)
+        .unwrap();
     Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
 }
 
@@ -103,11 +146,10 @@ async fn upload_endpoint(mut multipart: Multipart) {
         // let ct = field.content_type().unwrap().to_string();
         // let filename = field.file_name().unwrap().to_string();
         let data = field.bytes().await.unwrap();
-        
+
         println!("Length of `{}` is {} bytes", name, data.len());
 
         // let mut file = File::create(format!("data/{filename}")).unwrap();
         // file.write_all(&data).unwrap();
     }
 }
-

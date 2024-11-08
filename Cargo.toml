@@ -13,3 +13,4 @@ tower = { version = "0", features = ["util"] }
 tower-http = { version = "0", features = [ "fs", "compression-gzip", "compression-br", "compression-deflate", "compression-zstd" ] }
 tera = "1"
 minify-html = "0"
+sqlx = { version = "0", features = [ "runtime-tokio", "sqlite" ] }
