@@ -16,6 +16,7 @@ function updateFsStatus(type, message) {
   let fsStatus = document.getElementById("filesubmit-progress");
   let fsIcon = document.getElementById("fs-status-icon");
   let fsText = document.getElementById("fs-status-text");
+  let fsPbar = document.getElementById("fs-pbar");
 
   // Clear previous coloring of the status element.
   fsStatus.classList.remove('bg-gray-200', 'bg-green-100', 'bg-red-100', 'bg-blue-100');
@@ -29,18 +30,21 @@ function updateFsStatus(type, message) {
       fsStatus.classList.add('bg-green-100');
       fsIcon.classList.add('text-green-800');
       fsText.classList.add('text-green-800');
+      fsPbar.style.display = "none";
       break;
     case 'error':
       fsIcon.textContent = 'error';
       fsStatus.classList.add('bg-red-100');
       fsIcon.classList.add('text-red-800');
       fsText.classList.add('text-red-800');
+      fsPbar.style.display = "none";
       break;
     case 'uploading':
       fsIcon.textContent = 'progress_activity';
       fsStatus.classList.add('bg-blue-100');
       fsIcon.classList.add('text-blue-800', 'animate-spin');
       fsText.classList.add('text-blue-800');
+      fsPbar.style.display = "flex";
       break;
   }
 
@@ -51,6 +55,14 @@ function updateFsStatus(type, message) {
 async function uploadFile() {
   // Turn the status-display visible.
   document.getElementById("filesubmit-progress").style.display = "flex";
+
+  // Determine the expiry time.
+  if (!document.querySelector("input[type='radio'][name='expires']:checked")) {
+    updateFsStatus("error", "Please choose an expiry time.");
+    return;
+  }
+
+  let duration = document.querySelector("input[type='radio'][name='expires']:checked").value;
 
   // Grab the file selected by the user.
   let file = document.getElementById("fs-file").files[0];
@@ -140,13 +152,12 @@ async function uploadFile() {
     await window.crypto.subtle.exportKey("raw", key)
   ).toBase64());
 
-  // Append the encrypted filendata and filename.
+  // Append all the data that's supposed to go to the server.
   formData.append("e_filedata", new Blob([e_filedata]));
   formData.append("e_filename", new Blob([e_filename]));
-
-  // Append the IVs, too.
   formData.append("iv_fd", new Blob([iv_fd]));
   formData.append("iv_fn", new Blob([iv_fn]));
+  formData.append("duration", duration);
 
   // I'd love to use fetch for modern posting,
   // but if we want a regularly updating progress indicator we're stuck with XHR.
@@ -178,7 +189,7 @@ async function uploadFile() {
 
   xhr.upload.onprogress = (event) => {
     let progress = (event.loaded / event.total) * 100;
-    document.getElementById("fs-pbar").style.width = progress.toString() + "%";
+    document.getElementById("fs-pbar-inner").style.width = progress.toString() + "%";
     updateFsStatus("uploading", `Uploading ${(event.loaded / 1000000).toFixed(2)} / ${(event.total / 1000000).toFixed(2)} MB (${progress.toFixed(0)}%)`);
   }
 

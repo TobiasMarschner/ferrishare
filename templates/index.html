@@ -40,7 +40,7 @@ Upload a File - E2EE Fileshare
     <form id="filesubmit" class="flex flex-col gap-4">
       <input class="hidden" type="file" id="fs-file">
       <button type="button" id="fs-filebutton"
-        class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200">
+        class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed">
         <span class="matsym">folder_open</span>
         Select a File
       </button>
@@ -82,7 +82,7 @@ Upload a File - E2EE Fileshare
           </div>
         </fieldset>
         <button type="submit" id="fs-submit"
-          class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm mt-4 disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200">
+          class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm mt-4 disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed">
           <span class="flex justify-center items-center gap-4">
             <span class="matsym">upload_file</span> Encrypt and Upload
           </span>
@@ -92,10 +92,10 @@ Upload a File - E2EE Fileshare
     <div id="filesubmit-progress" class="hidden flex-col gap-4 p-4 rounded-md bg-gray-200">
       <div class="flex flex-row gap-4">
         <span class="matsym text-4xl" id="fs-status-icon"></span>
-        <div class="flex-1 flex flex-col items-stretch gap-2">
+        <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
           <div id="fs-status-text" class="text-lg font-bold"></div>
-          <div class="flex min-h-2 bg-gray-200 rounded-full">
-            <div id="fs-pbar" class="mr-auto bg-gray-400 rounded-full transition-width duration-500 ease-out"
+          <div id="fs-pbar" class="hidden min-h-2 bg-gray-200 rounded-full">
+            <div id="fs-pbar-inner" class="mr-auto bg-gray-400 rounded-full transition-width duration-500 ease-out"
               style="width: 0%;"></div>
           </div>
         </div>

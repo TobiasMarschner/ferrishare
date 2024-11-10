@@ -2,3 +2,5 @@
 /node_modules
 /static/main.css
 /data
+sqlite.*
+/.sqlx
