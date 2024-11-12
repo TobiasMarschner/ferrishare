@@ -50,7 +50,7 @@ Upload a File - E2EE Fileshare
             <span class="matsym text-2xl text-gray-500">draft</span>
             <div class="flex flex-col">
               <span class="text-gray-500">Filename</span>
-              <span id="fs-filename" class="text-xl">cool_file.txt</span>
+              <span id="fs-filename" class="text-xl [word-break:break-word]">cool_file.txt</span>
             </div>
           </li>
           <li class="flex gap-4">
@@ -149,6 +149,7 @@ Upload a File - E2EE Fileshare
   </div>
 </div>
 <script>
-  {% include "uploadscript.js" %}
+  {% include "common.js" %}
+  {% include "upload.js" %}
 </script>
 {% endblock %}

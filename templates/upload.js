@@ -1,35 +1,3 @@
-// Suite of utilities for working with base64 in the browser.
-// Specifically, we will be working with base64url,
-// which replaces + and / with - and _ to make the strings URL-safe.
-//
-// The methods are adapted from the excellent MDN resource on the topic:
-// https://developer.mozilla.org/en-US/docs/Web/API/Window/btoa
-
-// Encode Uint8Array to base64url-string, and truncate the padding.
-function b64u_encBytes(bytes) {
-  const binString = Array.from(bytes, (byte) =>
-    String.fromCodePoint(byte),
-  ).join("");
-  return btoa(binString).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
-                                                                   
-}
-
-// Decode base64url-string to Uint8Array.
-function b64u_decBytes(base64) {
-  const binString = atob(base64.replaceAll('-', '+').replaceAll('_', '/'));
-  return Uint8Array.from(binString, (m) => m.codePointAt(0));
-}
-
-// Encode JS-string to base64url-string (via Uint8Array and TextEncoder) and truncate the padding.
-function b64u_encString(str) {
-  return b64u_encBytes(new TextEncoder().encode(str));
-}
-
-// Decode base64url-string to JS-string. (via Uint8Array and TextEncoder)
-function b64u_decString(base64) {
-  return new TextEncoder().decode(b64u_decBytes(base64));
-}
-
 /*
   * type: One of "success", "error"
   * message: The actual text to display
@@ -194,7 +162,7 @@ async function uploadFile() {
 
       // Construct the download and admin links.
       const dl_link = `${location.protocol}//${location.host}/file?hash=${response.efd_sha256sum}#key=${key_b64url}`;
-      const adm_link = `${location.protocol}//${location.host}/file?hash=${response.efd_sha256sum}?admin=${response.admin_key}#key=${key_b64url}`;
+      const adm_link = `${location.protocol}//${location.host}/file?hash=${response.efd_sha256sum}&admin=${response.admin_key}#key=${key_b64url}`;
 
       // Set them up in the result boxes.
       document.getElementById("fs-success-download-input").value = dl_link;
@@ -214,7 +182,11 @@ async function uploadFile() {
   xhr.upload.onprogress = (event) => {
     let progress = (event.loaded / event.total) * 100;
     document.getElementById("fs-pbar-inner").style.width = progress.toString() + "%";
-    updateFsStatus("uploading", `Uploading ${(event.loaded / 1000000).toFixed(2)} / ${(event.total / 1000000).toFixed(2)} MB (${progress.toFixed(0)}%)`);
+    if (event.loaded < event.total) {
+      updateFsStatus("uploading", `Uploading ${(event.loaded / 1000000).toFixed(2)} / ${(event.total / 1000000).toFixed(2)} MB (${progress.toFixed(0)}%)`);
+    } else {
+      updateFsStatus("uploading", `Processing`);
+    }
   }
 
   xhr.send(formData);
@@ -240,14 +212,14 @@ document.getElementById("fs-file").addEventListener("change", (e) => {
   }
 });
 
-document.getElementById("fs-success-download-copy").addEventListener("click", (event) => {
+document.getElementById("fs-success-download-copy").addEventListener("click", (_) => {
   let textbox = document.getElementById("fs-success-download-input");
   // Not required, but we'll select the text anyways as an indicator to the user that the operation took place.
   textbox.select();
   navigator.clipboard.writeText(textbox.value);
 });
 
-document.getElementById("fs-success-admin-copy").addEventListener("click", (event) => {
+document.getElementById("fs-success-admin-copy").addEventListener("click", (_) => {
   let textbox = document.getElementById("fs-success-admin-input");
   // Not required, but we'll select the text anyways as an indicator to the user that the operation took place.
   textbox.select();

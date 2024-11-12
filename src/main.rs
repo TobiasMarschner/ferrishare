@@ -1,9 +1,9 @@
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
-    Argon2,
+    password_hash::{rand_core::OsRng, PasswordHasher, PasswordVerifier, SaltString},
+    Argon2, PasswordHash,
 };
 use axum::{
-    extract::{ConnectInfo, Multipart, State},
+    extract::{ConnectInfo, Multipart, Query, State},
     http::StatusCode,
     response::{Html, IntoResponse},
     routing::{get, post},
@@ -11,12 +11,14 @@ use axum::{
 };
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use chrono::{prelude::Utc, SubsecRound, TimeDelta};
+use itertools::*;
 use minify_html::minify;
 use rand::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use sqlx::{migrate::MigrateDatabase, FromRow, Row, Sqlite, SqlitePool};
+use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
 use std::{
+    collections::HashMap,
     fs::File,
     io::prelude::*,
     net::SocketAddr,
@@ -103,9 +105,9 @@ async fn main() {
     // Define the app's routes.
     let app = Router::new()
         // Main routes
-        .route("/", get(root))
+        .route("/", get(upload_page))
+        .route("/file", get(download_page))
         .route("/admin", get(admin))
-        .route("/download", get(download))
         .route("/admin_link", get(admin_link))
         .route("/admin_overview", get(admin_overview))
         .route("/upload_endpoint", post(upload_endpoint))
@@ -137,22 +139,185 @@ async fn shutdown_handler() {
     println!("Received shutdown signal ...");
 }
 
-async fn root() -> impl IntoResponse {
+async fn upload_page() -> impl IntoResponse {
     TERA.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
     let h = TERA.lock().unwrap().render("index.html", &context).unwrap();
     Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
 }
 
-async fn download() -> impl IntoResponse {
+// Use a struct for the download page template parameters.
+// This helps us not forget any required parameters.
+#[derive(Debug, Serialize)]
+struct DownloadPageContext<'a> {
+    response_type: &'a str,
+    error_head: &'a str,
+    error_text: &'a str,
+    e_filename: &'a str,
+    iv_fd: &'a str,
+    iv_fn: &'a str,
+    filesize: &'a str,
+    upload_ts: &'a str,
+    expiry_ts: &'a str,
+    views: &'a str,
+    downloads: &'a str,
+}
+
+impl Default for DownloadPageContext<'_> {
+    fn default() -> Self {
+        DownloadPageContext {
+            response_type: "",
+            error_head: "",
+            error_text: "",
+            e_filename: "",
+            iv_fd: "",
+            iv_fn: "",
+            filesize: "0",
+            upload_ts: "",
+            expiry_ts: "",
+            views: "0",
+            downloads: "0",
+        }
+    }
+}
+
+async fn download_page(
+    Query(params): Query<HashMap<String, String>>,
+    State(db): State<SqlitePool>,
+    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+) -> (StatusCode, Html<String>) {
     TERA.lock().unwrap().full_reload().unwrap();
-    let context = Context::new();
+
+    let hash = params.get("hash");
+    let admin = params.get("admin");
+
+    // Only allow legal combinations of parameters.
+    match (hash, admin, params.len()) {
+        (Some(h), Some(a), 2) => {}
+        (Some(h), None, 1) => {}
+        _ => {
+            // Make it clear the parameters are invalid and return right away.
+            let dpc = DownloadPageContext {
+                response_type: "error",
+                error_head: "Bad request",
+                error_text: "Only \"hash\" and \"admin\" are valid query parameters. Are you supplying them?",
+                ..Default::default()
+            };
+
+            let h = TERA
+                .lock()
+                .unwrap()
+                .render("download.html", &Context::from_serialize(&dpc).unwrap())
+                .unwrap();
+
+            return (
+                StatusCode::BAD_REQUEST,
+                Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap()),
+            );
+        }
+    }
+
+    // Guaranteed to work thanks to the previous match.
+    let hash = hash.unwrap();
+
+    // Grab the row from the DB.
+    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_hash, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, views, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
+        .bind(&hash)
+        .fetch_optional(&db)
+        .await
+        .unwrap();
+
+    if row.is_none() {
+        let dpc = DownloadPageContext {
+            response_type: "error",
+            error_head: "Not found",
+            error_text: "The file does not exist or has since expired.",
+            ..Default::default()
+        };
+
+        let h = TERA
+            .lock()
+            .unwrap()
+            .render("download.html", &Context::from_serialize(&dpc).unwrap())
+            .unwrap();
+
+        return (
+            StatusCode::NOT_FOUND,
+            Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap()),
+        );
+    }
+
+    // Guaranteed to work.
+    let row = row.unwrap();
+
+    // Extract several variables that we'll need in all cases.
+    let filesize = row.filesize.to_string();
+    let efn = format!("[{}]", row.e_filename.iter().join(", "));
+    let iv_fd = format!("[{}]", row.iv_fd.iter().join(", "));
+    let iv_fn = format!("[{}]", row.iv_fn.iter().join(", "));
+
+    // Also extract and convert views and downloads.
+    // We only need them if the admin key is given,
+    // but due to lifetime issues we're already converting them here.
+    let views = row.views.to_string();
+    let downloads = row.downloads.to_string();
+
+    let dpc: DownloadPageContext;
+
+    // Now, branch depending on whether there's an admin key.
+    if let Some(admin) = admin {
+        // Construct the hash-object out of the string stored in the db.
+        let parsed_hash = PasswordHash::new(&row.admin_key_hash).unwrap();
+        let password_check = Argon2::default().verify_password(admin.as_bytes(), &parsed_hash);
+
+        if password_check.is_err() {
+            dpc = DownloadPageContext {
+                response_type: "file",
+                error_head: "Invalid \"admin\" parameter",
+                error_text: "The \"admin\" parameter does not match the database record. Displaying normal file download instead.",
+                e_filename: &efn,
+                iv_fd: &iv_fd,
+                iv_fn: &iv_fn,
+                filesize: &filesize,
+                ..Default::default()
+            };
+        } else {
+            dpc = DownloadPageContext {
+                response_type: "admin",
+                e_filename: &efn,
+                iv_fd: &iv_fd,
+                iv_fn: &iv_fn,
+                filesize: &filesize,
+                upload_ts: &row.upload_ts,
+                expiry_ts: &row.expiry_ts,
+                views: &views,
+                downloads: &downloads,
+                ..Default::default()
+            };
+        };
+    } else {
+        dpc = DownloadPageContext {
+            response_type: "file",
+            e_filename: &efn,
+            iv_fd: &iv_fd,
+            iv_fn: &iv_fn,
+            filesize: &filesize,
+            ..Default::default()
+        };
+    }
+
+    // Use the DownloadPageContext to actually render the template.
     let h = TERA
         .lock()
         .unwrap()
-        .render("download.html", &context)
+        .render("download.html", &Context::from_serialize(&dpc).unwrap())
         .unwrap();
-    Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+
+    // Minify and return.
+    (
+        StatusCode::OK,
+        Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap()),
+    )
 }
 
 async fn admin_link() -> impl IntoResponse {
@@ -188,10 +353,10 @@ async fn admin() -> impl IntoResponse {
 struct UploadFileRow {
     id: i64,
     efd_sha256sum: String,
-    admin_key: String,
+    admin_key_hash: String,
     e_filename: Vec<u8>,
-    iv_fd: [u8; 12],
-    iv_fn: [u8; 12],
+    iv_fd: Vec<u8>,
+    iv_fn: Vec<u8>,
     filesize: i64,
     upload_ip: String,
     upload_ts: String,
@@ -304,10 +469,9 @@ async fn upload_endpoint(
     // While not perfect, those techniques can help us catch the worst offenders.
 
     // Then, add the row to the database.
-    sqlx::query("INSERT INTO uploaded_files (efd_sha256sum, admin_key_hash, admin_key_salt, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
+    sqlx::query("INSERT INTO uploaded_files (efd_sha256sum, admin_key_hash, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);")
         .bind(&efd_sha256sum)
         .bind(&admin_key_hash)
-        .bind(admin_key_salt.as_str())
         .bind(&e_filename)
         .bind(&iv_fd[..])
         .bind(&iv_fn[..])
@@ -332,4 +496,10 @@ async fn upload_endpoint(
 struct UploadFileResponse {
     efd_sha256sum: String,
     admin_key: String,
+}
+
+async fn download_endpoint(
+    State(db): State<SqlitePool>,
+    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+) {
 }
