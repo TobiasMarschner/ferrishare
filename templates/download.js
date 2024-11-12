@@ -1,17 +1,4 @@
 document.addEventListener('DOMContentLoaded', async (event) => {
-  // TEMPLATE VARIABLES
-  let response_type = '{{ response_type | safe }}';
-  let error_head = '{{ error_head | safe }}';
-  let error_text = '{{ error_text | safe }}';
-  let e_filename = new Uint8Array({{ e_filename | safe }});
-  let iv_fd = new Uint8Array({{ iv_fd | safe }});
-  let iv_fn = new Uint8Array({{ iv_fn | safe }});
-  let filesize = {{ filesize | safe }};
-  let upload_ts = '{{ upload_ts | safe }}';
-  let expiry_ts = '{{ expiry_ts | safe }}';
-  let views = {{ views | safe }};
-  let downloads = {{ views | safe }};
-
   if (error_head || error_text) {
     document.getElementById('error-box-head').textContent = error_head;
     document.getElementById('error-box-text').textContent = error_text;
@@ -20,15 +7,12 @@ document.addEventListener('DOMContentLoaded', async (event) => {
 
   if (response_type === 'file' || response_type === 'admin') {
     document.getElementById('dl-filesize').textContent = (filesize / 1000000).toFixed(2) + " MB";
-    
+
     // Attempt to decrypt the filename with the given key.
     // Grab the key and convert it back to binary.
-    let key_string = window.location.hash.substring(5);
     let key_bytes = b64u_decBytes(key_string);
 
     // Construct the AES key, if possible.
-    let key;
-
     try {
       key = await window.crypto.subtle.importKey(
         "raw",
@@ -54,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async (event) => {
         key,
         e_filename
       );
-      let d_filename = new TextDecoder().decode(d_filename_bytes);
+      d_filename = new TextDecoder().decode(d_filename_bytes);
       document.getElementById('dl-filename').textContent = d_filename;
     } catch (e) {
       document.getElementById('error-box-head').textContent = 'Could not decrypt filename';
@@ -75,9 +59,121 @@ document.addEventListener('DOMContentLoaded', async (event) => {
     document.getElementById('dl-views').textContent = views;
     document.getElementById('dl-downloads').textContent = downloads;
 
+    // Compute the "normal" download-link-box and set it up.
+    const dl_link = `${location.protocol}//${location.host}/file?hash=${efd_sha256sum}#key=${key_string}`;
+    document.getElementById("admin-download-input").value = dl_link;
+    document.getElementById("admin-download-link").href = dl_link;
+
     // Make all admin-only elements visible. (they all use flex)
     for (e of document.querySelectorAll('.admin-only')) {
       e.style.display = 'flex';
     }
   }
+});
+
+function updateDlStatus(type, message) {
+  let fsStatus = document.getElementById("download-progress");
+  let fsIcon = document.getElementById("dl-status-icon");
+  let fsText = document.getElementById("dl-status-text");
+  let fsPbar = document.getElementById("dl-pbar");
+
+  // Clear previous coloring of the status element.
+  fsStatus.classList.remove('bg-gray-200', 'bg-green-100', 'bg-red-100', 'bg-blue-100');
+  fsIcon.classList.remove('text-gray-800', 'text-green-800', 'text-red-800', 'text-blue-800', 'animate-spin');
+  fsText.classList.remove('text-gray-800', 'text-green-800', 'text-red-800', 'text-blue-800');
+
+  // Set up colors and icon accordingly.
+  switch (type) {
+    case 'success':
+      fsIcon.textContent = 'check_circle';
+      fsStatus.classList.add('bg-green-100');
+      fsIcon.classList.add('text-green-800');
+      fsText.classList.add('text-green-800');
+      fsPbar.style.display = "none";
+      break;
+    case 'error':
+      fsIcon.textContent = 'error';
+      fsStatus.classList.add('bg-red-100');
+      fsIcon.classList.add('text-red-800');
+      fsText.classList.add('text-red-800');
+      fsPbar.style.display = "none";
+      break;
+    case 'inprogress':
+      fsIcon.textContent = 'progress_activity';
+      fsStatus.classList.add('bg-blue-100');
+      fsIcon.classList.add('text-blue-800', 'animate-spin');
+      fsText.classList.add('text-blue-800');
+      fsPbar.style.display = "flex";
+      break;
+  }
+
+  // And copy over the message.
+  fsText.textContent = message;
+}
+
+// Set up the handler for the actual download button.
+document.getElementById("download-button").addEventListener("click", (_) => {
+  // I'd love to use fetch for modern posting,
+  // but if we want a regularly updating progress indicator we're stuck with XHR.
+  let xhr = new XMLHttpRequest();
+  xhr.open("GET", `/raw/${efd_sha256sum}`);
+  // Immediately store the response into an arraybuffer.
+  xhr.responseType = 'arraybuffer';
+
+  let dlbutton = document.getElementById("download-button");
+  let dlprogress = document.getElementById("download-progress");
+  let dlprog_pbar_inner = document.getElementById("dl-pbar-inner");
+
+  xhr.onload = async () => {
+    if (xhr.status == 200) {
+      try {
+        updateDlStatus('inprogress', "Decrypting");
+
+        // Now actually decrypt the file.
+        d_filedata = await window.crypto.subtle.decrypt(
+          {
+            name: "AES-GCM",
+            iv: iv_fd
+          },
+          key,
+          xhr.response
+        );
+
+        // Assemble the file.
+        let d_file = new File([d_filedata], d_filename);
+
+        // And download it.
+        let link = document.createElement("a");
+        let url = URL.createObjectURL(d_file);
+        link.setAttribute('href', url);
+        link.setAttribute('download', d_file.name);
+        link.click();
+      } catch (e) {
+        console.log(e);
+        updateDlStatus("error", "Could not decrypt file");
+      }
+
+      updateDlStatus('success', "File downloaded");
+    } else {
+      updateDlStatus("error", "Error during file download");
+    }
+  }
+
+  xhr.onprogress = (event) => {
+    let progress = (event.loaded / filesize) * 100;
+    dlprog_pbar_inner.style.width = progress.toString() + "%";
+    updateDlStatus("inprogress", `Downloading ${(event.loaded / 1000000).toFixed(2)} / ${(filesize / 1000000).toFixed(2)} MB (${progress.toFixed(0)}%)`);
+  }
+
+  // Disable download button while the operation is ongoing.
+  dlbutton.disabled = true;
+  dlprogress.style.display = 'flex';
+  xhr.send();
+});
+
+document.getElementById("admin-download-copy").addEventListener("click", (_) => {
+  let textbox = document.getElementById("admin-download-input");
+  // Not required, but we'll select the text anyways as an indicator to the user that the operation took place.
+  textbox.select();
+  navigator.clipboard.writeText(textbox.value);
 });

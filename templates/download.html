@@ -69,32 +69,43 @@ Download a File - E2EE Fileshare
       </li>
     </ul>
     <div class="flex flex-col gap-6">
-      <button type="button" id="dl-button"
-        class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+      <button type="button" id="download-button"
+        class="admin-only flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed">
         <span class="matsym">download</span>
         Download and Decrypt
       </button>
-      <button type="button" id="dl-button"
+      <div id="download-progress" class="hidden flex-row gap-4 p-4 rounded-md bg-gray-200">
+        <span class="matsym text-4xl animate-spin" id="dl-status-icon">progress_activity</span>
+        <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
+          <div id="dl-status-text" class="text-lg font-bold"></div>
+          <div id="dl-pbar" class="flex min-h-2 bg-gray-200 rounded-full">
+            <div id="dl-pbar-inner" class="mr-auto bg-gray-400 rounded-full transition-width duration-500 ease-out"
+              style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+      <button type="button" id="delete-button"
         class="admin-only hidden items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
         <span class="matsym">delete</span>
         Delete from Server
       </button>
-      <div class="admin-only hidden flex-col items-center rounded-lg shadow-md bg-gray-200 py-2 gap-2">
+      <div id="admin-download-box"
+        class="admin-only hidden flex-col items-center rounded-lg shadow-md bg-gray-200 py-2 gap-2">
         <span class="center text-gray-800 font-bold text-xl p-2 flex gap-2">
           <span class="matsym">public</span>
           <span>
             Public Download Link
           </span>
         </span>
-        <input class="self-stretch text-md p-2 shadow-inner border-2 border-gray-200" type="text"
-          value="http://localhost/p/f85a4e#key=123456" id="admin-link" readonly>
+        <input id="admin-download-input" class="self-stretch text-md p-2 shadow-inner border-2 border-gray-200"
+          type="text" readonly>
         <div class="flex gap-4 p-2">
-          <button type="button"
+          <a id="admin-download-link" target="_blank"
             class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
             <span class="matsym">open_in_new</span>
             <span>Open</span>
-          </button>
-          <button type="button"
+          </a>
+          <button id="admin-download-copy" type="button"
             class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
             <span class="matsym">content_paste</span>
             <span>Copy to Clipboard</span>
@@ -105,39 +116,29 @@ Download a File - E2EE Fileshare
   </div>
 </div>
 <script>
-// Suite of utilities for working with base64 in the browser.
-// Specifically, we will be working with base64url,
-// which replaces + and / with - and _ to make the strings URL-safe.
-//
-// The methods are adapted from the excellent MDN resource on the topic:
-// https://developer.mozilla.org/en-US/docs/Web/API/Window/btoa
+{% include "common.js" %}
 
-// Encode Uint8Array to base64url-string, and truncate the padding.
-function b64u_encBytes(bytes) {
-  const binString = Array.from(bytes, (byte) =>
-    String.fromCodePoint(byte),
-  ).join("");
-  return btoa(binString).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
-                                                                   
-}
+// TEMPLATE VARIABLES
+let response_type = '{{ response_type | safe }}';
+let error_head = '{{ error_head | safe }}';
+let error_text = '{{ error_text | safe }}';
+let e_filename = new Uint8Array({{ e_filename | safe }});
+let iv_fd = new Uint8Array({{ iv_fd | safe }});
+let iv_fn = new Uint8Array({{ iv_fn | safe }});
+let filesize = {{ filesize | safe }};
+let upload_ts = '{{ upload_ts | safe }}';
+let expiry_ts = '{{ expiry_ts | safe }}';
+let views = {{ views | safe }};
+let downloads = {{ views | safe }};
 
-// Decode base64url-string to Uint8Array.
-function b64u_decBytes(base64) {
-  const binString = atob(base64.replaceAll('-', '+').replaceAll('_', '/'));
-  return Uint8Array.from(binString, (m) => m.codePointAt(0));
-}
+const urlParams = new URLSearchParams(window.location.search);
+const efd_sha256sum = urlParams.get('hash');
+const key_string = window.location.hash.substring(5);
 
-// Encode JS-string to base64url-string (via Uint8Array and TextEncoder) and truncate the padding.
-function b64u_encString(str) {
-  return b64u_encBytes(new TextEncoder().encode(str));
-}
+let key;
+let d_filename;
+let d_filedata;
 
-// Decode base64url-string to JS-string. (via Uint8Array and TextEncoder)
-function b64u_decString(base64) {
-  return new TextEncoder().decode(b64u_decBytes(base64));
-}
-
-  {% include "common.js" %}
-  {% include "download.js" %}
+{% include "download.js" %}
 </script>
 {% endblock %}

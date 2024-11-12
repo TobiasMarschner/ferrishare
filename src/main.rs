@@ -14,7 +14,7 @@ use chrono::{prelude::Utc, SubsecRound, TimeDelta};
 use itertools::*;
 use minify_html::minify;
 use rand::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
 use std::{
@@ -113,6 +113,7 @@ async fn main() {
         .route("/upload_endpoint", post(upload_endpoint))
         // Serve static assets from the 'static'-folder.
         .nest_service("/static", ServeDir::new("static"))
+        .nest_service("/raw", ServeDir::new("data"))
         // Enable response compression.
         .layer(ServiceBuilder::new().layer(CompressionLayer::new()))
         .with_state(db)

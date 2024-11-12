@@ -29,7 +29,7 @@ function updateFsStatus(type, message) {
       fsText.classList.add('text-red-800');
       fsPbar.style.display = "none";
       break;
-    case 'uploading':
+    case 'inprogress':
       fsIcon.textContent = 'progress_activity';
       fsStatus.classList.add('bg-blue-100');
       fsIcon.classList.add('text-blue-800', 'animate-spin');
@@ -68,7 +68,7 @@ async function uploadFile() {
   document.getElementById("fs-filebutton").disabled = true;
   document.getElementById("fs-submit").disabled = true;
 
-  updateFsStatus("uploading", "Encrypting");
+  updateFsStatus("inprogress", "Encrypting");
 
   // Extract and encode the raw file data and its filename.
   let encoder = new TextEncoder();
@@ -107,35 +107,6 @@ async function uploadFile() {
     key,
     filename
   );
-
-  // // Sanity check! Decrypt:
-  // let d_filedata = await window.crypto.subtle.decrypt(
-  //   {
-  //     name: "AES-GCM",
-  //     iv: iv_fd
-  //   },
-  //   key,
-  //   e_filedata
-  // );
-  // let d_filename = await window.crypto.subtle.decrypt(
-  //   {
-  //     name: "AES-GCM",
-  //     iv: iv_fn
-  //   },
-  //   key,
-  //   e_filename
-  // );
-
-  // let decoder = new TextDecoder();
-  // let dfile = new File([d_filedata], decoder.decode(d_filename));
-  // console.log(dfile);
-  //
-  // // OK, here we go, lol.
-  // let link = document.createElement("a");
-  // let url = URL.createObjectURL(dfile);
-  // link.setAttribute('href', url);
-  // link.setAttribute('download', dfile.name);
-  // link.click();
 
   // Export the AES-GCM key to base64url.
   let key_b64url = b64u_encBytes(new Uint8Array(
@@ -183,9 +154,9 @@ async function uploadFile() {
     let progress = (event.loaded / event.total) * 100;
     document.getElementById("fs-pbar-inner").style.width = progress.toString() + "%";
     if (event.loaded < event.total) {
-      updateFsStatus("uploading", `Uploading ${(event.loaded / 1000000).toFixed(2)} / ${(event.total / 1000000).toFixed(2)} MB (${progress.toFixed(0)}%)`);
+      updateFsStatus("inprogress", `Uploading ${(event.loaded / 1000000).toFixed(2)} / ${(event.total / 1000000).toFixed(2)} MB (${progress.toFixed(0)}%)`);
     } else {
-      updateFsStatus("uploading", `Processing`);
+      updateFsStatus("inprogress", `Processing`);
     }
   }
 
