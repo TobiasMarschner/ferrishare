@@ -1,11 +1,33 @@
-// We'll use base64 to encode the key with as few characters as possible.
-// To make this URL-safe we'll use `base64url`, which replaces + and / with - and _ respectively.
-function base64url_encode(str) {
-  return str.replaceAll('+', '-').replaceAll('/', '_');
+// Suite of utilities for working with base64 in the browser.
+// Specifically, we will be working with base64url,
+// which replaces + and / with - and _ to make the strings URL-safe.
+//
+// The methods are adapted from the excellent MDN resource on the topic:
+// https://developer.mozilla.org/en-US/docs/Web/API/Window/btoa
+
+// Encode Uint8Array to base64url-string, and truncate the padding.
+function b64u_encBytes(bytes) {
+  const binString = Array.from(bytes, (byte) =>
+    String.fromCodePoint(byte),
+  ).join("");
+  return btoa(binString).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '')
+                                                                   
 }
 
-function base64url_decode(str) {
-  return str.replaceAll('-', '+').replaceAll('_', '/');
+// Decode base64url-string to Uint8Array.
+function b64u_decBytes(base64) {
+  const binString = atob(base64.replaceAll('-', '+').replaceAll('_', '/'));
+  return Uint8Array.from(binString, (m) => m.codePointAt(0));
+}
+
+// Encode JS-string to base64url-string (via Uint8Array and TextEncoder) and truncate the padding.
+function b64u_encString(str) {
+  return b64u_encBytes(new TextEncoder().encode(str));
+}
+
+// Decode base64url-string to JS-string. (via Uint8Array and TextEncoder)
+function b64u_decString(base64) {
+  return new TextEncoder().decode(b64u_decBytes(base64));
 }
 
 /*
@@ -148,9 +170,9 @@ async function uploadFile() {
   // link.click();
 
   // Export the AES-GCM key to base64url.
-  let key_b64url = base64url_encode(new Uint8Array(
+  let key_b64url = b64u_encBytes(new Uint8Array(
     await window.crypto.subtle.exportKey("raw", key)
-  ).toBase64());
+  ));
 
   // Append all the data that's supposed to go to the server.
   formData.append("e_filedata", new Blob([e_filedata]));
@@ -165,12 +187,14 @@ async function uploadFile() {
   xhr.open("POST", "/upload_endpoint");
 
   xhr.onload = () => {
-    if (xhr.status == 200) {
+    if (xhr.status == 201) {
       updateFsStatus("success", "Upload successful!");
 
+      let response = JSON.parse(xhr.response);
+
       // Construct the download and admin links.
-      const dl_link = `${location.protocol}//${location.host}/file/XXX#key=${key_b64url}`;
-      const adm_link = `${location.protocol}//${location.host}/file/XXX?adm=XXX#key=${key_b64url}`;
+      const dl_link = `${location.protocol}//${location.host}/file?hash=${response.efd_sha256sum}#key=${key_b64url}`;
+      const adm_link = `${location.protocol}//${location.host}/file?hash=${response.efd_sha256sum}?admin=${response.admin_key}#key=${key_b64url}`;
 
       // Set them up in the result boxes.
       document.getElementById("fs-success-download-input").value = dl_link;
@@ -183,7 +207,7 @@ async function uploadFile() {
       document.getElementById("fs-success-download-box").style.display = "flex";
       document.getElementById("fs-success-admin-box").style.display = "flex";
     } else {
-      updateFsStatus("error", "Error uploading file! Status " + xhr.status);
+      updateFsStatus("error", "Error uploading file! Response code " + xhr.status);
     }
   }
 
@@ -216,3 +240,16 @@ document.getElementById("fs-file").addEventListener("change", (e) => {
   }
 });
 
+document.getElementById("fs-success-download-copy").addEventListener("click", (event) => {
+  let textbox = document.getElementById("fs-success-download-input");
+  // Not required, but we'll select the text anyways as an indicator to the user that the operation took place.
+  textbox.select();
+  navigator.clipboard.writeText(textbox.value);
+});
+
+document.getElementById("fs-success-admin-copy").addEventListener("click", (event) => {
+  let textbox = document.getElementById("fs-success-admin-input");
+  // Not required, but we'll select the text anyways as an indicator to the user that the operation took place.
+  textbox.select();
+  navigator.clipboard.writeText(textbox.value);
+});

@@ -1,11 +1,20 @@
+use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
+    Argon2,
+};
 use axum::{
     extract::{ConnectInfo, Multipart, State},
+    http::StatusCode,
     response::{Html, IntoResponse},
     routing::{get, post},
-    Router,
+    Json, Router,
 };
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use chrono::{prelude::Utc, SubsecRound, TimeDelta};
 use minify_html::minify;
+use rand::prelude::*;
+use serde::Serialize;
+use sha2::{Digest, Sha256};
 use sqlx::{migrate::MigrateDatabase, FromRow, Row, Sqlite, SqlitePool};
 use std::{
     fs::File,
@@ -16,9 +25,6 @@ use std::{
 use tera::{Context, Tera};
 use tower::ServiceBuilder;
 use tower_http::{compression::CompressionLayer, services::ServeDir};
-use rand::prelude::*;
-use base64::{engine::general_purpose::URL_SAFE, Engine as _};
-use sha2::{Sha256, Digest};
 
 static HTML_MINIFY_CFG: LazyLock<minify_html::Cfg> = LazyLock::new(|| {
     let mut cfg = minify_html::Cfg::spec_compliant();
@@ -199,7 +205,7 @@ async fn upload_endpoint(
     State(db): State<SqlitePool>,
     ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     mut multipart: Multipart,
-) {
+) -> (StatusCode, Json<UploadFileResponse>) {
     println!("endpoint reached");
 
     let mut e_filename: Option<Vec<u8>> = None;
@@ -260,18 +266,20 @@ async fn upload_endpoint(
     let filesize = e_filedata.len() as i64;
     let upload_ip = client_address.ip().to_string();
 
-    // Grab all URL slugs and generate a new unique one.
-    let all_slugs: Vec<String> = sqlx::query_scalar("SELECT url_slug FROM uploaded_files")
-        .fetch_all(&db)
-        .await
-        .unwrap();
-
     // Compute the SHA-256 hash of the encrypted data.
     // Likelihood of collision is ridiculously small, so we can ignore it here.
     // It'll be used as the URL slug to access the file.
-    let efd_sha256sum = URL_SAFE.encode(Sha256::digest(&e_filedata));
-    // Admin keys don't have to be unique, just generate one.
-    let admin_key = URL_SAFE.encode(thread_rng().gen::<[u8; 12]>());
+    let efd_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(&e_filedata));
+
+    // Generate a random admin password as well as a salt for it.
+    let admin_key = URL_SAFE_NO_PAD.encode(thread_rng().gen::<[u8; 12]>());
+    let admin_key_salt = SaltString::generate(&mut OsRng);
+
+    let argon2 = Argon2::default();
+    let admin_key_hash = argon2
+        .hash_password(admin_key.as_bytes(), &admin_key_salt)
+        .unwrap()
+        .to_string();
 
     // TODO Proxied IPs. You'll likely run this behind a reverse-proxy.
     // You need to be able to set up trusted proxy IPs and extract X-Forwarded-For instead.
@@ -296,17 +304,32 @@ async fn upload_endpoint(
     // While not perfect, those techniques can help us catch the worst offenders.
 
     // Then, add the row to the database.
-    sqlx::query("INSERT INTO uploaded_files (url_slug, admin_key, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);")
-        .bind(efd_sha256sum)
-        .bind(admin_key)
-        .bind(e_filename)
+    sqlx::query("INSERT INTO uploaded_files (efd_sha256sum, admin_key_hash, admin_key_salt, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);")
+        .bind(&efd_sha256sum)
+        .bind(&admin_key_hash)
+        .bind(admin_key_salt.as_str())
+        .bind(&e_filename)
         .bind(&iv_fd[..])
         .bind(&iv_fn[..])
-        .bind(filesize)
-        .bind(upload_ip)
-        .bind(upload_ts)
-        .bind(expiry_ts)
+        .bind(&filesize)
+        .bind(&upload_ip)
+        .bind(&upload_ts)
+        .bind(&expiry_ts)
         .execute(&db)
         .await
         .unwrap();
+
+    (
+        StatusCode::CREATED,
+        Json(UploadFileResponse {
+            efd_sha256sum,
+            admin_key,
+        }),
+    )
+}
+
+#[derive(Debug, Serialize)]
+struct UploadFileResponse {
+    efd_sha256sum: String,
+    admin_key: String,
 }

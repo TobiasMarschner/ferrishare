@@ -2,8 +2,9 @@
 CREATE TABLE IF NOT EXISTS uploaded_files
 (
   id INTEGER PRIMARY KEY NOT NULL,
-  url_slug TEXT,
-  admin_key TEXT,
+  efd_sha256sum TEXT,
+  admin_key_hash TEXT,
+  admin_key_salt TEXT,
   e_filename BLOB,
   iv_fd BLOB,
   iv_fn BLOB,

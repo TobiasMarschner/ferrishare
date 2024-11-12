@@ -18,3 +18,4 @@ chrono = { version = "0" }
 rand = { version = "0" }
 base64 = { version = "0" }
 sha2 = { version = "0" }
+argon2 = { version = "0" }
