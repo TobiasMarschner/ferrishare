@@ -53,13 +53,13 @@ Download a File - E2EE Fileshare
           </div>
         </div>
       </li>
-      <li class="admin-only hidden gap-4">
-        <span class="matsym text-2xl text-gray-500">visibility</span>
-        <div class="flex flex-col">
-          <span class="text-gray-500">Views</span>
-          <span id="dl-views" class="text-xl">23</span>
-        </div>
-      </li>
+      <!-- <li class="admin-only hidden gap-4"> -->
+      <!--   <span class="matsym text-2xl text-gray-500">visibility</span> -->
+      <!--   <div class="flex flex-col"> -->
+      <!--     <span class="text-gray-500">Views</span> -->
+      <!--     <span id="dl-views" class="text-xl">23</span> -->
+      <!--   </div> -->
+      <!-- </li> -->
       <li class="admin-only hidden gap-4">
         <span class="matsym text-2xl text-gray-500">download</span>
         <div class="flex flex-col">
@@ -130,8 +130,7 @@ let upload_ts = '{{ upload_ts | safe }}';
 let upload_ts_pretty = '{{ upload_ts_pretty | safe }}';
 let expiry_ts = '{{ expiry_ts | safe }}';
 let expiry_ts_pretty = '{{ expiry_ts_pretty | safe }}';
-let views = {{ views | safe }};
-let downloads = {{ views | safe }};
+let downloads = {{ downloads | safe }};
 
 const urlParams = new URLSearchParams(window.location.search);
 const efd_sha256sum = urlParams.get('hash');

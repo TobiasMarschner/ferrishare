@@ -9,6 +9,7 @@ Still to do:
   - Actually deleting expired files
 - Packaging the whole thing in a configurable Docker container
 - Check that uploads are indeed encrypted (entropy and magic number(?) checks).
+- Ensure that uploaded files are immediately streamed to disk instead of memory.
 - Correct tracing / logging
   - Perhaps into a dedicated file, perhaps into STDOUT so docker (compose) can pick it up
 - Correct error handling

@@ -56,7 +56,6 @@ document.addEventListener('DOMContentLoaded', async (event) => {
     document.getElementById('dl-upload-ts').textContent = upload_ts;
     document.getElementById('dl-expiry-pretty').textContent = expiry_ts_pretty;
     document.getElementById('dl-expiry-ts').textContent = expiry_ts;
-    document.getElementById('dl-views').textContent = views;
     document.getElementById('dl-downloads').textContent = downloads;
 
     // Compute the "normal" download-link-box and set it up.
@@ -116,7 +115,7 @@ document.getElementById("download-button").addEventListener("click", (_) => {
   // I'd love to use fetch for modern posting,
   // but if we want a regularly updating progress indicator we're stuck with XHR.
   let xhr = new XMLHttpRequest();
-  xhr.open("GET", `/raw/${efd_sha256sum}`);
+  xhr.open("GET", `/download_endpoint?hash=${efd_sha256sum}`);
   // Immediately store the response into an arraybuffer.
   xhr.responseType = 'arraybuffer';
 

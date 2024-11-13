@@ -3,11 +3,7 @@ use argon2::{
     Argon2, PasswordHash,
 };
 use axum::{
-    extract::{ConnectInfo, Multipart, Query, State},
-    http::StatusCode,
-    response::{Html, IntoResponse},
-    routing::{get, post},
-    Json, Router,
+    body::Body, extract::{ConnectInfo, Multipart, Query, State}, http::StatusCode, response::{Html, IntoResponse}, routing::{get, post}, Json, Router
 };
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use chrono::{prelude::Utc, DateTime, SubsecRound, TimeDelta};
@@ -26,7 +22,8 @@ use std::{
 };
 use tera::{Context, Tera};
 use tower::ServiceBuilder;
-use tower_http::{compression::CompressionLayer, services::ServeDir};
+use tower_http::{compression::CompressionLayer, services::{fs::AsyncReadBody, ServeDir}};
+use tokio_util::io::ReaderStream;
 
 static HTML_MINIFY_CFG: LazyLock<minify_html::Cfg> = LazyLock::new(|| {
     let mut cfg = minify_html::Cfg::spec_compliant();
@@ -111,9 +108,9 @@ async fn main() {
         .route("/admin_link", get(admin_link))
         .route("/admin_overview", get(admin_overview))
         .route("/upload_endpoint", post(upload_endpoint))
+        .route("/download_endpoint", get(download_endpoint))
         // Serve static assets from the 'static'-folder.
         .nest_service("/static", ServeDir::new("static"))
-        .nest_service("/raw", ServeDir::new("data"))
         // Enable response compression.
         .layer(ServiceBuilder::new().layer(CompressionLayer::new()))
         .with_state(db)
@@ -140,6 +137,61 @@ async fn shutdown_handler() {
     println!("Received shutdown signal ...");
 }
 
+async fn download_endpoint(
+    Query(params): Query<HashMap<String, String>>,
+    State(db): State<SqlitePool>,
+    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+) -> (StatusCode, impl IntoResponse) {
+    // Only the file parameter is permitted here.
+    let hash = params.get("hash");
+
+    // First, ensure the given parameters are correct.
+    if params.get("hash").is_none() || params.len() != 1 {
+        return (StatusCode::BAD_REQUEST, Body::empty());
+    }
+
+    // Guaranteed to work.
+    let hash = hash.unwrap();
+
+    // TODO: Think about what happens if the file is deleted / expires as it's being downloaded.
+
+    // Next, query for the given file.
+    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_hash, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
+        .bind(&hash)
+        .fetch_optional(&db)
+        .await
+        .unwrap();
+
+    // Return 404 if the file genuinely does not exist or has already expired.
+    if row.as_ref().map_or(true, |e| e.expired) {
+        return (StatusCode::NOT_FOUND, Body::empty());
+    }
+
+    // Guaranteed to work.
+    let row = row.unwrap();
+
+    // Open the AsyncRead-stream for the file.
+    let file = match tokio::fs::File::open(format!("data/{}", hash)).await {
+        Ok(file) => file,
+        Err(_) => {
+            // A file being in the DB but not on disk should not be possible.
+            return (StatusCode::INTERNAL_SERVER_ERROR, Body::empty());
+        }
+    };
+
+    let body = Body::from_stream(ReaderStream::new(file));
+
+    // Add to the download count.
+    sqlx::query("UPDATE uploaded_files SET downloads = ? WHERE efd_sha256sum = ?;")
+        .bind(&(row.downloads + 1))
+        .bind(&hash)
+        .execute(&db)
+        .await
+        .unwrap();
+
+    (StatusCode::OK, body)
+}
+
 async fn upload_page() -> impl IntoResponse {
     TERA.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
@@ -162,7 +214,6 @@ struct DownloadPageContext<'a> {
     upload_ts_pretty: &'a str,
     expiry_ts: &'a str,
     expiry_ts_pretty: &'a str,
-    views: &'a str,
     downloads: &'a str,
 }
 
@@ -180,7 +231,6 @@ impl Default for DownloadPageContext<'_> {
             upload_ts_pretty: "",
             expiry_ts: "",
             expiry_ts_pretty: "",
-            views: "0",
             downloads: "0",
         }
     }
@@ -226,7 +276,7 @@ async fn download_page(
     let hash = hash.unwrap();
 
     // Grab the row from the DB.
-    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_hash, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, views, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
+    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_hash, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
         .bind(&hash)
         .fetch_optional(&db)
         .await
@@ -265,7 +315,6 @@ async fn download_page(
     // Also extract and convert several more variables.
     // We only need them if the admin key is given,
     // but due to lifetime issues we're already converting them here.
-    let views = row.views.to_string();
     let downloads = row.downloads.to_string();
 
     // Timestamps
@@ -331,7 +380,6 @@ async fn download_page(
                 upload_ts_pretty: &upload_ts_pretty,
                 expiry_ts: &expiry_ts,
                 expiry_ts_pretty: &expiry_ts_pretty,
-                views: &views,
                 downloads: &downloads,
                 ..Default::default()
             };
@@ -402,7 +450,6 @@ struct UploadFileRow {
     upload_ip: String,
     upload_ts: String,
     expiry_ts: String,
-    views: i64,
     downloads: i64,
     expired: bool,
 }
@@ -537,10 +584,4 @@ async fn upload_endpoint(
 struct UploadFileResponse {
     efd_sha256sum: String,
     admin_key: String,
-}
-
-async fn download_endpoint(
-    State(db): State<SqlitePool>,
-    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
-) {
 }
