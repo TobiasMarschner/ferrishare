@@ -10,7 +10,7 @@ use axum::{
     Json, Router,
 };
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
-use chrono::{prelude::Utc, SubsecRound, TimeDelta};
+use chrono::{prelude::Utc, DateTime, SubsecRound, TimeDelta};
 use itertools::*;
 use minify_html::minify;
 use rand::prelude::*;
@@ -159,7 +159,9 @@ struct DownloadPageContext<'a> {
     iv_fn: &'a str,
     filesize: &'a str,
     upload_ts: &'a str,
+    upload_ts_pretty: &'a str,
     expiry_ts: &'a str,
+    expiry_ts_pretty: &'a str,
     views: &'a str,
     downloads: &'a str,
 }
@@ -175,7 +177,9 @@ impl Default for DownloadPageContext<'_> {
             iv_fn: "",
             filesize: "0",
             upload_ts: "",
+            upload_ts_pretty: "",
             expiry_ts: "",
+            expiry_ts_pretty: "",
             views: "0",
             downloads: "0",
         }
@@ -185,7 +189,7 @@ impl Default for DownloadPageContext<'_> {
 async fn download_page(
     Query(params): Query<HashMap<String, String>>,
     State(db): State<SqlitePool>,
-    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+    // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
 ) -> (StatusCode, Html<String>) {
     TERA.lock().unwrap().full_reload().unwrap();
 
@@ -194,8 +198,8 @@ async fn download_page(
 
     // Only allow legal combinations of parameters.
     match (hash, admin, params.len()) {
-        (Some(h), Some(a), 2) => {}
-        (Some(h), None, 1) => {}
+        (Some(_), Some(_), 2) => {}
+        (Some(_), None, 1) => {}
         _ => {
             // Make it clear the parameters are invalid and return right away.
             let dpc = DownloadPageContext {
@@ -228,7 +232,8 @@ async fn download_page(
         .await
         .unwrap();
 
-    if row.is_none() {
+    // Return 404 if the file genuinely does not exist or has already expired.
+    if row.as_ref().map_or(true, |e| e.expired) {
         let dpc = DownloadPageContext {
             response_type: "error",
             error_head: "Not found",
@@ -257,11 +262,44 @@ async fn download_page(
     let iv_fd = format!("[{}]", row.iv_fd.iter().join(", "));
     let iv_fn = format!("[{}]", row.iv_fn.iter().join(", "));
 
-    // Also extract and convert views and downloads.
+    // Also extract and convert several more variables.
     // We only need them if the admin key is given,
     // but due to lifetime issues we're already converting them here.
     let views = row.views.to_string();
     let downloads = row.downloads.to_string();
+
+    // Timestamps
+    let uts = DateTime::parse_from_rfc3339(&row.upload_ts).unwrap();
+    let ets = DateTime::parse_from_rfc3339(&row.expiry_ts).unwrap();
+    let now = Utc::now();
+
+    fn pretty_print_relative_time(td: &TimeDelta) -> String {
+        let values = vec![
+            td.num_weeks(),
+            td.num_days() % 7,
+            td.num_hours() % 24,
+            td.num_minutes() % 60,
+        ];
+        if values.iter().all(|v| *v == 0) {
+            return "<1m".into();
+        }
+        let characters = vec!['w', 'd', 'h', 'm'];
+        values
+            .iter()
+            .map(|v| v.abs())
+            .zip(characters.iter())
+            .filter(|(v, _)| *v > 0)
+            .map(|(v, c)| format!("{v}{c}"))
+            .join(" ")
+    }
+
+    let upload_ts = uts.format("(%c)").to_string();
+    let upload_ts_pretty = format!(
+        "{} ago",
+        pretty_print_relative_time(&now.signed_duration_since(uts))
+    );
+    let expiry_ts = ets.format("(%c)").to_string();
+    let expiry_ts_pretty = pretty_print_relative_time(&now.signed_duration_since(ets));
 
     let dpc: DownloadPageContext;
 
@@ -289,8 +327,10 @@ async fn download_page(
                 iv_fd: &iv_fd,
                 iv_fn: &iv_fn,
                 filesize: &filesize,
-                upload_ts: &row.upload_ts,
-                expiry_ts: &row.expiry_ts,
+                upload_ts: &upload_ts,
+                upload_ts_pretty: &upload_ts_pretty,
+                expiry_ts: &expiry_ts,
+                expiry_ts_pretty: &expiry_ts_pretty,
                 views: &views,
                 downloads: &downloads,
                 ..Default::default()

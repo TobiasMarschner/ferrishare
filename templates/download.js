@@ -52,9 +52,9 @@ document.addEventListener('DOMContentLoaded', async (event) => {
 
   if (response_type === 'admin') {
     // Set all admin-only fields.
-    document.getElementById('dl-upload-pretty').textContent = 'TODO';
+    document.getElementById('dl-upload-pretty').textContent = upload_ts_pretty;
     document.getElementById('dl-upload-ts').textContent = upload_ts;
-    document.getElementById('dl-expiry-pretty').textContent = 'TODO';
+    document.getElementById('dl-expiry-pretty').textContent = expiry_ts_pretty;
     document.getElementById('dl-expiry-ts').textContent = expiry_ts;
     document.getElementById('dl-views').textContent = views;
     document.getElementById('dl-downloads').textContent = downloads;

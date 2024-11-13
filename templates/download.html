@@ -38,7 +38,7 @@ Download a File - E2EE Fileshare
         <div class="flex flex-col">
           <span class="text-gray-500">Created</span>
           <div class="flex items-baseline gap-2">
-            <span id="dl-upload-pretty" class="text-xl">14h 32m ago</span>
+            <span id="dl-upload-pretty" class="text-xl">14h 32m</span>
             <span id="dl-upload-ts" class="text-gray-500">(4:32 PM GMT, Oct 22, 2024)</span>
           </div>
         </div>
@@ -127,7 +127,9 @@ let iv_fd = new Uint8Array({{ iv_fd | safe }});
 let iv_fn = new Uint8Array({{ iv_fn | safe }});
 let filesize = {{ filesize | safe }};
 let upload_ts = '{{ upload_ts | safe }}';
+let upload_ts_pretty = '{{ upload_ts_pretty | safe }}';
 let expiry_ts = '{{ expiry_ts | safe }}';
+let expiry_ts_pretty = '{{ expiry_ts_pretty | safe }}';
 let views = {{ views | safe }};
 let downloads = {{ views | safe }};
 
