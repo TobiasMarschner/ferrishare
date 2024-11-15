@@ -1,4 +1,3 @@
--- Add migration script here
 CREATE TABLE IF NOT EXISTS uploaded_files
 (
   id INTEGER PRIMARY KEY NOT NULL,

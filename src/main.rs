@@ -3,27 +3,35 @@ use argon2::{
     Argon2, PasswordHash,
 };
 use axum::{
-    body::Body, extract::{ConnectInfo, Multipart, Query, State}, http::StatusCode, response::{Html, IntoResponse}, routing::{get, post}, Json, Router
+    body::Body,
+    extract::{ConnectInfo, Multipart, Query, State},
+    http::StatusCode,
+    response::{Html, IntoResponse},
+    routing::{get, post},
+    Json, Router,
 };
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use chrono::{prelude::Utc, DateTime, SubsecRound, TimeDelta};
 use itertools::*;
 use minify_html::minify;
 use rand::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs::File,
     io::prelude::*,
     net::SocketAddr,
     sync::{LazyLock, Mutex},
 };
 use tera::{Context, Tera};
-use tower::ServiceBuilder;
-use tower_http::{compression::CompressionLayer, services::{fs::AsyncReadBody, ServeDir}};
 use tokio_util::io::ReaderStream;
+use tower::ServiceBuilder;
+use tower_http::{
+    compression::CompressionLayer,
+    services::{fs::AsyncReadBody, ServeDir},
+};
 
 static HTML_MINIFY_CFG: LazyLock<minify_html::Cfg> = LazyLock::new(|| {
     let mut cfg = minify_html::Cfg::spec_compliant();
@@ -109,6 +117,7 @@ async fn main() {
         .route("/admin_overview", get(admin_overview))
         .route("/upload_endpoint", post(upload_endpoint))
         .route("/download_endpoint", get(download_endpoint))
+        .route("/delete_endpoint", post(delete_endpoint))
         // Serve static assets from the 'static'-folder.
         .nest_service("/static", ServeDir::new("static"))
         // Enable response compression.
@@ -135,6 +144,60 @@ async fn shutdown_handler() {
 
     // Received one? Print that, then hyper will shut down the server.
     println!("Received shutdown signal ...");
+}
+
+#[derive(Debug, Deserialize)]
+struct DeleteRequest {
+    hash: String,
+    admin: String,
+}
+
+async fn delete_endpoint(
+    State(db): State<SqlitePool>,
+    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+    Json(req): Json<DeleteRequest>,
+) -> StatusCode {
+    // Extract the two parameters.
+    let efd_sha256sum = req.hash;
+    let admin_key = req.admin;
+
+    // Query the databse for the entry.
+    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_hash, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
+        .bind(&efd_sha256sum)
+        .fetch_optional(&db)
+        .await
+        .unwrap();
+
+    // Return 404 if the file genuinely does not exist or has already expired.
+    if row.as_ref().map_or(true, |e| e.expired) {
+        return StatusCode::NOT_FOUND;
+    }
+
+    // Guaranteed to work.
+    let row = row.unwrap();
+
+    // Next, check the provided admin-key.
+    let parsed_hash = PasswordHash::new(&row.admin_key_hash).unwrap();
+    let password_check = Argon2::default().verify_password(admin_key.as_bytes(), &parsed_hash);
+
+    if password_check.is_err() {
+        return StatusCode::UNAUTHORIZED;
+    }
+
+    // Looks like the request is valid.
+    // Update the expired-bool in the databse.
+    sqlx::query("UPDATE uploaded_files SET expired = 1 WHERE efd_sha256sum = ?;")
+        .bind(&efd_sha256sum)
+        .execute(&db)
+        .await
+        .unwrap();
+
+    // TODO Actually delete the file, too.
+    // TODO We'll probably want to refactor this since deletions involve the same steps but can
+    // happen either as the result of a manual request like this, or as the result of timed
+    // expiry.
+
+    StatusCode::OK
 }
 
 async fn download_endpoint(

@@ -8,7 +8,7 @@ Download a File - E2EE Fileshare
 <div class="m-8">
   <div id="error-box" class="hidden max-w-lg mx-auto flex-col gap-4 p-8 rounded-xl bg-gray-200 mb-8 shadow-lg">
     <div class="flex items-center gap-4">
-      <span class="matsym text-4xl" id="fs-status-icon">warning</span>
+      <span id="error-box-icon" class="matsym text-4xl">warning</span>
       <span id="error-box-head" class="text-lg font-bold"></span>
     </div>
     <p id="error-box-text"></p>
@@ -53,13 +53,6 @@ Download a File - E2EE Fileshare
           </div>
         </div>
       </li>
-      <!-- <li class="admin-only hidden gap-4"> -->
-      <!--   <span class="matsym text-2xl text-gray-500">visibility</span> -->
-      <!--   <div class="flex flex-col"> -->
-      <!--     <span class="text-gray-500">Views</span> -->
-      <!--     <span id="dl-views" class="text-xl">23</span> -->
-      <!--   </div> -->
-      <!-- </li> -->
       <li class="admin-only hidden gap-4">
         <span class="matsym text-2xl text-gray-500">download</span>
         <div class="flex flex-col">
@@ -70,7 +63,7 @@ Download a File - E2EE Fileshare
     </ul>
     <div class="flex flex-col gap-6">
       <button type="button" id="download-button"
-        class="admin-only flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed">
+        class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed">
         <span class="matsym">download</span>
         Download and Decrypt
       </button>
@@ -85,7 +78,7 @@ Download a File - E2EE Fileshare
         </div>
       </div>
       <button type="button" id="delete-button"
-        class="admin-only hidden items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+        class="admin-only hidden items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed">
         <span class="matsym">delete</span>
         Delete from Server
       </button>
@@ -134,6 +127,7 @@ let downloads = {{ downloads | safe }};
 
 const urlParams = new URLSearchParams(window.location.search);
 const efd_sha256sum = urlParams.get('hash');
+const admin_key = urlParams.get('admin');
 const key_string = window.location.hash.substring(5);
 
 let key;

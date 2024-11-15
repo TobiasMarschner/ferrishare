@@ -76,6 +76,9 @@ function updateDlStatus(type, message) {
   let fsText = document.getElementById("dl-status-text");
   let fsPbar = document.getElementById("dl-pbar");
 
+  // Ensure the box itself is always visible.
+  fsStatus.style.display = 'flex';
+
   // Clear previous coloring of the status element.
   fsStatus.classList.remove('bg-gray-200', 'bg-green-100', 'bg-red-100', 'bg-blue-100');
   fsIcon.classList.remove('text-gray-800', 'text-green-800', 'text-red-800', 'text-blue-800', 'animate-spin');
@@ -166,7 +169,6 @@ document.getElementById("download-button").addEventListener("click", (_) => {
 
   // Disable download button while the operation is ongoing.
   dlbutton.disabled = true;
-  dlprogress.style.display = 'flex';
   xhr.send();
 });
 
@@ -175,4 +177,33 @@ document.getElementById("admin-download-copy").addEventListener("click", (_) => 
   // Not required, but we'll select the text anyways as an indicator to the user that the operation took place.
   textbox.select();
   navigator.clipboard.writeText(textbox.value);
+});
+
+document.getElementById("delete-button").addEventListener("click", () => {
+  let xhr = new XMLHttpRequest();
+
+  xhr.open('POST', '/delete_endpoint');
+  xhr.setRequestHeader('Content-Type', 'application/json');
+
+  xhr.onload = () => {
+    if (xhr.status === 200) {
+      document.getElementById('error-box-head').textContent = 'The file has been deleted';
+      document.getElementById('error-box-icon').textContent = 'check_circle';
+      document.getElementById('error-box-text').style.display = 'none';
+      document.getElementById('error-box').style.display = 'flex';
+      document.getElementById('dl-box').style.display = 'none';
+    } else {
+      updateDlStatus('error', 'Error during deletion request')
+      document.getElementById('download-button').disabled = false;
+      document.getElementById('delete-button').disabled = false;
+    }
+  }
+
+  document.getElementById('download-button').disabled = true;
+  document.getElementById('delete-button').disabled = true;
+
+  xhr.send(JSON.stringify({
+    hash: efd_sha256sum,
+    admin: admin_key
+  }))
 });
