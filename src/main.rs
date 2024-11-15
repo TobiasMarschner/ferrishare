@@ -8,7 +8,7 @@ use axum::{
     http::StatusCode,
     response::{Html, IntoResponse},
     routing::{get, post},
-    Json, Router,
+    Form, Json, Router,
 };
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use chrono::{prelude::Utc, DateTime, SubsecRound, TimeDelta};
@@ -112,7 +112,8 @@ async fn main() {
         // Main routes
         .route("/", get(upload_page))
         .route("/file", get(download_page))
-        .route("/admin", get(admin))
+        .route("/admin", get(admin_get))
+        // .route("/admin", post(admin_post))
         .route("/admin_link", get(admin_link))
         .route("/admin_overview", get(admin_overview))
         .route("/upload_endpoint", post(upload_endpoint))
@@ -162,7 +163,7 @@ async fn delete_endpoint(
     let admin_key = req.admin;
 
     // Query the databse for the entry.
-    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_hash, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
+    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
         .bind(&efd_sha256sum)
         .fetch_optional(&db)
         .await
@@ -176,11 +177,11 @@ async fn delete_endpoint(
     // Guaranteed to work.
     let row = row.unwrap();
 
-    // Next, check the provided admin-key.
-    let parsed_hash = PasswordHash::new(&row.admin_key_hash).unwrap();
-    let password_check = Argon2::default().verify_password(admin_key.as_bytes(), &parsed_hash);
+    // Compute the sha256-digest of the admin_key.
+    let admin_key_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(URL_SAFE_NO_PAD.decode(admin_key).unwrap()));
 
-    if password_check.is_err() {
+    // If the hashes don't match, stop here.
+    if admin_key_sha256sum != row.admin_key_sha256sum {
         return StatusCode::UNAUTHORIZED;
     }
 
@@ -219,7 +220,7 @@ async fn download_endpoint(
     // TODO: Think about what happens if the file is deleted / expires as it's being downloaded.
 
     // Next, query for the given file.
-    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_hash, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
+    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
         .bind(&hash)
         .fetch_optional(&db)
         .await
@@ -339,7 +340,7 @@ async fn download_page(
     let hash = hash.unwrap();
 
     // Grab the row from the DB.
-    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_hash, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
+    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
         .bind(&hash)
         .fetch_optional(&db)
         .await
@@ -417,22 +418,15 @@ async fn download_page(
 
     // Now, branch depending on whether there's an admin key.
     if let Some(admin) = admin {
-        // Construct the hash-object out of the string stored in the db.
-        let parsed_hash = PasswordHash::new(&row.admin_key_hash).unwrap();
-        let password_check = Argon2::default().verify_password(admin.as_bytes(), &parsed_hash);
+        // Perform three steps:
+        // 1) Turn the base64url-encoded admin_key to binary.
+        // 2) Calculate the sha256sum of that key in binary format.
+        // 3) Reencode the digest to base64url.
+        let admin_key_sha256sum =
+            URL_SAFE_NO_PAD.encode(Sha256::digest(URL_SAFE_NO_PAD.decode(admin).unwrap()));
 
-        if password_check.is_err() {
-            dpc = DownloadPageContext {
-                response_type: "file",
-                error_head: "Invalid \"admin\" parameter",
-                error_text: "The \"admin\" parameter does not match the database record. Displaying normal file download instead.",
-                e_filename: &efn,
-                iv_fd: &iv_fd,
-                iv_fn: &iv_fn,
-                filesize: &filesize,
-                ..Default::default()
-            };
-        } else {
+        // Now, check if the hashes match.
+        if admin_key_sha256sum == row.admin_key_sha256sum {
             dpc = DownloadPageContext {
                 response_type: "admin",
                 e_filename: &efn,
@@ -444,6 +438,17 @@ async fn download_page(
                 expiry_ts: &expiry_ts,
                 expiry_ts_pretty: &expiry_ts_pretty,
                 downloads: &downloads,
+                ..Default::default()
+            };
+        } else {
+            dpc = DownloadPageContext {
+                response_type: "file",
+                error_head: "Invalid \"admin\" parameter",
+                error_text: "The \"admin\" parameter does not match the database record. Displaying normal file download instead.",
+                e_filename: &efn,
+                iv_fd: &iv_fd,
+                iv_fn: &iv_fn,
+                filesize: &filesize,
                 ..Default::default()
             };
         };
@@ -494,18 +499,44 @@ async fn admin_overview() -> impl IntoResponse {
     Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
 }
 
-async fn admin() -> impl IntoResponse {
+async fn admin_get() -> impl IntoResponse {
     TERA.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
     let h = TERA.lock().unwrap().render("admin.html", &context).unwrap();
     Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
 }
 
+#[derive(Debug, Deserialize)]
+struct AdminLogin {
+    password: String,
+}
+
+async fn admin_post(
+    Form(admin_login): Form<AdminLogin>,
+    State(db): State<SqlitePool>,
+    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+) -> StatusCode {
+    if admin_login.password != "coolpw" {
+        return StatusCode::UNAUTHORIZED;
+    }
+
+    // Create a new session.
+
+    // sqlx::query("INSERT INTO sessions (session_key, expiry_ts) VALUES (?, ?);")
+    //     .bind(&upload_ts)
+    //     .bind(&expiry_ts)
+    //     .execute(&db)
+    //     .await
+    //     .unwrap();
+
+    StatusCode::OK
+}
+
 #[derive(Debug, FromRow, Clone)]
 struct UploadFileRow {
     id: i64,
     efd_sha256sum: String,
-    admin_key_hash: String,
+    admin_key_sha256sum: String,
     e_filename: Vec<u8>,
     iv_fd: Vec<u8>,
     iv_fn: Vec<u8>,
@@ -582,20 +613,33 @@ async fn upload_endpoint(
     let filesize = e_filedata.len() as i64;
     let upload_ip = client_address.ip().to_string();
 
-    // Compute the SHA-256 hash of the encrypted data.
+    // Compute the sha256sum of the encrypted data.
     // Likelihood of collision is ridiculously small, so we can ignore it here.
-    // It'll be used as the URL slug to access the file.
+    // We'll use its base64url-encoding as the URL to identify the file.
     let efd_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(&e_filedata));
 
-    // Generate a random admin password as well as a salt for it.
-    let admin_key = URL_SAFE_NO_PAD.encode(thread_rng().gen::<[u8; 12]>());
-    let admin_key_salt = SaltString::generate(&mut OsRng);
+    // Generate a random admin password out of 256 bits of strong entropy.
+    let admin_key_bytes = thread_rng().gen::<[u8; 32]>();
+    let admin_key = URL_SAFE_NO_PAD.encode(&admin_key_bytes);
 
-    let argon2 = Argon2::default();
-    let admin_key_hash = argon2
-        .hash_password(admin_key.as_bytes(), &admin_key_salt)
-        .unwrap()
-        .to_string();
+    // Also generate a hash of this password using sha256 for storage in the databse.
+    //
+    // NOTE: Use of sha256 instead of a password-hashing algorithm like argon2id is intentional.
+    // Password-hashing algorithms help secure passwords that:
+    // 1) may have little entropy to begin with (mitigated by increasing the algorithm's parameters,
+    //    such as iteration count and memory footprint)
+    // 2) may be used more than once by different users (mitigated by salting)
+    // 3) may leak if the db gets hacked (mitigated since hashing is a one-way operation)
+    //
+    // Threat (1) does not apply since the passwords are generated with 256 bits of entropy.
+    // Threat (2) does not apply since the password is randomly generated.
+    //
+    // This means only the third threat has to be considered.
+    // For that purpose, a single iteration of sha256 is wholly sufficient.
+    //
+    // In practice, this choice helps speed up requests
+    // as a single sha256-digest can be computed very quickly.
+    let admin_key_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(&admin_key_bytes));
 
     // TODO Proxied IPs. You'll likely run this behind a reverse-proxy.
     // You need to be able to set up trusted proxy IPs and extract X-Forwarded-For instead.
@@ -620,9 +664,9 @@ async fn upload_endpoint(
     // While not perfect, those techniques can help us catch the worst offenders.
 
     // Then, add the row to the database.
-    sqlx::query("INSERT INTO uploaded_files (efd_sha256sum, admin_key_hash, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);")
+    sqlx::query("INSERT INTO uploaded_files (efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);")
         .bind(&efd_sha256sum)
-        .bind(&admin_key_hash)
+        .bind(&admin_key_sha256sum)
         .bind(&e_filename)
         .bind(&iv_fd[..])
         .bind(&iv_fn[..])
