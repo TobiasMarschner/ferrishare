@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS uploaded_files
   upload_ip TEXT,
   upload_ts TEXT,
   expiry_ts TEXT,
-  views INTEGER DEFAULT 0,
   downloads INTEGER DEFAULT 0,
   expired INTEGER DEFAULT 0
 ) STRICT;

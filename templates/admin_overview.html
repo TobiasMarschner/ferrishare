@@ -14,30 +14,31 @@ Upload a File - E2EE Fileshare
     <table>
       <thead>
         <tr class="hidden lg:table-row text-left *:font-bold *:p-4 text-gray-500">
-          <th class=""> ID </th>
+          <th class=""> File Hash </th>
           <th class=""> Size </th>
           <th class=""> Uploaded </th>
           <th class=""> Expires in </th>
-          <th class=""> <span class="matsym">visibility</span> </th>
+          <!-- <th class=""> <span class="matsym">visibility</span> </th> -->
           <th class=""> <span class="matsym">download</span> </th>
           <th class=""> <span class="matsym">delete</span> </th>
         </tr>
       </thead>
       <tbody class="lg:table-row-group flex flex-col gap-8">
+        {% for file in files %}
         <tr
           class="flex lg:table-row flex-col lg:*:p-4 gap-6 lg:border-t-2 lg:border-gray-200 rounded-xl bg-gray-100 lg:bg-inherit shadow-lg lg:shadow-none p-8 lg:p-0">
           <td class="flex lg:table-cell flex-row gap-4">
             <div class="lg:hidden matsym text-2xl text-gray-500">code</div>
             <div class="flex flex-col">
-              <div class="lg:hidden text-gray-500">ID</div>
-              <div class="text-xl lg:text-base">6c55dcfc18be9498</div>
+              <div class="lg:hidden text-gray-500">File Hash</div>
+              <div class="text-base lg:text-sm font-mono break-all max-w-[22ch]">{{ file.efd_sha256sum }}</div>
             </div>
           </td>
           <td class="flex lg:table-cell flex-row gap-4">
             <div class="lg:hidden matsym text-2xl text-gray-500">clock_loader_90</div>
             <div class="flex flex-col">
               <div class="lg:hidden text-gray-500">Size</div>
-              <div class="text-xl lg:text-lg">4.56 MB</div>
+              <div class="text-xl lg:text-lg">{{ file.formatted_filesize }}</div>
             </div>
           </td>
           <td class="flex lg:table-cell flex-row gap-4">
@@ -46,10 +47,10 @@ Upload a File - E2EE Fileshare
               <div class="lg:hidden text-gray-500">Uploaded</div>
               <div class="flex lg:flex-col gap-2 lg:gap-0 items-baseline text-xl lg:text-lg">
                 <div class="text-xl lg:text-lg">
-                  4h 34m ago
+                  {{ file.upload_ts_pretty }}
                 </div>
                 <div class="text-gray-500 text-sm">
-                  (4:32 PM GMT, Oct 22, 2024)
+                  {{ file.upload_ts }}
                 </div>
               </div>
             </div>
@@ -60,26 +61,26 @@ Upload a File - E2EE Fileshare
               <div class="lg:hidden text-gray-500">Expires in</div>
               <div class="flex lg:flex-col gap-2 lg:gap-0 items-baseline text-xl lg:text-lg">
                 <div class="text-xl lg:text-lg">
-                  4d 14h 32m
+                  {{ file.expiry_ts_pretty }}
                 </div>
                 <div class="text-gray-500 text-sm">
-                  (4:32 PM GMT, Oct 29, 2024)
+                  {{ file.expiry_ts }}
                 </div>
               </div>
             </div>
           </td>
-          <td class="flex lg:table-cell flex-row gap-4">
-            <div class="lg:hidden matsym text-2xl text-gray-500">visibility</div>
-            <div class="flex flex-col">
-              <div class="lg:hidden text-gray-500">Views</div>
-              <div class="text-xl lg:text-lg lg:text-center">23</div>
-            </div>
-          </td>
+          <!-- <td class="flex lg:table-cell flex-row gap-4"> -->
+          <!--   <div class="lg:hidden matsym text-2xl text-gray-500">visibility</div> -->
+          <!--   <div class="flex flex-col"> -->
+          <!--     <div class="lg:hidden text-gray-500">Views</div> -->
+          <!--     <div class="text-xl lg:text-lg lg:text-center">23</div> -->
+          <!--   </div> -->
+          <!-- </td> -->
           <td class="flex lg:table-cell flex-row gap-4">
             <div class="lg:hidden matsym text-2xl text-gray-500">download</div>
             <div class="flex flex-col">
               <div class="lg:hidden text-gray-500">Downloads</div>
-              <div class="text-xl lg:text-lg lg:text-center">7</div>
+              <div class="text-xl lg:text-lg lg:text-center">{{ file.downloads }}</div>
             </div>
           </td>
           <td>
@@ -90,6 +91,7 @@ Upload a File - E2EE Fileshare
             </button>
           </td>
         </tr>
+      {% endfor %}
       </tbody>
     </table>
   </div>

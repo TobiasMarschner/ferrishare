@@ -5,13 +5,15 @@ use argon2::{
 use axum::{
     body::Body,
     extract::{ConnectInfo, Multipart, Query, State},
-    http::StatusCode,
-    response::{Html, IntoResponse},
+    http::{HeaderMap, StatusCode},
+    response::{Html, IntoResponse, Redirect},
     routing::{get, post},
     Form, Json, Router,
 };
+use axum_extra::extract::CookieJar;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
-use chrono::{prelude::Utc, DateTime, SubsecRound, TimeDelta};
+use chrono::{prelude::Utc, DateTime, SubsecRound, TimeDelta, TimeZone};
+use cookie::{time::Duration, Cookie};
 use itertools::*;
 use minify_html::minify;
 use rand::prelude::*;
@@ -113,7 +115,7 @@ async fn main() {
         .route("/", get(upload_page))
         .route("/file", get(download_page))
         .route("/admin", get(admin_get))
-        // .route("/admin", post(admin_post))
+        .route("/admin", post(admin_post))
         .route("/admin_link", get(admin_link))
         .route("/admin_overview", get(admin_overview))
         .route("/upload_endpoint", post(upload_endpoint))
@@ -178,7 +180,8 @@ async fn delete_endpoint(
     let row = row.unwrap();
 
     // Compute the sha256-digest of the admin_key.
-    let admin_key_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(URL_SAFE_NO_PAD.decode(admin_key).unwrap()));
+    let admin_key_sha256sum =
+        URL_SAFE_NO_PAD.encode(Sha256::digest(URL_SAFE_NO_PAD.decode(admin_key).unwrap()));
 
     // If the hashes don't match, stop here.
     if admin_key_sha256sum != row.admin_key_sha256sum {
@@ -300,6 +303,28 @@ impl Default for DownloadPageContext<'_> {
     }
 }
 
+fn pretty_print_delta<Tz1: TimeZone, Tz2: TimeZone>(a: DateTime<Tz1>, b: DateTime<Tz2>) -> String {
+    let time_delta = a.signed_duration_since(b);
+
+    let values = vec![
+        time_delta.num_weeks(),
+        time_delta.num_days() % 7,
+        time_delta.num_hours() % 24,
+        time_delta.num_minutes() % 60,
+    ];
+    if values.iter().all(|v| *v == 0) {
+        return "<1m".into();
+    }
+    let characters = vec!['w', 'd', 'h', 'm'];
+    values
+        .iter()
+        .map(|v| v.abs())
+        .zip(characters.iter())
+        .filter(|(v, _)| *v > 0)
+        .map(|(v, c)| format!("{v}{c}"))
+        .join(" ")
+}
+
 async fn download_page(
     Query(params): Query<HashMap<String, String>>,
     State(db): State<SqlitePool>,
@@ -386,33 +411,10 @@ async fn download_page(
     let ets = DateTime::parse_from_rfc3339(&row.expiry_ts).unwrap();
     let now = Utc::now();
 
-    fn pretty_print_relative_time(td: &TimeDelta) -> String {
-        let values = vec![
-            td.num_weeks(),
-            td.num_days() % 7,
-            td.num_hours() % 24,
-            td.num_minutes() % 60,
-        ];
-        if values.iter().all(|v| *v == 0) {
-            return "<1m".into();
-        }
-        let characters = vec!['w', 'd', 'h', 'm'];
-        values
-            .iter()
-            .map(|v| v.abs())
-            .zip(characters.iter())
-            .filter(|(v, _)| *v > 0)
-            .map(|(v, c)| format!("{v}{c}"))
-            .join(" ")
-    }
-
     let upload_ts = uts.format("(%c)").to_string();
-    let upload_ts_pretty = format!(
-        "{} ago",
-        pretty_print_relative_time(&now.signed_duration_since(uts))
-    );
+    let upload_ts_pretty = format!("{} ago", pretty_print_delta(now, uts));
     let expiry_ts = ets.format("(%c)").to_string();
-    let expiry_ts_pretty = pretty_print_relative_time(&now.signed_duration_since(ets));
+    let expiry_ts_pretty = pretty_print_delta(now, ets);
 
     let dpc: DownloadPageContext;
 
@@ -499,37 +501,142 @@ async fn admin_overview() -> impl IntoResponse {
     Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
 }
 
-async fn admin_get() -> impl IntoResponse {
-    TERA.lock().unwrap().full_reload().unwrap();
-    let context = Context::new();
-    let h = TERA.lock().unwrap().render("admin.html", &context).unwrap();
-    Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+#[derive(Debug, FromRow, Deserialize)]
+struct AdminSession {
+    session_id_sha256sum: String,
+    expiry_ts: String,
+}
+
+async fn admin_get(
+    State(db): State<SqlitePool>,
+    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+    jar: CookieJar,
+) -> impl IntoResponse {
+    // Calculate the base64url-encoded sha256sum of the session cookie, if any.
+    let user_session_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(
+        URL_SAFE_NO_PAD
+            .decode(jar.get("id").map_or("", |e| e.value()))
+            .unwrap_or_default(),
+    ));
+
+    let session_row: Option<AdminSession> = sqlx::query_as("SELECT session_id_sha256sum, expiry_ts FROM admin_sessions WHERE session_id_sha256sum = ? LIMIT 1;").bind(&user_session_sha256sum)
+        .fetch_optional(&db)
+        .await
+        .unwrap();
+
+    if session_row.is_some() {
+        // Request info about all currently live files.
+        let all_files: Vec<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE expired = 0;")
+            .fetch_all(&db)
+            .await
+            .unwrap();
+
+        #[derive(Debug, Serialize)]
+        struct UploadedFile {
+            efd_sha256sum: String,
+            formatted_filesize: String,
+            upload_ts_pretty: String,
+            upload_ts: String,
+            expiry_ts_pretty: String,
+            expiry_ts: String,
+            downloads: i64,
+        }
+
+        let now = Utc::now();
+
+        let ufs = all_files
+            .into_iter()
+            .map(|e| {
+                let uts = DateTime::parse_from_rfc3339(&e.upload_ts).unwrap();
+                let ets = DateTime::parse_from_rfc3339(&e.expiry_ts).unwrap();
+                UploadedFile {
+                    efd_sha256sum: e.efd_sha256sum,
+                    formatted_filesize: format!("{:.2} MB", e.filesize as f64 / 1_000_000.0),
+                    upload_ts_pretty: format!("{} ago", pretty_print_delta(now, uts)),
+                    upload_ts: uts.format("(%c)").to_string(),
+                    expiry_ts_pretty: pretty_print_delta(now, ets),
+                    expiry_ts: ets.format("(%c)").to_string(),
+                    downloads: e.downloads,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        TERA.lock().unwrap().full_reload().unwrap();
+        let mut context = Context::new();
+        context.insert("files", &ufs);
+        let h = TERA
+            .lock()
+            .unwrap()
+            .render("admin_overview.html", &context)
+            .unwrap();
+        Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+    } else {
+        TERA.lock().unwrap().full_reload().unwrap();
+        let context = Context::new();
+        let h = TERA.lock().unwrap().render("admin.html", &context).unwrap();
+        Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+    }
 }
 
 #[derive(Debug, Deserialize)]
 struct AdminLogin {
     password: String,
+    long_login: Option<String>,
 }
 
+#[axum::debug_handler]
 async fn admin_post(
-    Form(admin_login): Form<AdminLogin>,
     State(db): State<SqlitePool>,
     ConnectInfo(client_address): ConnectInfo<SocketAddr>,
-) -> StatusCode {
-    if admin_login.password != "coolpw" {
-        return StatusCode::UNAUTHORIZED;
-    }
+    jar: CookieJar,
+    Form(admin_login): Form<AdminLogin>,
+) -> Result<(CookieJar, Redirect), StatusCode> {
+    // TODO Obviously read this from a config, this is just for dev purposes.
+    let admin_pw = PasswordHash::new("$argon2id$v=19$m=32768,t=2,p=1$GqrzTtRpoGeTSuq4$9rKEnqGUHRD1BkLq4IIa3CEFsuzsWwf646249huVPZk").unwrap();
+
+    // Verify the provided password.
+    Argon2::default()
+        .verify_password(admin_login.password.as_bytes(), &admin_pw)
+        .map_err(|_| StatusCode::UNAUTHORIZED)?;
 
     // Create a new session.
+    let session_id_bytes = thread_rng().gen::<[u8; 32]>();
+    let session_id = URL_SAFE_NO_PAD.encode(&session_id_bytes);
 
-    // sqlx::query("INSERT INTO sessions (session_key, expiry_ts) VALUES (?, ?);")
-    //     .bind(&upload_ts)
-    //     .bind(&expiry_ts)
-    //     .execute(&db)
-    //     .await
-    //     .unwrap();
+    // Use the sha256-digest in the databse.
+    let session_id_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(&session_id_bytes));
 
-    StatusCode::OK
+    // Build the cookie for the session id.
+    let mut session_cookie = Cookie::build(("id", session_id))
+        .http_only(true)
+        .secure(true)
+        .same_site(cookie::SameSite::Strict);
+
+    // If a long session is requested, it will be given 30 days validity.
+    // Otherwise, it will be given 24 hours validity and
+    // the cookie will be set to expire on closing the browser.
+
+    if admin_login.long_login.is_some() {
+        session_cookie = session_cookie.max_age(Duration::days(30));
+    }
+
+    // Calculate the RFC3339 timestamp for session expiry, either in one or 30 days.
+    let expiry_ts = Utc::now()
+        .checked_add_signed(TimeDelta::days(match admin_login.long_login {
+            Some(_) => 30,
+            None => 1,
+        }))
+        .unwrap()
+        .to_rfc3339();
+
+    sqlx::query("INSERT INTO admin_sessions (session_id_sha256sum, expiry_ts) VALUES (?, ?);")
+        .bind(&session_id_sha256sum)
+        .bind(&expiry_ts)
+        .execute(&db)
+        .await
+        .unwrap();
+
+    Ok((jar.add(session_cookie), Redirect::to("/admin")))
 }
 
 #[derive(Debug, FromRow, Clone)]

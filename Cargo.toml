@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = { version = "0.7", features = ["multipart", "query"] }
+axum = { version = "0.7", features = ["multipart", "query", "macros"] }
 axum-extra = { version = "0", features = ["cookie"]}
 itertools = "0"
 serde = { version = "1", features = ["derive"] }
@@ -14,6 +14,7 @@ tower = { version = "0", features = ["util"] }
 tower-http = { version = "0", features = [ "fs", "compression-gzip", "compression-br", "compression-deflate", "compression-zstd" ] }
 tera = "1"
 minify-html = "0"
+cookie = { version = "0" }
 sqlx = { version = "0", features = [ "runtime-tokio", "sqlite" ] }
 chrono = { version = "0" }
 rand = { version = "0" }
