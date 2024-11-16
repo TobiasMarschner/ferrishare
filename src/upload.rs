@@ -15,18 +15,23 @@ use tera::Context;
 
 use crate::*;
 
-pub async fn upload_page(State(aps): State<AppState>) -> impl IntoResponse {
-    aps.tera.lock().unwrap().full_reload().unwrap();
+pub async fn upload_page(State(aps): State<AppState>) -> Result<impl IntoResponse, StatusCode> {
+    aps.tera
+        .lock()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .full_reload()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let context = Context::new();
     let h = aps
         .tera
         .lock()
-        .unwrap()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .render("index.html", &context)
-        .unwrap();
-    Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let response_body = String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(Html(response_body))
 }
-
 
 pub async fn upload_endpoint(
     State(aps): State<AppState>,
