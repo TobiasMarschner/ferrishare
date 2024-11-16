@@ -1,0 +1,67 @@
+use axum::{
+    extract::{ConnectInfo, State},
+    http::StatusCode,
+    Json,
+};
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
+use serde::Deserialize;
+use sha2::{Digest, Sha256};
+use sqlx::SqlitePool;
+use std::net::SocketAddr;
+
+use crate::upload::UploadFileRow;
+
+#[derive(Debug, Deserialize)]
+pub struct DeleteRequest {
+    hash: String,
+    admin: String,
+}
+
+pub async fn delete_endpoint(
+    State(db): State<SqlitePool>,
+    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+    Json(req): Json<DeleteRequest>,
+) -> StatusCode {
+    // Extract the two parameters.
+    let efd_sha256sum = req.hash;
+    let admin_key = req.admin;
+
+    // Query the databse for the entry.
+    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
+        .bind(&efd_sha256sum)
+        .fetch_optional(&db)
+        .await
+        .unwrap();
+
+    // Return 404 if the file genuinely does not exist or has already expired.
+    if row.as_ref().map_or(true, |e| e.expired) {
+        return StatusCode::NOT_FOUND;
+    }
+
+    // Guaranteed to work.
+    let row = row.unwrap();
+
+    // Compute the sha256-digest of the admin_key.
+    let admin_key_sha256sum =
+        URL_SAFE_NO_PAD.encode(Sha256::digest(URL_SAFE_NO_PAD.decode(admin_key).unwrap()));
+
+    // If the hashes don't match, stop here.
+    if admin_key_sha256sum != row.admin_key_sha256sum {
+        return StatusCode::UNAUTHORIZED;
+    }
+
+    // Looks like the request is valid.
+    // Update the expired-bool in the databse.
+    sqlx::query("UPDATE uploaded_files SET expired = 1 WHERE efd_sha256sum = ?;")
+        .bind(&efd_sha256sum)
+        .execute(&db)
+        .await
+        .unwrap();
+
+    // TODO Actually delete the file, too.
+    // TODO We'll probably want to refactor this since deletions involve the same steps but can
+    // happen either as the result of a manual request like this, or as the result of timed
+    // expiry.
+
+    StatusCode::OK
+}
