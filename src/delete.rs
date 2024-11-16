@@ -9,6 +9,7 @@ use sha2::{Digest, Sha256};
 use sqlx::SqlitePool;
 use std::net::SocketAddr;
 
+use crate::*;
 use crate::upload::UploadFileRow;
 
 #[derive(Debug, Deserialize)]
@@ -18,7 +19,7 @@ pub struct DeleteRequest {
 }
 
 pub async fn delete_endpoint(
-    State(db): State<SqlitePool>,
+    State(aps): State<AppState>,
     ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     Json(req): Json<DeleteRequest>,
 ) -> StatusCode {
@@ -29,7 +30,7 @@ pub async fn delete_endpoint(
     // Query the databse for the entry.
     let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
         .bind(&efd_sha256sum)
-        .fetch_optional(&db)
+        .fetch_optional(&aps.db)
         .await
         .unwrap();
 
@@ -54,7 +55,7 @@ pub async fn delete_endpoint(
     // Update the expired-bool in the databse.
     sqlx::query("UPDATE uploaded_files SET expired = 1 WHERE efd_sha256sum = ?;")
         .bind(&efd_sha256sum)
-        .execute(&db)
+        .execute(&aps.db)
         .await
         .unwrap();
 

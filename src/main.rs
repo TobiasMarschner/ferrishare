@@ -5,38 +5,41 @@ use axum::{
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 use std::{
     net::SocketAddr,
-    sync::{LazyLock, Mutex},
+    sync::{Arc, LazyLock, Mutex},
 };
 use tera::Tera;
 use tower::ServiceBuilder;
 use tower_http::{compression::CompressionLayer, services::ServeDir};
 
 mod admin;
+mod delete;
 mod download;
 mod upload;
-mod delete;
 
-pub static HTML_MINIFY_CFG: LazyLock<minify_html::Cfg> = LazyLock::new(|| {
-    let mut cfg = minify_html::Cfg::spec_compliant();
-    // Keep things compliant, we don't need to crunc *that much*.
-    cfg.keep_closing_tags = true;
-    cfg.keep_html_and_head_opening_tags = true;
-    // Very useful, minify all the CSS here, too.
-    cfg.minify_css = true;
-    cfg.minify_js = true;
-    cfg
-});
+// It should be cheaper to copy two pointers with one layer of indirection each (AppState + Clone)
+// instead of one pointer with up to two layers of indirection (Arc<AppState>).
+#[derive(Debug, Clone)]
+pub struct AppState {
+    tera: Arc<Mutex<Tera>>,
+    db: SqlitePool,
+}
 
-pub static TERA: LazyLock<Mutex<Tera>> = LazyLock::new(|| {
-    let tera = match Tera::new("templates/**/*.{html,js}") {
-        Ok(t) => t,
-        Err(e) => {
-            println!("Parsing error(s): {}", e);
-            panic!();
-        }
-    };
-    Mutex::new(tera)
-});
+pub const MINIFY_CFG: minify_html::Cfg = minify_html::Cfg {
+    do_not_minify_doctype: true,
+    ensure_spec_compliant_unquoted_attribute_values: true,
+    keep_closing_tags: true,
+    keep_html_and_head_opening_tags: true,
+    keep_spaces_between_attributes: true,
+    keep_comments: false,
+    keep_input_type_text_attr: false,
+    keep_ssi_comments: false,
+    preserve_brace_template_syntax: false,
+    preserve_chevron_percent_template_syntax: false,
+    minify_css: true,
+    minify_js: true,
+    remove_bangs: false,
+    remove_processing_instructions: false,
+};
 
 const DB_URL: &str = "sqlite://sqlite.db";
 
@@ -53,6 +56,9 @@ async fn main() {
 
     // Open the DB pool.
     let db = SqlitePool::connect(DB_URL).await.unwrap();
+
+    // Initialize the templating engine.
+    let tera = Arc::new(Mutex::new(Tera::new("templates/**/*.{html,js}").expect("error during template parsing")));
 
     // Perform migrations, if necesary.
     let crate_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
@@ -73,6 +79,8 @@ async fn main() {
 
     println!("migration: {:?}", migration_results);
 
+    let aps = AppState { tera, db };
+
     // Define the app's routes.
     let app = Router::new()
         // Main routes
@@ -89,7 +97,7 @@ async fn main() {
         .nest_service("/static", ServeDir::new("static"))
         // Enable response compression.
         .layer(ServiceBuilder::new().layer(CompressionLayer::new()))
-        .with_state(db)
+        .with_state(aps)
         .into_make_service_with_connect_info::<SocketAddr>();
 
     // Bind to localhost for now.

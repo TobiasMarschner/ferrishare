@@ -15,11 +15,12 @@ use std::{collections::HashMap, net::SocketAddr};
 use tera::Context;
 use tokio_util::io::ReaderStream;
 
-use crate::{upload::UploadFileRow, HTML_MINIFY_CFG, TERA};
+use crate::upload::UploadFileRow;
+use crate::*;
 
 pub async fn download_endpoint(
     Query(params): Query<HashMap<String, String>>,
-    State(db): State<SqlitePool>,
+    State(aps): State<AppState>,
     ConnectInfo(client_address): ConnectInfo<SocketAddr>,
 ) -> (StatusCode, impl IntoResponse) {
     // Only the file parameter is permitted here.
@@ -38,7 +39,7 @@ pub async fn download_endpoint(
     // Next, query for the given file.
     let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
         .bind(&hash)
-        .fetch_optional(&db)
+        .fetch_optional(&aps.db)
         .await
         .unwrap();
 
@@ -65,7 +66,7 @@ pub async fn download_endpoint(
     sqlx::query("UPDATE uploaded_files SET downloads = ? WHERE efd_sha256sum = ?;")
         .bind(&(row.downloads + 1))
         .bind(&hash)
-        .execute(&db)
+        .execute(&aps.db)
         .await
         .unwrap();
 
@@ -109,7 +110,10 @@ impl Default for DownloadPageContext<'_> {
     }
 }
 
-pub fn pretty_print_delta<Tz1: TimeZone, Tz2: TimeZone>(a: DateTime<Tz1>, b: DateTime<Tz2>) -> String {
+pub fn pretty_print_delta<Tz1: TimeZone, Tz2: TimeZone>(
+    a: DateTime<Tz1>,
+    b: DateTime<Tz2>,
+) -> String {
     let time_delta = a.signed_duration_since(b);
 
     let values = vec![
@@ -133,10 +137,10 @@ pub fn pretty_print_delta<Tz1: TimeZone, Tz2: TimeZone>(a: DateTime<Tz1>, b: Dat
 
 pub async fn download_page(
     Query(params): Query<HashMap<String, String>>,
-    State(db): State<SqlitePool>,
+    State(aps): State<AppState>,
     // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
 ) -> (StatusCode, Html<String>) {
-    TERA.lock().unwrap().full_reload().unwrap();
+    aps.tera.lock().unwrap().full_reload().unwrap();
 
     let hash = params.get("hash");
     let admin = params.get("admin");
@@ -154,7 +158,8 @@ pub async fn download_page(
                 ..Default::default()
             };
 
-            let h = TERA
+            let h = aps
+                .tera
                 .lock()
                 .unwrap()
                 .render("download.html", &Context::from_serialize(&dpc).unwrap())
@@ -162,7 +167,7 @@ pub async fn download_page(
 
             return (
                 StatusCode::BAD_REQUEST,
-                Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap()),
+                Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap()),
             );
         }
     }
@@ -173,7 +178,7 @@ pub async fn download_page(
     // Grab the row from the DB.
     let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
         .bind(&hash)
-        .fetch_optional(&db)
+        .fetch_optional(&aps.db)
         .await
         .unwrap();
 
@@ -186,7 +191,8 @@ pub async fn download_page(
             ..Default::default()
         };
 
-        let h = TERA
+        let h = aps
+            .tera
             .lock()
             .unwrap()
             .render("download.html", &Context::from_serialize(&dpc).unwrap())
@@ -194,7 +200,7 @@ pub async fn download_page(
 
         return (
             StatusCode::NOT_FOUND,
-            Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap()),
+            Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap()),
         );
     }
 
@@ -272,7 +278,8 @@ pub async fn download_page(
     }
 
     // Use the DownloadPageContext to actually render the template.
-    let h = TERA
+    let h = aps
+        .tera
         .lock()
         .unwrap()
         .render("download.html", &Context::from_serialize(&dpc).unwrap())
@@ -281,6 +288,6 @@ pub async fn download_page(
     // Minify and return.
     (
         StatusCode::OK,
-        Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap()),
+        Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap()),
     )
 }

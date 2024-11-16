@@ -17,28 +17,32 @@ use sqlx::{FromRow, SqlitePool};
 use std::net::SocketAddr;
 use tera::Context;
 
-use crate::{download::pretty_print_delta, upload::UploadFileRow, HTML_MINIFY_CFG, TERA};
+use crate::download::pretty_print_delta;
+use crate::upload::UploadFileRow;
+use crate::*;
 
-pub async fn admin_link() -> impl IntoResponse {
-    TERA.lock().unwrap().full_reload().unwrap();
+pub async fn admin_link(State(aps): State<AppState>) -> impl IntoResponse {
+    aps.tera.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
-    let h = TERA
+    let h = aps
+        .tera
         .lock()
         .unwrap()
         .render("admin_link.html", &context)
         .unwrap();
-    Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+    Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
 }
 
-pub async fn admin_overview() -> impl IntoResponse {
-    TERA.lock().unwrap().full_reload().unwrap();
+pub async fn admin_overview(State(aps): State<AppState>) -> impl IntoResponse {
+    aps.tera.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
-    let h = TERA
+    let h = aps
+        .tera
         .lock()
         .unwrap()
         .render("admin_overview.html", &context)
         .unwrap();
-    Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+    Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
 }
 
 #[derive(Debug, FromRow, Deserialize)]
@@ -48,7 +52,7 @@ struct AdminSession {
 }
 
 pub async fn admin_get(
-    State(db): State<SqlitePool>,
+    State(aps): State<AppState>,
     ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     jar: CookieJar,
 ) -> impl IntoResponse {
@@ -60,14 +64,14 @@ pub async fn admin_get(
     ));
 
     let session_row: Option<AdminSession> = sqlx::query_as("SELECT session_id_sha256sum, expiry_ts FROM admin_sessions WHERE session_id_sha256sum = ? LIMIT 1;").bind(&user_session_sha256sum)
-        .fetch_optional(&db)
+        .fetch_optional(&aps.db)
         .await
         .unwrap();
 
     if session_row.is_some() {
         // Request info about all currently live files.
         let all_files: Vec<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE expired = 0;")
-            .fetch_all(&db)
+            .fetch_all(&aps.db)
             .await
             .unwrap();
 
@@ -101,20 +105,21 @@ pub async fn admin_get(
             })
             .collect::<Vec<_>>();
 
-        TERA.lock().unwrap().full_reload().unwrap();
+        aps.tera.lock().unwrap().full_reload().unwrap();
         let mut context = Context::new();
         context.insert("files", &ufs);
-        let h = TERA
+        let h = aps
+            .tera
             .lock()
             .unwrap()
             .render("admin_overview.html", &context)
             .unwrap();
-        Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+        Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
     } else {
-        TERA.lock().unwrap().full_reload().unwrap();
+        aps.tera.lock().unwrap().full_reload().unwrap();
         let context = Context::new();
-        let h = TERA.lock().unwrap().render("admin.html", &context).unwrap();
-        Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+        let h = aps.tera.lock().unwrap().render("admin.html", &context).unwrap();
+        Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
     }
 }
 
@@ -126,7 +131,7 @@ pub struct AdminLogin {
 
 #[axum::debug_handler]
 pub async fn admin_post(
-    State(db): State<SqlitePool>,
+    State(aps): State<AppState>,
     ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     jar: CookieJar,
     Form(admin_login): Form<AdminLogin>,
@@ -172,7 +177,7 @@ pub async fn admin_post(
     sqlx::query("INSERT INTO admin_sessions (session_id_sha256sum, expiry_ts) VALUES (?, ?);")
         .bind(&session_id_sha256sum)
         .bind(&expiry_ts)
-        .execute(&db)
+        .execute(&aps.db)
         .await
         .unwrap();
 

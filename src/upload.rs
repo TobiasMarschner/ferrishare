@@ -16,11 +16,13 @@ use tera::Context;
 
 use crate::*;
 
-pub async fn upload_page() -> impl IntoResponse {
-    TERA.lock().unwrap().full_reload().unwrap();
+pub async fn upload_page(
+    State(aps): State<AppState>,
+) ->impl IntoResponse {
+    aps.tera.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
-    let h = TERA.lock().unwrap().render("index.html", &context).unwrap();
-    Html(String::from_utf8(minify(h.as_bytes(), &HTML_MINIFY_CFG)).unwrap())
+    let h = aps.tera.lock().unwrap().render("index.html", &context).unwrap();
+    Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
 }
 
 #[derive(Debug, FromRow, Clone)]
@@ -40,7 +42,7 @@ pub struct UploadFileRow {
 }
 
 pub async fn upload_endpoint(
-    State(db): State<SqlitePool>,
+    State(aps): State<AppState>,
     ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     mut multipart: Multipart,
 ) -> (StatusCode, Json<UploadFileResponse>) {
@@ -165,7 +167,7 @@ pub async fn upload_endpoint(
         .bind(&upload_ip)
         .bind(&upload_ts)
         .bind(&expiry_ts)
-        .execute(&db)
+        .execute(&aps.db)
         .await
         .unwrap();
 
