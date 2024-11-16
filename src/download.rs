@@ -1,6 +1,6 @@
 use axum::{
     body::Body,
-    extract::{ConnectInfo, Query, State},
+    extract::{Query, State},
     http::StatusCode,
     response::{Html, IntoResponse},
 };
@@ -10,18 +10,17 @@ use itertools::*;
 use minify_html::minify;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use sqlx::SqlitePool;
-use std::{collections::HashMap, net::SocketAddr};
+use sqlx::FromRow;
+use std::collections::HashMap;
 use tera::Context;
 use tokio_util::io::ReaderStream;
 
-use crate::upload::UploadFileRow;
 use crate::*;
 
 pub async fn download_endpoint(
     Query(params): Query<HashMap<String, String>>,
     State(aps): State<AppState>,
-    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+    // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
 ) -> (StatusCode, impl IntoResponse) {
     // Only the file parameter is permitted here.
     let hash = params.get("hash");
@@ -37,14 +36,20 @@ pub async fn download_endpoint(
     // TODO: Think about what happens if the file is deleted / expires as it's being downloaded.
 
     // Next, query for the given file.
-    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
-        .bind(&hash)
-        .fetch_optional(&aps.db)
-        .await
-        .unwrap();
+    // We only need to know whether
+    // (1) the row exists
+    // (2) the 'expired' value of the row
+    // (3) the 'downloads' value, as we're going to increment that
+    let row: Option<(i64, bool)> = sqlx::query_as(
+        "SELECT downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;",
+    )
+    .bind(&hash)
+    .fetch_optional(&aps.db)
+    .await
+    .unwrap();
 
     // Return 404 if the file genuinely does not exist or has already expired.
-    if row.as_ref().map_or(true, |e| e.expired) {
+    if row.as_ref().map_or(true, |e| e.1) {
         return (StatusCode::NOT_FOUND, Body::empty());
     }
 
@@ -64,7 +69,7 @@ pub async fn download_endpoint(
 
     // Add to the download count.
     sqlx::query("UPDATE uploaded_files SET downloads = ? WHERE efd_sha256sum = ?;")
-        .bind(&(row.downloads + 1))
+        .bind(&(row.0 + 1))
         .bind(&hash)
         .execute(&aps.db)
         .await
@@ -175,8 +180,21 @@ pub async fn download_page(
     // Guaranteed to work thanks to the previous match.
     let hash = hash.unwrap();
 
+    #[derive(FromRow)]
+    struct FileRow {
+        admin_key_sha256sum: String,
+        e_filename: Vec<u8>,
+        iv_fd: Vec<u8>,
+        iv_fn: Vec<u8>,
+        filesize: i64,
+        upload_ts: String,
+        expiry_ts: String,
+        downloads: i64,
+        expired: bool,
+    }
+
     // Grab the row from the DB.
-    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
+    let row: Option<FileRow> = sqlx::query_as("SELECT admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
         .bind(&hash)
         .fetch_optional(&aps.db)
         .await

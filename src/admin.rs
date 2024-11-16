@@ -1,6 +1,6 @@
 use argon2::{password_hash::PasswordVerifier, Argon2, PasswordHash};
 use axum::{
-    extract::{ConnectInfo, State},
+    extract::State,
     http::StatusCode,
     response::{Html, IntoResponse, Redirect},
     Form,
@@ -13,47 +13,15 @@ use minify_html::minify;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use sqlx::{FromRow, SqlitePool};
-use std::net::SocketAddr;
+use sqlx::FromRow;
 use tera::Context;
 
 use crate::download::pretty_print_delta;
-use crate::upload::UploadFileRow;
 use crate::*;
-
-pub async fn admin_link(State(aps): State<AppState>) -> impl IntoResponse {
-    aps.tera.lock().unwrap().full_reload().unwrap();
-    let context = Context::new();
-    let h = aps
-        .tera
-        .lock()
-        .unwrap()
-        .render("admin_link.html", &context)
-        .unwrap();
-    Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
-}
-
-pub async fn admin_overview(State(aps): State<AppState>) -> impl IntoResponse {
-    aps.tera.lock().unwrap().full_reload().unwrap();
-    let context = Context::new();
-    let h = aps
-        .tera
-        .lock()
-        .unwrap()
-        .render("admin_overview.html", &context)
-        .unwrap();
-    Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
-}
-
-#[derive(Debug, FromRow, Deserialize)]
-struct AdminSession {
-    session_id_sha256sum: String,
-    expiry_ts: String,
-}
 
 pub async fn admin_get(
     State(aps): State<AppState>,
-    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+    // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     jar: CookieJar,
 ) -> impl IntoResponse {
     // Calculate the base64url-encoded sha256sum of the session cookie, if any.
@@ -63,14 +31,24 @@ pub async fn admin_get(
             .unwrap_or_default(),
     ));
 
-    let session_row: Option<AdminSession> = sqlx::query_as("SELECT session_id_sha256sum, expiry_ts FROM admin_sessions WHERE session_id_sha256sum = ? LIMIT 1;").bind(&user_session_sha256sum)
-        .fetch_optional(&aps.db)
-        .await
-        .unwrap();
+    let session_row: Option<i64> =
+        sqlx::query_scalar("SELECT 1 FROM admin_sessions WHERE session_id_sha256sum = ? LIMIT 1;")
+            .bind(&user_session_sha256sum)
+            .fetch_optional(&aps.db)
+            .await
+            .unwrap();
 
     if session_row.is_some() {
+        #[derive(FromRow)]
+        struct FileRow {
+            efd_sha256sum: String,
+            filesize: i64,
+            upload_ts: String,
+            expiry_ts: String,
+            downloads: i64,
+        }
         // Request info about all currently live files.
-        let all_files: Vec<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE expired = 0;")
+        let all_files: Vec<FileRow> = sqlx::query_as("SELECT efd_sha256sum, filesize, upload_ts, expiry_ts, downloads FROM uploaded_files WHERE expired = 0;")
             .fetch_all(&aps.db)
             .await
             .unwrap();
@@ -118,7 +96,12 @@ pub async fn admin_get(
     } else {
         aps.tera.lock().unwrap().full_reload().unwrap();
         let context = Context::new();
-        let h = aps.tera.lock().unwrap().render("admin.html", &context).unwrap();
+        let h = aps
+            .tera
+            .lock()
+            .unwrap()
+            .render("admin.html", &context)
+            .unwrap();
         Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
     }
 }
@@ -132,7 +115,7 @@ pub struct AdminLogin {
 #[axum::debug_handler]
 pub async fn admin_post(
     State(aps): State<AppState>,
-    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+    // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     jar: CookieJar,
     Form(admin_login): Form<AdminLogin>,
 ) -> Result<(CookieJar, Redirect), StatusCode> {

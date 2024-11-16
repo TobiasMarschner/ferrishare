@@ -10,36 +10,23 @@ use minify_html::minify;
 use rand::prelude::*;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use sqlx::{FromRow, SqlitePool};
 use std::{fs::File, io::prelude::*, net::SocketAddr};
 use tera::Context;
 
 use crate::*;
 
-pub async fn upload_page(
-    State(aps): State<AppState>,
-) ->impl IntoResponse {
+pub async fn upload_page(State(aps): State<AppState>) -> impl IntoResponse {
     aps.tera.lock().unwrap().full_reload().unwrap();
     let context = Context::new();
-    let h = aps.tera.lock().unwrap().render("index.html", &context).unwrap();
+    let h = aps
+        .tera
+        .lock()
+        .unwrap()
+        .render("index.html", &context)
+        .unwrap();
     Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
 }
 
-#[derive(Debug, FromRow, Clone)]
-pub struct UploadFileRow {
-    pub id: i64,
-    pub efd_sha256sum: String,
-    pub admin_key_sha256sum: String,
-    pub e_filename: Vec<u8>,
-    pub iv_fd: Vec<u8>,
-    pub iv_fn: Vec<u8>,
-    pub filesize: i64,
-    pub upload_ip: String,
-    pub upload_ts: String,
-    pub expiry_ts: String,
-    pub downloads: i64,
-    pub expired: bool,
-}
 
 pub async fn upload_endpoint(
     State(aps): State<AppState>,

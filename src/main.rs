@@ -5,7 +5,7 @@ use axum::{
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 use std::{
     net::SocketAddr,
-    sync::{Arc, LazyLock, Mutex},
+    sync::{Arc, Mutex},
 };
 use tera::Tera;
 use tower::ServiceBuilder;
@@ -58,7 +58,9 @@ async fn main() {
     let db = SqlitePool::connect(DB_URL).await.unwrap();
 
     // Initialize the templating engine.
-    let tera = Arc::new(Mutex::new(Tera::new("templates/**/*.{html,js}").expect("error during template parsing")));
+    let tera = Arc::new(Mutex::new(
+        Tera::new("templates/**/*.{html,js}").expect("error during template parsing"),
+    ));
 
     // Perform migrations, if necesary.
     let crate_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
@@ -77,8 +79,6 @@ async fn main() {
         }
     }
 
-    println!("migration: {:?}", migration_results);
-
     let aps = AppState { tera, db };
 
     // Define the app's routes.
@@ -88,8 +88,6 @@ async fn main() {
         .route("/file", get(download::download_page))
         .route("/admin", get(admin::admin_get))
         .route("/admin", post(admin::admin_post))
-        .route("/admin_link", get(admin::admin_link))
-        .route("/admin_overview", get(admin::admin_overview))
         .route("/upload_endpoint", post(upload::upload_endpoint))
         .route("/download_endpoint", get(download::download_endpoint))
         .route("/delete_endpoint", post(delete::delete_endpoint))

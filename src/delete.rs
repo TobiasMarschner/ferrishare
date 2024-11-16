@@ -1,16 +1,10 @@
-use axum::{
-    extract::{ConnectInfo, State},
-    http::StatusCode,
-    Json,
-};
+use axum::{extract::State, http::StatusCode, Json};
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
-use sqlx::SqlitePool;
-use std::net::SocketAddr;
+use sqlx::FromRow;
 
 use crate::*;
-use crate::upload::UploadFileRow;
 
 #[derive(Debug, Deserialize)]
 pub struct DeleteRequest {
@@ -20,15 +14,21 @@ pub struct DeleteRequest {
 
 pub async fn delete_endpoint(
     State(aps): State<AppState>,
-    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+    // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     Json(req): Json<DeleteRequest>,
 ) -> StatusCode {
     // Extract the two parameters.
     let efd_sha256sum = req.hash;
     let admin_key = req.admin;
 
+    #[derive(FromRow)]
+    struct FileRow {
+        admin_key_sha256sum: String,
+        expired: bool,
+    }
+
     // Query the databse for the entry.
-    let row: Option<UploadFileRow> = sqlx::query_as("SELECT id, efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
+    let row: Option<FileRow> = sqlx::query_as("SELECT admin_key_sha256sum, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
         .bind(&efd_sha256sum)
         .fetch_optional(&aps.db)
         .await
