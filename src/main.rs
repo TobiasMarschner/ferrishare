@@ -19,47 +19,36 @@ mod delete;
 mod download;
 mod upload;
 
-// It should be cheaper to copy two pointers with one layer of indirection each (AppState + Clone)
-// instead of one pointer with up to two layers of indirection (Arc<AppState>).
+/// Global variables provided to every single request handler.
+/// Contains pointers to the database-pool and HTML-templating-engine.
+///
+/// Implemented as a Cloneable struct containing two Arcs instead as copying around two pointers
+/// should be cheaper than wrapping the whole struct in an Arc and suffering from two layers of
+/// indirection on the database pool (as SqlitePool is itself essentially an Arc).
 #[derive(Debug, Clone)]
 pub struct AppState {
     tera: Arc<Mutex<Tera>>,
     db: SqlitePool,
 }
 
+/// Use a custom error type that can be returned by handlers.
+///
+/// This follows recommendations from the axum documentation:
+/// <https://github.com/tokio-rs/axum/blob/main/examples/anyhow-error-response/src/main.rs>
 pub struct AppError(anyhow::Error);
 
+/// Allows axum to automatically convert our custom AppError into a Response.
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Html(format!(
-                "
-<!DOCTYPE html>
-<html lang=\"en\">
-  <head>
-    <meta charset=\"UTF-8\">
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
-    <title>Internal Server Error (500)</title>
-  </head>
-  <body style=\"font-family: sans-serif;\">
-    <h1 style=\"font-size: 24px; font-weight: 700;\">Internal Server Error</h1>
-    <p style=\"margin-top: 1rem;\">
-      An unforeseen error occurred on the server, sorry about that! Try <a href=\"/\">returning to the homepage</a>.
-    </p>
-    <p style=\"margin-top: 1rem;\">
-      Error details: {}
-    </p>
-  </body>
-</html>
-",
-                self.0
-            )),
-        )
-            .into_response()
+            StatusCode::INTERNAL_SERVER_ERROR, 
+            format!("Internal server error: {}", self.0),
+        ).into_response()
     }
 }
 
+/// Ensure that our custom error type can be built automatically from anyhow::Error.
+/// This allows us to use the ?-operator in request-handlers to easily handle errors.
 impl<E> From<E> for AppError
 where
     E: Into<anyhow::Error>,
@@ -69,6 +58,36 @@ where
     }
 }
 
+/// Define a custom bail!-macro that includes a call to .into(),
+/// automatically converting the anyhow::Error to an AppError.
+///
+/// Based on advice from this GitHub-issue on the anyhow-crate:
+/// <https://github.com/dtolnay/anyhow/issues/112#issuecomment-704549251>
+#[macro_export]
+macro_rules! bail {
+    ($($err:tt)*) => {
+        return Err(anyhow::anyhow!($($err)*).into());
+    };
+}
+
+/// Define a custom ensure!-macro that includes a call to .into(),
+/// automatically converting the anyhow::Error to an AppError.
+///
+/// Based on advice from this GitHub-issue on the anyhow-crate:
+/// <https://github.com/dtolnay/anyhow/issues/112#issuecomment-704549251>
+#[macro_export]
+macro_rules! ensure {
+    ($cond:expr, $($err:tt)*) => {
+        if !$cond {
+            return Err(anyhow::anyhow!($($err)*).into());
+        }
+    };
+}
+
+/// Global definition of the HTML-minifier configuration.
+///
+/// CSS- and JS-minification are enabled, while some more aggressive
+/// and non-compliant settings for HTML have been disabled.
 pub const MINIFY_CFG: minify_html::Cfg = minify_html::Cfg {
     do_not_minify_doctype: true,
     ensure_spec_compliant_unquoted_attribute_values: true,

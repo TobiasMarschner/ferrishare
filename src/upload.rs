@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use axum::{
     extract::{ConnectInfo, Multipart, State},
     http::StatusCode,
@@ -15,7 +16,6 @@ use tera::Context;
 
 use crate::*;
 
-#[axum::debug_handler]
 pub async fn upload_page(State(aps): State<AppState>) -> Result<Html<String>, AppError> {
     aps.tera.lock().await.full_reload()?;
     let context = Context::new();
@@ -28,7 +28,7 @@ pub async fn upload_endpoint(
     State(aps): State<AppState>,
     ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     mut multipart: Multipart,
-) -> (StatusCode, Json<UploadFileResponse>) {
+) -> Result<(StatusCode, Json<UploadFileResponse>), AppError> {
     println!("endpoint reached");
 
     let mut e_filename: Option<Vec<u8>> = None;
@@ -37,33 +37,31 @@ pub async fn upload_endpoint(
     let mut iv_fn: Option<[u8; 12]> = None;
     let mut hour_duration: Option<i64> = None;
 
-    while let Some(field) = multipart.next_field().await.unwrap() {
-        let field_name = field.name().unwrap().to_string();
-        let field_data = field.bytes().await.unwrap();
+    while let Some(field) = multipart.next_field().await? {
+        let field_name = field.name().map_or(String::new(), |e| e.to_string());
+        let field_data = field.bytes().await?;
 
         match field_name.as_str() {
             "e_filename" => {
-                if field_data.len() > 8192 {
-                    todo!("filename over 8KiB (somehow)");
-                }
+                ensure!(
+                    field_data.len() <= 8192,
+                    "encrypted filename is too large (larger than 8KiB)"
+                );
                 e_filename = Some(Vec::from(field_data));
             }
             "e_filedata" => {
-                if field_data.len() > 10485760 {
-                    todo!("file bigger than 10MiB");
-                }
+                ensure!(
+                    field_data.len() <= 10485760,
+                    "encrypted file is too large (larger than 10MiB)"
+                );
                 e_filedata = Some(Vec::from(field_data));
             }
             "iv_fd" => {
-                if field_data.len() != 12 {
-                    todo!("iv_fd is not exactly 12 bytes");
-                }
+                ensure!(field_data.len() == 12, "iv_fd is not exactly 12 bytes long");
                 iv_fd = Some(Vec::from(field_data).try_into().unwrap());
             }
             "iv_fn" => {
-                if field_data.len() != 12 {
-                    todo!("iv_fn is not exactly 12 bytes");
-                }
+                ensure!(field_data.len() == 12, "iv_fn is not exactly 12 bytes long");
                 iv_fn = Some(Vec::from(field_data).try_into().unwrap());
             }
             "duration" => {
@@ -76,16 +74,16 @@ pub async fn upload_endpoint(
                 };
             }
             _ => {
-                todo!("illegal form field");
+                bail!("illegal form field during upload");
             }
         }
     }
 
-    let e_filename = e_filename.unwrap();
-    let e_filedata = e_filedata.unwrap();
-    let iv_fd = iv_fd.unwrap();
-    let iv_fn = iv_fn.unwrap();
-    let hour_duration = hour_duration.unwrap();
+    let e_filename = e_filename.ok_or(anyhow!("no encrypted filename provided"))?;
+    let e_filedata = e_filedata.ok_or(anyhow!("no encrypted filedata provided"))?;
+    let iv_fd = iv_fd.ok_or(anyhow!("no iv_fd provided"))?;
+    let iv_fn = iv_fn.ok_or(anyhow!("no iv_fn provided"))?;
+    let hour_duration = hour_duration.ok_or(anyhow!("no duration provided"))?;
     let filesize = e_filedata.len() as i64;
     let upload_ip = client_address.ip().to_string();
 
@@ -126,12 +124,15 @@ pub async fn upload_endpoint(
     let upload_ts = now.to_rfc3339();
     let expiry_ts = now
         .checked_add_signed(TimeDelta::hours(hour_duration))
-        .unwrap()
+        .ok_or(anyhow!("failed to apply duration to current timestamp"))?
         .to_rfc3339();
 
     // First, store the file using std::io.
-    let mut efile = File::create(format!("data/{efd_sha256sum}")).unwrap();
-    efile.write_all(&e_filedata).unwrap();
+    let mut efile = File::create(format!("data/{efd_sha256sum}"))
+        .map_err(|_| anyhow!("failed to create file on disk"))?;
+    efile
+        .write_all(&e_filedata)
+        .map_err(|_| anyhow!("failed to write encrypted filedata to file on disk"))?;
     drop(efile);
 
     // TODO Calculate entropy of the file.
@@ -151,16 +152,15 @@ pub async fn upload_endpoint(
         .bind(&upload_ts)
         .bind(&expiry_ts)
         .execute(&aps.db)
-        .await
-        .unwrap();
+        .await?;
 
-    (
+    Ok((
         StatusCode::CREATED,
         Json(UploadFileResponse {
             efd_sha256sum,
             admin_key,
         }),
-    )
+    ))
 }
 
 #[derive(Debug, Serialize)]
