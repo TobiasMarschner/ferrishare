@@ -11,6 +11,7 @@ Upload a File - E2EE Fileshare
       <span class="matsym text-3xl">home_storage</span>
       Viewing All Uploaded Files
     </h2>
+    {% if files %}
     <table>
       <thead>
         <tr class="hidden lg:table-row text-left *:font-bold *:p-4 text-gray-500">
@@ -94,6 +95,9 @@ Upload a File - E2EE Fileshare
       {% endfor %}
       </tbody>
     </table>
+    {% else %}
+    <p class="text-center text-xl">No files are currently stored on the server. <a class="classic-link" href="/">Upload one!</a></p>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

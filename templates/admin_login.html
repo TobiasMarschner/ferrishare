@@ -5,6 +5,14 @@ Administration - E2EE Fileshare
 {% endblock %}
 
 {% block content %}
+{% if failed_login %}
+<div id="error-box" class="max-w-lg mx-auto flex-col gap-4 p-8 rounded-xl bg-gray-200 my-8 shadow-lg">
+  <div class="flex items-center gap-4">
+    <span id="error-box-icon" class="matsym text-4xl">warning</span>
+    <span id="error-box-head" class="text-lg font-bold">Login failed, incorrect password</span>
+  </div>
+</div>
+{% endif %}
 <div class="max-w-lg mx-auto shadow-lg bg-gray-100 rounded-xl flex flex-col p-8 gap-8 m-8">
   <h2 class="flex gap-4 text-2xl self-center">
     <span class="matsym text-3xl">manage_accounts</span>

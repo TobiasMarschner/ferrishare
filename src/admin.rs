@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use argon2::{password_hash::PasswordVerifier, Argon2, PasswordHash};
 use axum::{
-    extract::State,
+    extract::{Query, State},
     http::StatusCode,
     response::{Html, IntoResponse, Redirect},
     Form,
@@ -20,6 +22,7 @@ use crate::download::pretty_print_delta;
 use crate::*;
 
 pub async fn admin_get(
+    Query(params): Query<HashMap<String, String>>,
     State(aps): State<AppState>,
     // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     jar: CookieJar,
@@ -107,8 +110,12 @@ pub async fn admin_get(
             .render("admin_overview.html", &context)?;
         Ok(Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?))
     } else {
+        // Check if this is a normal visit or a Redirect from a failed login-attempt.
+        let failed_login = params.get("status").map_or(false, |e| e == "login_failed");
+
         aps.tera.lock().await.full_reload()?;
-        let context = Context::new();
+        let mut context = Context::new();
+        context.insert("failed_login", &failed_login);
         let h = aps.tera.lock().await.render("admin_login.html", &context)?;
         Ok(Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?))
     }
@@ -131,9 +138,12 @@ pub async fn admin_post(
     let admin_pw = PasswordHash::new("$argon2id$v=19$m=32768,t=2,p=1$GqrzTtRpoGeTSuq4$9rKEnqGUHRD1BkLq4IIa3CEFsuzsWwf646249huVPZk").unwrap();
 
     // Verify the provided password.
-    Argon2::default()
-        .verify_password(admin_login.password.as_bytes(), &admin_pw)
-        .map_err(|_| AppError::new(StatusCode::UNAUTHORIZED, "incorrect admin password"))?;
+    let password_result =
+        Argon2::default().verify_password(admin_login.password.as_bytes(), &admin_pw);
+
+    if password_result.is_err() {
+        return Ok((jar, Redirect::to("/admin?status=login_failed")));
+    }
 
     // Create a new session.
     let session_id_bytes = thread_rng().gen::<[u8; 32]>();

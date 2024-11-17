@@ -11,6 +11,18 @@
     src: url('/static/font/MaterialSymbolsRounded.woff2') format('woff2');
   }
 
+  a.classic-link {
+    @apply underline text-blue-600;
+  }
+
+  a.classic-link:hover {
+    @apply text-blue-500;
+  }
+
+  a.classic-link:active {
+    @apply text-blue-700;
+  }
+
   .matsym {
     font-family: 'Material Symbols Rounded';
     font-weight: normal;
