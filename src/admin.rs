@@ -109,7 +109,7 @@ pub async fn admin_get(
     } else {
         aps.tera.lock().await.full_reload()?;
         let context = Context::new();
-        let h = aps.tera.lock().await.render("admin.html", &context)?;
+        let h = aps.tera.lock().await.render("admin_login.html", &context)?;
         Ok(Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?))
     }
 }

@@ -18,7 +18,7 @@ use crate::*;
 pub async fn upload_page(State(aps): State<AppState>) -> Result<Html<String>, AppError> {
     aps.tera.lock().await.full_reload()?;
     let context = Context::new();
-    let h = aps.tera.lock().await.render("index.html", &context)?;
+    let h = aps.tera.lock().await.render("upload.html", &context)?;
     let response_body = String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?;
     Ok(Html(response_body))
 }
