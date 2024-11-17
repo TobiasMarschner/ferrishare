@@ -171,8 +171,9 @@ async fn main() {
         // Main routes
         .route("/", get(upload::upload_page))
         .route("/file", get(download::download_page))
-        .route("/admin", get(admin::admin_get))
-        .route("/admin", post(admin::admin_post))
+        .route("/admin", get(admin::admin_page))
+        .route("/admin_login", post(admin::admin_login))
+        .route("/admin_logout", post(admin::admin_logout))
         .route("/upload_endpoint", post(upload::upload_endpoint))
         .route("/download_endpoint", get(download::download_endpoint))
         .route("/delete_endpoint", post(delete::delete_endpoint))

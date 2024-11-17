@@ -7,10 +7,18 @@ Upload a File - E2EE Fileshare
 {% block content %}
 <div class="m-8">
   <div class="max-w-lg lg:max-w-6xl lg:shadow-lg lg:bg-gray-100 lg:rounded-xl flex flex-col lg:p-8 gap-8 mx-auto">
-    <h2 class="flex gap-4 text-2xl justify-center lg:justify-start">
-      <span class="matsym text-3xl">home_storage</span>
-      Viewing All Uploaded Files
-    </h2>
+    <div class="flex items-stretch">
+      <h2 class="flex gap-4 text-2xl items-center justify-center lg:justify-start mr-4">
+        <span class="matsym text-3xl">home_storage</span>
+        Viewing All Uploaded Files
+      </h2>
+      <form method="post" action="/admin_logout" class="ml-auto flex items-center">
+        <button type="submit" class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+          <span>Logout</span>
+          <span class="matsym">logout</span>
+        </button>
+      </form>
+    </div>
     {% if files %}
     <table>
       <thead>

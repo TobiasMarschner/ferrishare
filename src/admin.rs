@@ -21,7 +21,7 @@ use tera::Context;
 use crate::download::pretty_print_delta;
 use crate::*;
 
-pub async fn admin_get(
+pub async fn admin_page(
     Query(params): Query<HashMap<String, String>>,
     State(aps): State<AppState>,
     // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
@@ -127,8 +127,7 @@ pub struct AdminLogin {
     long_login: Option<String>,
 }
 
-#[axum::debug_handler]
-pub async fn admin_post(
+pub async fn admin_login(
     State(aps): State<AppState>,
     // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     jar: CookieJar,
@@ -182,4 +181,24 @@ pub async fn admin_post(
         .await?;
 
     Ok((jar.add(session_cookie), Redirect::to("/admin")))
+}
+
+pub async fn admin_logout(
+    State(aps): State<AppState>,
+    jar: CookieJar,
+) -> Result<(CookieJar, Redirect), AppError> {
+    // Calculate the base64url-encoded sha256sum of the session cookie, if any.
+    let user_session_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(
+        URL_SAFE_NO_PAD
+            .decode(jar.get("id").map_or("", |e| e.value()))
+            .unwrap_or_default(),
+    ));
+
+    // Remove whatever rows exist with that sha256sum.
+    sqlx::query("DELETE FROM admin_sessions WHERE session_id_sha256sum = ?;")
+        .bind(&user_session_sha256sum)
+        .execute(&aps.db)
+        .await?;
+
+    Ok((jar.remove("id"), Redirect::to("/admin")))
 }
