@@ -146,7 +146,7 @@ async function uploadFile() {
       document.getElementById("fs-success-download-box").style.display = "flex";
       document.getElementById("fs-success-admin-box").style.display = "flex";
     } else {
-      updateFsStatus("error", "Error uploading file! Response code " + xhr.status);
+      updateFsStatus("error", xhr.responseText);
     }
   }
 

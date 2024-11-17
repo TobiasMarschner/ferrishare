@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use axum::{
     extract::{ConnectInfo, Multipart, State},
     http::StatusCode,
@@ -43,29 +42,45 @@ pub async fn upload_endpoint(
 
         match field_name.as_str() {
             "e_filename" => {
-                ensure!(
-                    field_data.len() <= 8192,
-                    "encrypted filename is too large (larger than 8KiB)"
-                );
+                if field_data.len() > 8192 {
+                    return AppError::err(
+                        StatusCode::BAD_REQUEST,
+                        "encrypted filename is too large (larger than 8KiB)",
+                    );
+                }
                 e_filename = Some(Vec::from(field_data));
             }
             "e_filedata" => {
-                ensure!(
-                    field_data.len() <= 10485760,
-                    "encrypted file is too large (larger than 10MiB)"
-                );
+                if field_data.len() > 10485760 {
+                    return AppError::err(
+                        StatusCode::BAD_REQUEST,
+                        "encrypted file is too large (larger than 10MiB)",
+                    );
+                }
                 e_filedata = Some(Vec::from(field_data));
             }
             "iv_fd" => {
-                ensure!(field_data.len() == 12, "iv_fd is not exactly 12 bytes long");
+                if field_data.len() != 12 {
+                    return AppError::err(
+                        StatusCode::BAD_REQUEST,
+                        "iv_fd is not exactly 12 bytes long",
+                    );
+                }
                 iv_fd = Some(Vec::from(field_data).try_into().unwrap());
             }
             "iv_fn" => {
-                ensure!(field_data.len() == 12, "iv_fn is not exactly 12 bytes long");
+                if field_data.len() != 12 {
+                    return AppError::err(
+                        StatusCode::BAD_REQUEST,
+                        "iv_fn is not exactly 12 bytes long",
+                    );
+                }
                 iv_fn = Some(Vec::from(field_data).try_into().unwrap());
             }
             "duration" => {
-                let s = std::str::from_utf8(&field_data).unwrap();
+                let s = std::str::from_utf8(&field_data).map_err(|_| {
+                    AppError::new(StatusCode::BAD_REQUEST, "invalid duration parameter")
+                })?;
                 hour_duration = match s {
                     "hour" => Some(1),
                     "day" => Some(24),
@@ -74,16 +89,19 @@ pub async fn upload_endpoint(
                 };
             }
             _ => {
-                bail!("illegal form field during upload");
+                return AppError::err(StatusCode::BAD_REQUEST, "illegal form field during upload");
             }
         }
     }
 
-    let e_filename = e_filename.ok_or(anyhow!("no encrypted filename provided"))?;
-    let e_filedata = e_filedata.ok_or(anyhow!("no encrypted filedata provided"))?;
-    let iv_fd = iv_fd.ok_or(anyhow!("no iv_fd provided"))?;
-    let iv_fn = iv_fn.ok_or(anyhow!("no iv_fn provided"))?;
-    let hour_duration = hour_duration.ok_or(anyhow!("no duration provided"))?;
+    let e_filename = e_filename
+        .ok_or_else(|| AppError::new(StatusCode::BAD_REQUEST, "no encrypted filename provided"))?;
+    let e_filedata = e_filedata
+        .ok_or_else(|| AppError::new(StatusCode::BAD_REQUEST, "no encrypted filedata provided"))?;
+    let iv_fd = iv_fd.ok_or_else(|| AppError::new(StatusCode::BAD_REQUEST, "no iv_fd provided"))?;
+    let iv_fn = iv_fn.ok_or_else(|| AppError::new(StatusCode::BAD_REQUEST, "no iv_fn provided"))?;
+    let hour_duration = hour_duration
+        .ok_or_else(|| AppError::new(StatusCode::BAD_REQUEST, "no duration provided"))?;
     let filesize = e_filedata.len() as i64;
     let upload_ip = client_address.ip().to_string();
 
@@ -124,15 +142,15 @@ pub async fn upload_endpoint(
     let upload_ts = now.to_rfc3339();
     let expiry_ts = now
         .checked_add_signed(TimeDelta::hours(hour_duration))
-        .ok_or(anyhow!("failed to apply duration to current timestamp"))?
+        .ok_or_else(|| AppError::new500("failed to apply duration to current timestamp"))?
         .to_rfc3339();
 
     // First, store the file using std::io.
     let mut efile = File::create(format!("data/{efd_sha256sum}"))
-        .map_err(|_| anyhow!("failed to create file on disk"))?;
+        .map_err(|e| AppError::new500(format!("failed to create file on disk: {e}")))?;
     efile
         .write_all(&e_filedata)
-        .map_err(|_| anyhow!("failed to write encrypted filedata to file on disk"))?;
+        .map_err(|e| AppError::new500(format!("failed to write encrypted filedata to disk: {e}")))?;
     drop(efile);
 
     // TODO Calculate entropy of the file.
@@ -152,7 +170,8 @@ pub async fn upload_endpoint(
         .bind(&upload_ts)
         .bind(&expiry_ts)
         .execute(&aps.db)
-        .await?;
+        .await
+        .map_err(|e| AppError::new500(format!("failed to insert row into database: {e}")))?;
 
     Ok((
         StatusCode::CREATED,

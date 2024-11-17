@@ -1,7 +1,7 @@
 use axum::{
     extract::MatchedPath,
     http::{Request, StatusCode},
-    response::{Html, IntoResponse, Response},
+    response::{IntoResponse, Response},
     routing::{get, post},
     Router,
 };
@@ -35,15 +35,44 @@ pub struct AppState {
 ///
 /// This follows recommendations from the axum documentation:
 /// <https://github.com/tokio-rs/axum/blob/main/examples/anyhow-error-response/src/main.rs>
-pub struct AppError(anyhow::Error);
+pub struct AppError {
+    status_code: StatusCode,
+    message: String,
+}
+
+impl AppError {
+    /// Create a new Result<T, AppError>::Err with the corresponding StatusCode and message.
+    ///
+    /// Useful for quickly returning a custom error in any of the request handlers.
+    fn err<T>(status_code: StatusCode, message: impl Into<String>) -> Result<T, Self> {
+        Err(Self {
+            status_code,
+            message: message.into(),
+        })
+    }
+
+    /// Create a new AppError with the corresponding StatusCode and message.
+    fn new(status_code: StatusCode, message: impl Into<String>) -> Self {
+        Self {
+            status_code,
+            message: message.into(),
+        }
+    }
+
+    /// Create a new AppError with the corresponding message and StatusCode 500.
+    fn new500(message: impl Into<String>) -> Self {
+        Self::new(StatusCode::INTERNAL_SERVER_ERROR, message)
+    }
+}
 
 /// Allows axum to automatically convert our custom AppError into a Response.
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         (
-            StatusCode::INTERNAL_SERVER_ERROR, 
-            format!("Internal server error: {}", self.0),
-        ).into_response()
+            self.status_code,
+            format!("{}: {}", self.status_code.to_string(), self.message),
+        )
+            .into_response()
     }
 }
 
@@ -54,34 +83,11 @@ where
     E: Into<anyhow::Error>,
 {
     fn from(err: E) -> Self {
-        Self(err.into())
-    }
-}
-
-/// Define a custom bail!-macro that includes a call to .into(),
-/// automatically converting the anyhow::Error to an AppError.
-///
-/// Based on advice from this GitHub-issue on the anyhow-crate:
-/// <https://github.com/dtolnay/anyhow/issues/112#issuecomment-704549251>
-#[macro_export]
-macro_rules! bail {
-    ($($err:tt)*) => {
-        return Err(anyhow::anyhow!($($err)*).into());
-    };
-}
-
-/// Define a custom ensure!-macro that includes a call to .into(),
-/// automatically converting the anyhow::Error to an AppError.
-///
-/// Based on advice from this GitHub-issue on the anyhow-crate:
-/// <https://github.com/dtolnay/anyhow/issues/112#issuecomment-704549251>
-#[macro_export]
-macro_rules! ensure {
-    ($cond:expr, $($err:tt)*) => {
-        if !$cond {
-            return Err(anyhow::anyhow!($($err)*).into());
+        Self {
+            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+            message: err.into().to_string(),
         }
-    };
+    }
 }
 
 /// Global definition of the HTML-minifier configuration.
