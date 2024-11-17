@@ -83,23 +83,23 @@ pub async fn admin_get(
             })
             .collect::<Vec<_>>();
 
-        aps.tera.lock().unwrap().full_reload().unwrap();
+        aps.tera.lock().await.full_reload().unwrap();
         let mut context = Context::new();
         context.insert("files", &ufs);
         let h = aps
             .tera
             .lock()
-            .unwrap()
+            .await
             .render("admin_overview.html", &context)
             .unwrap();
         Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
     } else {
-        aps.tera.lock().unwrap().full_reload().unwrap();
+        aps.tera.lock().await.full_reload().unwrap();
         let context = Context::new();
         let h = aps
             .tera
             .lock()
-            .unwrap()
+            .await
             .render("admin.html", &context)
             .unwrap();
         Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())

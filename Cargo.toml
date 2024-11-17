@@ -4,14 +4,17 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = { version = "0.7", features = ["multipart", "query", "macros"] }
+axum = { version = "0.7", features = ["multipart", "query", "macros", "tracing"] }
 axum-extra = { version = "0", features = ["cookie"]}
 itertools = "0"
 serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0" }
 tower = { version = "0", features = ["util"] }
-tower-http = { version = "0", features = [ "fs", "compression-gzip", "compression-br", "compression-deflate", "compression-zstd" ] }
+tower-http = { version = "0", features = [ "fs", "compression-full", "trace" ] }
+tracing = { version = "0" }
+tracing-subscriber = { version = "0", features = ["env-filter"] }
+anyhow = { version = "1" }
 tera = "1"
 minify-html = "0"
 cookie = { version = "0" }

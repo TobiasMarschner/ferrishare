@@ -145,7 +145,7 @@ pub async fn download_page(
     State(aps): State<AppState>,
     // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
 ) -> (StatusCode, Html<String>) {
-    aps.tera.lock().unwrap().full_reload().unwrap();
+    aps.tera.lock().await.full_reload().unwrap();
 
     let hash = params.get("hash");
     let admin = params.get("admin");
@@ -166,7 +166,7 @@ pub async fn download_page(
             let h = aps
                 .tera
                 .lock()
-                .unwrap()
+                .await
                 .render("download.html", &Context::from_serialize(&dpc).unwrap())
                 .unwrap();
 
@@ -212,7 +212,7 @@ pub async fn download_page(
         let h = aps
             .tera
             .lock()
-            .unwrap()
+            .await
             .render("download.html", &Context::from_serialize(&dpc).unwrap())
             .unwrap();
 
@@ -299,7 +299,7 @@ pub async fn download_page(
     let h = aps
         .tera
         .lock()
-        .unwrap()
+        .await
         .render("download.html", &Context::from_serialize(&dpc).unwrap())
         .unwrap();
 

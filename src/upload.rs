@@ -1,7 +1,7 @@
 use axum::{
     extract::{ConnectInfo, Multipart, State},
     http::StatusCode,
-    response::{Html, IntoResponse},
+    response::Html,
     Json,
 };
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
@@ -15,21 +15,12 @@ use tera::Context;
 
 use crate::*;
 
-pub async fn upload_page(State(aps): State<AppState>) -> Result<impl IntoResponse, StatusCode> {
-    aps.tera
-        .lock()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .full_reload()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+#[axum::debug_handler]
+pub async fn upload_page(State(aps): State<AppState>) -> Result<Html<String>, AppError> {
+    aps.tera.lock().await.full_reload()?;
     let context = Context::new();
-    let h = aps
-        .tera
-        .lock()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
-        .render("index.html", &context)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let response_body = String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let h = aps.tera.lock().await.render("index.html", &context)?;
+    let response_body = String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?;
     Ok(Html(response_body))
 }
 

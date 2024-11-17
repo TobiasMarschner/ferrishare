@@ -1,15 +1,18 @@
 use axum::{
+    extract::MatchedPath,
+    http::{Request, StatusCode},
+    response::{Html, IntoResponse, Response},
     routing::{get, post},
     Router,
 };
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
-use std::{
-    net::SocketAddr,
-    sync::{Arc, Mutex},
-};
+use std::{net::SocketAddr, sync::Arc};
 use tera::Tera;
+use tokio::sync::Mutex;
 use tower::ServiceBuilder;
-use tower_http::{compression::CompressionLayer, services::ServeDir};
+use tower_http::{compression::CompressionLayer, services::ServeDir, trace::TraceLayer};
+use tracing::info_span;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod admin;
 mod delete;
@@ -22,6 +25,48 @@ mod upload;
 pub struct AppState {
     tera: Arc<Mutex<Tera>>,
     db: SqlitePool,
+}
+
+pub struct AppError(anyhow::Error);
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Html(format!(
+                "
+<!DOCTYPE html>
+<html lang=\"en\">
+  <head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
+    <title>Internal Server Error (500)</title>
+  </head>
+  <body style=\"font-family: sans-serif;\">
+    <h1 style=\"font-size: 24px; font-weight: 700;\">Internal Server Error</h1>
+    <p style=\"margin-top: 1rem;\">
+      An unforeseen error occurred on the server, sorry about that! Try <a href=\"/\">returning to the homepage</a>.
+    </p>
+    <p style=\"margin-top: 1rem;\">
+      Error details: {}
+    </p>
+  </body>
+</html>
+",
+                self.0
+            )),
+        )
+            .into_response()
+    }
+}
+
+impl<E> From<E> for AppError
+where
+    E: Into<anyhow::Error>,
+{
+    fn from(err: E) -> Self {
+        Self(err.into())
+    }
 }
 
 pub const MINIFY_CFG: minify_html::Cfg = minify_html::Cfg {
@@ -79,6 +124,21 @@ async fn main() {
         }
     }
 
+    tracing_subscriber::registry()
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                // axum logs rejections from built-in extractors with the `axum::rejection`
+                // target, at `TRACE` level. `axum::rejection=trace` enables showing those events
+                format!(
+                    "{}=debug,tower_http=debug,axum::rejection=trace",
+                    env!("CARGO_CRATE_NAME")
+                )
+                .into()
+            }),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
     let aps = AppState { tera, db };
 
     // Define the app's routes.
@@ -95,6 +155,23 @@ async fn main() {
         .nest_service("/static", ServeDir::new("static"))
         // Enable response compression.
         .layer(ServiceBuilder::new().layer(CompressionLayer::new()))
+        .layer(
+            TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
+                // Log the matched route's path (with placeholders not filled in).
+                // Use request.uri() or OriginalUri if you want the real path.
+                let matched_path = request
+                    .extensions()
+                    .get::<MatchedPath>()
+                    .map(MatchedPath::as_str);
+
+                info_span!(
+                    "http_request",
+                    method = ?request.method(),
+                    matched_path,
+                    some_other_field = tracing::field::Empty,
+                )
+            }),
+        )
         .with_state(aps)
         .into_make_service_with_connect_info::<SocketAddr>();
 
@@ -102,6 +179,8 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:8000")
         .await
         .unwrap();
+
+    tracing::debug!("listeing on {}", listener.local_addr().unwrap());
 
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_handler())
