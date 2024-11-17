@@ -1,4 +1,5 @@
 use axum::{extract::State, http::StatusCode, Json};
+use axum_extra::extract::CookieJar;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -9,12 +10,13 @@ use crate::*;
 #[derive(Debug, Deserialize)]
 pub struct DeleteRequest {
     hash: String,
-    admin: String,
+    admin: Option<String>,
 }
 
 pub async fn delete_endpoint(
     State(aps): State<AppState>,
     // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+    jar: CookieJar,
     Json(req): Json<DeleteRequest>,
 ) -> Result<StatusCode, AppError> {
     // Extract the two parameters.
@@ -43,27 +45,56 @@ pub async fn delete_endpoint(
     // Guaranteed to work.
     let row = row.ok_or_else(|| AppError::new500("illegal unwrap"))?;
 
-    // Compute the sha256-digest of the admin_key.
-    let admin_key_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(
-        URL_SAFE_NO_PAD.decode(admin_key).unwrap_or_default(),
-    ));
+    let mut authorized = false;
 
-    // If the hashes don't match, stop here.
-    if admin_key_sha256sum != row.admin_key_sha256sum {
-        return AppError::err(StatusCode::UNAUTHORIZED, "invalid admin_key");
+    // Compute the sha256-digest of the admin_key if it was provided.
+    if let Some(admin_key) = admin_key {
+        let admin_key_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(
+            URL_SAFE_NO_PAD.decode(admin_key).unwrap_or_default(),
+        ));
+
+        // If the admin key matches, the request can go through.
+        if admin_key_sha256sum == row.admin_key_sha256sum {
+            authorized = true;
+        }
     }
 
-    // Looks like the request is valid.
-    // Update the expired-bool in the databse.
-    sqlx::query("UPDATE uploaded_files SET expired = 1 WHERE efd_sha256sum = ?;")
-        .bind(&efd_sha256sum)
-        .execute(&aps.db)
+    // No matching admin_key? Check for session_id, then.
+    if !authorized {
+        // Calculate the base64url-encoded sha256sum of the session cookie, if any.
+        let user_session_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(
+            URL_SAFE_NO_PAD
+                .decode(jar.get("id").map_or("", |e| e.value()))
+                .unwrap_or_default(),
+        ));
+
+        let session_row: Option<i64> = sqlx::query_scalar(
+            "SELECT 1 FROM admin_sessions WHERE session_id_sha256sum = ? LIMIT 1;",
+        )
+        .bind(&user_session_sha256sum)
+        .fetch_optional(&aps.db)
         .await?;
 
-    // TODO Actually delete the file, too.
-    // TODO We'll probably want to refactor this since deletions involve the same steps but can
-    // happen either as the result of a manual request like this, or as the result of timed
-    // expiry.
+        if session_row.is_some() {
+            authorized = true;
+        }
+    }
 
-    Ok(StatusCode::OK)
+    // Now delete the file if we're authroized.
+    if authorized {
+        // Update the expired-bool in the databse.
+        sqlx::query("UPDATE uploaded_files SET expired = 1 WHERE efd_sha256sum = ?;")
+            .bind(&efd_sha256sum)
+            .execute(&aps.db)
+            .await?;
+
+        // TODO Actually delete the file, too.
+        // TODO We'll probably want to refactor this since deletions involve the same steps but can
+        // happen either as the result of a manual request like this, or as the result of timed
+        // expiry.
+
+        Ok(StatusCode::OK)
+    } else {
+        AppError::err(StatusCode::UNAUTHORIZED, "unauthorized")
+    }
 }

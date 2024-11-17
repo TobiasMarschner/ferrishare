@@ -78,13 +78,6 @@ Upload a File - E2EE Fileshare
               </div>
             </div>
           </td>
-          <!-- <td class="flex lg:table-cell flex-row gap-4"> -->
-          <!--   <div class="lg:hidden matsym text-2xl text-gray-500">visibility</div> -->
-          <!--   <div class="flex flex-col"> -->
-          <!--     <div class="lg:hidden text-gray-500">Views</div> -->
-          <!--     <div class="text-xl lg:text-lg lg:text-center">23</div> -->
-          <!--   </div> -->
-          <!-- </td> -->
           <td class="flex lg:table-cell flex-row gap-4">
             <div class="lg:hidden matsym text-2xl text-gray-500">download</div>
             <div class="flex flex-col">
@@ -93,9 +86,9 @@ Upload a File - E2EE Fileshare
             </div>
           </td>
           <td>
-            <button type="button" id="dl-button"
-              class="w-full lg:w-auto lg:mx-auto flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
-              <span class="matsym">delete</span>
+            <button type="button" data-efdhash="{{ file.efd_sha256sum }}"
+              class="admin-delete-button no-underline w-full lg:w-auto lg:mx-auto flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed">
+              <span class="matsym no-underline">delete</span>
               <span class="lg:hidden">Delete from Server</span>
             </button>
           </td>
@@ -108,4 +101,37 @@ Upload a File - E2EE Fileshare
     {% endif %}
   </div>
 </div>
+<script>
+async function delete_handler(btn, event) {
+  // Disable the button while the request is being processed.
+  btn.disabled = true;
+
+  // Create the new request to the deletion-endpoint.
+  let xhr = new XMLHttpRequest();
+  xhr.open('POST', '/delete_endpoint');
+  xhr.setRequestHeader('Content-Type', 'application/json');
+
+  xhr.onload = () => {
+    if (xhr.status === 200) {
+      // Successful? Strike through all values in the row. (first five <td>s in it)
+      for (let i = 0; i < 5; i++) {
+        let item = btn.parentElement.parentElement.childNodes[i];
+        item.classList.add("line-through");
+        item.classList.add("text-gray-400");
+      }
+    } else {
+      // No fancy interface here, just console.
+      console.log(xhr.responseText);
+    }
+  }
+
+  xhr.send(JSON.stringify({
+    hash: btn.dataset.efdhash,
+  }))
+}
+
+for (btn of document.querySelectorAll(".admin-delete-button")) {
+  btn.addEventListener("click", delete_handler.bind(null, btn));
+}
+</script>
 {% endblock %}
