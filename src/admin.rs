@@ -23,7 +23,7 @@ pub async fn admin_get(
     State(aps): State<AppState>,
     // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     jar: CookieJar,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     // Calculate the base64url-encoded sha256sum of the session cookie, if any.
     let user_session_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(
         URL_SAFE_NO_PAD
@@ -35,8 +35,7 @@ pub async fn admin_get(
         sqlx::query_scalar("SELECT 1 FROM admin_sessions WHERE session_id_sha256sum = ? LIMIT 1;")
             .bind(&user_session_sha256sum)
             .fetch_optional(&aps.db)
-            .await
-            .unwrap();
+            .await?;
 
     if session_row.is_some() {
         #[derive(FromRow)]
@@ -50,8 +49,7 @@ pub async fn admin_get(
         // Request info about all currently live files.
         let all_files: Vec<FileRow> = sqlx::query_as("SELECT efd_sha256sum, filesize, upload_ts, expiry_ts, downloads FROM uploaded_files WHERE expired = 0;")
             .fetch_all(&aps.db)
-            .await
-            .unwrap();
+            .await?;
 
         #[derive(Debug, Serialize)]
         struct UploadedFile {
@@ -69,40 +67,50 @@ pub async fn admin_get(
         let ufs = all_files
             .into_iter()
             .map(|e| {
-                let uts = DateTime::parse_from_rfc3339(&e.upload_ts).unwrap();
-                let ets = DateTime::parse_from_rfc3339(&e.expiry_ts).unwrap();
+                let uts = DateTime::parse_from_rfc3339(&e.upload_ts).ok();
+                let ets = DateTime::parse_from_rfc3339(&e.expiry_ts).ok();
                 UploadedFile {
                     efd_sha256sum: e.efd_sha256sum,
                     formatted_filesize: format!("{:.2} MB", e.filesize as f64 / 1_000_000.0),
-                    upload_ts_pretty: format!("{} ago", pretty_print_delta(now, uts)),
-                    upload_ts: uts.format("(%c)").to_string(),
-                    expiry_ts_pretty: pretty_print_delta(now, ets),
-                    expiry_ts: ets.format("(%c)").to_string(),
+                    upload_ts_pretty: if let Some(uts) = uts {
+                        format!("{} ago", pretty_print_delta(now, uts))
+                    } else {
+                        "N/A".to_string()
+                    },
+                    upload_ts: if let Some(uts) = uts {
+                        uts.format("(%c)").to_string()
+                    } else {
+                        "(invalid timestamp)".to_string()
+                    },
+                    expiry_ts_pretty: if let Some(ets) = ets {
+                        pretty_print_delta(now, ets)
+                    } else {
+                        "N/A".to_string()
+                    },
+                    expiry_ts: if let Some(ets) = ets {
+                        ets.format("(%c)").to_string()
+                    } else {
+                        "(invalid timestamp)".to_string()
+                    },
                     downloads: e.downloads,
                 }
             })
             .collect::<Vec<_>>();
 
-        aps.tera.lock().await.full_reload().unwrap();
+        aps.tera.lock().await.full_reload()?;
         let mut context = Context::new();
         context.insert("files", &ufs);
         let h = aps
             .tera
             .lock()
             .await
-            .render("admin_overview.html", &context)
-            .unwrap();
-        Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
+            .render("admin_overview.html", &context)?;
+        Ok(Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?))
     } else {
-        aps.tera.lock().await.full_reload().unwrap();
+        aps.tera.lock().await.full_reload()?;
         let context = Context::new();
-        let h = aps
-            .tera
-            .lock()
-            .await
-            .render("admin.html", &context)
-            .unwrap();
-        Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap())
+        let h = aps.tera.lock().await.render("admin.html", &context)?;
+        Ok(Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?))
     }
 }
 
@@ -118,14 +126,14 @@ pub async fn admin_post(
     // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     jar: CookieJar,
     Form(admin_login): Form<AdminLogin>,
-) -> Result<(CookieJar, Redirect), StatusCode> {
+) -> Result<(CookieJar, Redirect), AppError> {
     // TODO Obviously read this from a config, this is just for dev purposes.
     let admin_pw = PasswordHash::new("$argon2id$v=19$m=32768,t=2,p=1$GqrzTtRpoGeTSuq4$9rKEnqGUHRD1BkLq4IIa3CEFsuzsWwf646249huVPZk").unwrap();
 
     // Verify the provided password.
     Argon2::default()
         .verify_password(admin_login.password.as_bytes(), &admin_pw)
-        .map_err(|_| StatusCode::UNAUTHORIZED)?;
+        .map_err(|_| AppError::new(StatusCode::UNAUTHORIZED, "incorrect admin password"))?;
 
     // Create a new session.
     let session_id_bytes = thread_rng().gen::<[u8; 32]>();
@@ -154,15 +162,14 @@ pub async fn admin_post(
             Some(_) => 30,
             None => 1,
         }))
-        .unwrap()
+        .ok_or_else(|| AppError::new500("failed to apply duration to current timestamp"))?
         .to_rfc3339();
 
     sqlx::query("INSERT INTO admin_sessions (session_id_sha256sum, expiry_ts) VALUES (?, ?);")
         .bind(&session_id_sha256sum)
         .bind(&expiry_ts)
         .execute(&aps.db)
-        .await
-        .unwrap();
+        .await?;
 
     Ok((jar.add(session_cookie), Redirect::to("/admin")))
 }

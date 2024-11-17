@@ -21,17 +21,20 @@ pub async fn download_endpoint(
     Query(params): Query<HashMap<String, String>>,
     State(aps): State<AppState>,
     // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
-) -> (StatusCode, impl IntoResponse) {
+) -> Result<(StatusCode, impl IntoResponse), AppError> {
     // Only the file parameter is permitted here.
     let hash = params.get("hash");
 
     // First, ensure the given parameters are correct.
-    if params.get("hash").is_none() || params.len() != 1 {
-        return (StatusCode::BAD_REQUEST, Body::empty());
+    if hash.is_none() || params.len() != 1 {
+        return AppError::err(
+            StatusCode::BAD_REQUEST,
+            "provide only the 'hash' query parameter",
+        );
     }
 
     // Guaranteed to work.
-    let hash = hash.unwrap();
+    let hash = hash.ok_or_else(|| AppError::new500("illegal unwrap"))?;
 
     // TODO: Think about what happens if the file is deleted / expires as it's being downloaded.
 
@@ -45,23 +48,25 @@ pub async fn download_endpoint(
     )
     .bind(&hash)
     .fetch_optional(&aps.db)
-    .await
-    .unwrap();
+    .await?;
 
     // Return 404 if the file genuinely does not exist or has already expired.
     if row.as_ref().map_or(true, |e| e.1) {
-        return (StatusCode::NOT_FOUND, Body::empty());
+        return AppError::err(StatusCode::NOT_FOUND, "file not found or expired");
     }
 
     // Guaranteed to work.
-    let row = row.unwrap();
+    let row = row.ok_or_else(|| AppError::new500("illegal unwrap"))?;
 
     // Open the AsyncRead-stream for the file.
     let file = match tokio::fs::File::open(format!("data/{}", hash)).await {
         Ok(file) => file,
         Err(_) => {
             // A file being in the DB but not on disk should not be possible.
-            return (StatusCode::INTERNAL_SERVER_ERROR, Body::empty());
+            return AppError::err(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "file in database but not on disk",
+            );
         }
     };
 
@@ -72,10 +77,9 @@ pub async fn download_endpoint(
         .bind(&(row.0 + 1))
         .bind(&hash)
         .execute(&aps.db)
-        .await
-        .unwrap();
+        .await?;
 
-    (StatusCode::OK, body)
+    Ok((StatusCode::OK, body))
 }
 
 // Use a struct for the download page template parameters.
@@ -121,7 +125,7 @@ pub fn pretty_print_delta<Tz1: TimeZone, Tz2: TimeZone>(
 ) -> String {
     let time_delta = a.signed_duration_since(b);
 
-    let values = vec![
+    let values = [
         time_delta.num_weeks(),
         time_delta.num_days() % 7,
         time_delta.num_hours() % 24,
@@ -130,7 +134,7 @@ pub fn pretty_print_delta<Tz1: TimeZone, Tz2: TimeZone>(
     if values.iter().all(|v| *v == 0) {
         return "<1m".into();
     }
-    let characters = vec!['w', 'd', 'h', 'm'];
+    let characters = ['w', 'd', 'h', 'm'];
     values
         .iter()
         .map(|v| v.abs())
@@ -144,8 +148,8 @@ pub async fn download_page(
     Query(params): Query<HashMap<String, String>>,
     State(aps): State<AppState>,
     // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
-) -> (StatusCode, Html<String>) {
-    aps.tera.lock().await.full_reload().unwrap();
+) -> Result<(StatusCode, Html<String>), AppError> {
+    aps.tera.lock().await.full_reload()?;
 
     let hash = params.get("hash");
     let admin = params.get("admin");
@@ -167,18 +171,17 @@ pub async fn download_page(
                 .tera
                 .lock()
                 .await
-                .render("download.html", &Context::from_serialize(&dpc).unwrap())
-                .unwrap();
+                .render("download.html", &Context::from_serialize(&dpc)?)?;
 
-            return (
+            return Ok((
                 StatusCode::BAD_REQUEST,
-                Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap()),
-            );
+                Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?),
+            ));
         }
     }
 
     // Guaranteed to work thanks to the previous match.
-    let hash = hash.unwrap();
+    let hash = hash.ok_or_else(|| AppError::new500("illegal unwrap"))?;
 
     #[derive(FromRow)]
     struct FileRow {
@@ -197,8 +200,7 @@ pub async fn download_page(
     let row: Option<FileRow> = sqlx::query_as("SELECT admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
         .bind(&hash)
         .fetch_optional(&aps.db)
-        .await
-        .unwrap();
+        .await?;
 
     // Return 404 if the file genuinely does not exist or has already expired.
     if row.as_ref().map_or(true, |e| e.expired) {
@@ -213,17 +215,16 @@ pub async fn download_page(
             .tera
             .lock()
             .await
-            .render("download.html", &Context::from_serialize(&dpc).unwrap())
-            .unwrap();
+            .render("download.html", &Context::from_serialize(&dpc)?)?;
 
-        return (
+        return Ok((
             StatusCode::NOT_FOUND,
-            Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap()),
-        );
+            Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?),
+        ));
     }
 
     // Guaranteed to work.
-    let row = row.unwrap();
+    let row = row.ok_or_else(|| AppError::new500("illegal unwrap"))?;
 
     // Extract several variables that we'll need in all cases.
     let filesize = row.filesize.to_string();
@@ -237,8 +238,8 @@ pub async fn download_page(
     let downloads = row.downloads.to_string();
 
     // Timestamps
-    let uts = DateTime::parse_from_rfc3339(&row.upload_ts).unwrap();
-    let ets = DateTime::parse_from_rfc3339(&row.expiry_ts).unwrap();
+    let uts = DateTime::parse_from_rfc3339(&row.upload_ts)?;
+    let ets = DateTime::parse_from_rfc3339(&row.expiry_ts)?;
     let now = Utc::now();
 
     let upload_ts = uts.format("(%c)").to_string();
@@ -254,8 +255,9 @@ pub async fn download_page(
         // 1) Turn the base64url-encoded admin_key to binary.
         // 2) Calculate the sha256sum of that key in binary format.
         // 3) Reencode the digest to base64url.
-        let admin_key_sha256sum =
-            URL_SAFE_NO_PAD.encode(Sha256::digest(URL_SAFE_NO_PAD.decode(admin).unwrap()));
+        let admin_key_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(
+            URL_SAFE_NO_PAD.decode(admin).unwrap_or_default(),
+        ));
 
         // Now, check if the hashes match.
         if admin_key_sha256sum == row.admin_key_sha256sum {
@@ -300,12 +302,11 @@ pub async fn download_page(
         .tera
         .lock()
         .await
-        .render("download.html", &Context::from_serialize(&dpc).unwrap())
-        .unwrap();
+        .render("download.html", &Context::from_serialize(&dpc)?)?;
 
     // Minify and return.
-    (
+    Ok((
         StatusCode::OK,
-        Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG)).unwrap()),
-    )
+        Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?),
+    ))
 }

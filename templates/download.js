@@ -157,7 +157,7 @@ document.getElementById("download-button").addEventListener("click", (_) => {
 
       updateDlStatus('success', "File downloaded");
     } else {
-      updateDlStatus("error", "Error during file download");
+      updateDlStatus("error", new TextDecoder().decode(xhr.response));
     }
   }
 
@@ -193,7 +193,7 @@ document.getElementById("delete-button").addEventListener("click", () => {
       document.getElementById('error-box').style.display = 'flex';
       document.getElementById('dl-box').style.display = 'none';
     } else {
-      updateDlStatus('error', 'Error during deletion request')
+      updateDlStatus('error', xhr.responseText);
       document.getElementById('download-button').disabled = false;
       document.getElementById('delete-button').disabled = false;
     }
