@@ -92,6 +92,8 @@ pub async fn delete_endpoint(
         // TODO We'll probably want to refactor this since deletions involve the same steps but can
         // happen either as the result of a manual request like this, or as the result of timed
         // expiry.
+        
+        tracing::info!(efd_sha256sum, "deleted file");
 
         Ok(StatusCode::OK)
     } else {

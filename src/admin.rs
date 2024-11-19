@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use argon2::{password_hash::PasswordVerifier, Argon2, PasswordHash};
 use axum::{
     extract::{Query, State},
-    http::StatusCode,
     response::{Html, IntoResponse, Redirect},
     Form,
 };
@@ -165,12 +164,11 @@ pub async fn admin_login(
         session_cookie = session_cookie.max_age(Duration::days(30));
     }
 
+    // Session validity is either one or 30 days, depending on the login checkbox.
+    let duration_days = admin_login.long_login.map_or(1, |_| 30);
     // Calculate the RFC3339 timestamp for session expiry, either in one or 30 days.
     let expiry_ts = Utc::now()
-        .checked_add_signed(TimeDelta::days(match admin_login.long_login {
-            Some(_) => 30,
-            None => 1,
-        }))
+        .checked_add_signed(TimeDelta::days(duration_days))
         .ok_or_else(|| AppError::new500("failed to apply duration to current timestamp"))?
         .to_rfc3339();
 
@@ -179,6 +177,8 @@ pub async fn admin_login(
         .bind(&expiry_ts)
         .execute(&aps.db)
         .await?;
+
+    tracing::info!(session_id_sha256sum, duration_days, "new admin login");
 
     Ok((jar.add(session_cookie), Redirect::to("/admin")))
 }
@@ -195,10 +195,12 @@ pub async fn admin_logout(
     ));
 
     // Remove whatever rows exist with that sha256sum.
-    sqlx::query("DELETE FROM admin_sessions WHERE session_id_sha256sum = ?;")
+    let db_results = sqlx::query("DELETE FROM admin_sessions WHERE session_id_sha256sum = ?;")
         .bind(&user_session_sha256sum)
         .execute(&aps.db)
         .await?;
+
+    tracing::info!(user_session_sha256sum, "logging out {0} admin session(s)", db_results.rows_affected());
 
     Ok((jar.remove("id"), Redirect::to("/admin")))
 }

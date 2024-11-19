@@ -1,19 +1,19 @@
 use axum::{
-    extract::{ConnectInfo, MatchedPath},
-    http::{Request, StatusCode},
+    extract::ConnectInfo,
+    http::StatusCode,
     middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::{get, post},
     Router,
 };
+use itertools::Itertools;
 use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
 use std::{net::SocketAddr, sync::Arc};
 use tera::Tera;
 use tokio::sync::Mutex;
 use tower::ServiceBuilder;
-use tower_http::{compression::CompressionLayer, services::ServeDir, trace::TraceLayer};
-use tracing::{info_span, Instrument, Level};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tower_http::{compression::CompressionLayer, services::ServeDir};
+use tracing::{Instrument, Level};
 
 mod admin;
 mod delete;
@@ -69,8 +69,11 @@ impl AppError {
 /// Allows axum to automatically convert our custom AppError into a Response.
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        if self.status_code.is_client_error() {
+        // Report client-side errors that are not 404s as warnings.
+        // This might help identify implementation problems in the frontent.
+        if self.status_code.is_client_error() && self.status_code != StatusCode::NOT_FOUND {
             tracing::warn!(status_code = self.status_code.to_string(), self.message);
+        // 5XXs are always severe errors, even if the server doesn't crash
         } else if self.status_code.is_server_error() {
             tracing::error!(status_code = self.status_code.to_string(), self.message);
         }
@@ -135,24 +138,32 @@ async fn custom_tracing(
 ) -> Response {
     // Extract all relevant info from the request.
     let path = request.uri().path();
-    let query = request.uri().query();
+    let query = request.uri().query().map(|v| {
+        // Remove "admin=XXX" query parameter since the plaintext admin_key of a single file
+        // is not supposed to be stored anywhere on the server, not even in the logs.
+        v.split('&')
+            .map(|p| {
+                if p.starts_with("admin=") {
+                    "admin=<REDACTED IN LOGS>"
+                } else {
+                    p
+                }
+            })
+            .join("&")
+    });
     // let version = request.version();
     let method = request.method();
-    let cookies = request
-        .headers()
-        .get("cookie")
-        .map(|v| v.to_str().unwrap_or_default())
-        .unwrap_or_default();
 
     // Create the http_request span out of this info.
-    let span = tracing::info_span!("http_request", %client, path, query, ?method, ?cookies);
+    let span = tracing::info_span!("http_request", %client, path, query, ?method);
 
     // Instrument the rest of the stack with this span.
     async move {
-        // Fire off an event for the received request.
-        tracing::info!("received request");
-        // And actually process the request.
-        next.run(request).await
+        // Actually process the request.
+        let response = next.run(request).await;
+        // Afterwards fire off an event so that the request + response StatusCode gets logged.
+        tracing::info!(response.status = %response.status(), "processed request");
+        response
     }
     .instrument(span)
     .await
