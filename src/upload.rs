@@ -171,7 +171,7 @@ pub async fn upload_endpoint(
         .await
         .map_err(|e| AppError::new500(format!("failed to insert row into database: {e}")))?;
 
-    tracing::info!(efd_sha256sum, filesize, upload_ip, hour_duration, "succesfully created new file");
+    tracing::info!(efd_sha256sum, filesize, hour_duration, "succesfully created new file");
 
     Ok((
         StatusCode::CREATED,
