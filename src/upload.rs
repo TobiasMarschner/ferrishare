@@ -28,8 +28,6 @@ pub async fn upload_endpoint(
     ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<UploadFileResponse>), AppError> {
-    println!("endpoint reached");
-
     let mut e_filename: Option<Vec<u8>> = None;
     let mut e_filedata: Option<Vec<u8>> = None;
     let mut iv_fd: Option<[u8; 12]> = None;
@@ -172,6 +170,8 @@ pub async fn upload_endpoint(
         .execute(&aps.db)
         .await
         .map_err(|e| AppError::new500(format!("failed to insert row into database: {e}")))?;
+
+    tracing::info!(efd_sha256sum, filesize, upload_ip, hour_duration, "succesfully created new file");
 
     Ok((
         StatusCode::CREATED,

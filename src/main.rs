@@ -11,7 +11,7 @@ use tera::Tera;
 use tokio::sync::Mutex;
 use tower::ServiceBuilder;
 use tower_http::{compression::CompressionLayer, services::ServeDir, trace::TraceLayer};
-use tracing::info_span;
+use tracing::{info_span, Level};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod admin;
@@ -115,6 +115,12 @@ const DB_URL: &str = "sqlite://sqlite.db";
 
 #[tokio::main]
 async fn main() {
+    // Set up `tracing` (logging).
+    // We're simply using the default formatting subscriber provided by `tracing_subscriber`.
+    let subscriber = tracing_subscriber::fmt()
+        .with_max_level(Level::INFO)
+        .init();
+
     // Create the database if it doesn't already exist.
     if !Sqlite::database_exists(DB_URL).await.unwrap_or(false) {
         println!("Creating databse {DB_URL}");
@@ -149,21 +155,6 @@ async fn main() {
         }
     }
 
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                // axum logs rejections from built-in extractors with the `axum::rejection`
-                // target, at `TRACE` level. `axum::rejection=trace` enables showing those events
-                format!(
-                    "{}=debug,tower_http=debug,axum::rejection=trace",
-                    env!("CARGO_CRATE_NAME")
-                )
-                .into()
-            }),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-
     let aps = AppState { tera, db };
 
     // Define the app's routes.
@@ -181,22 +172,11 @@ async fn main() {
         .nest_service("/static", ServeDir::new("static"))
         // Enable response compression.
         .layer(ServiceBuilder::new().layer(CompressionLayer::new()))
+        // Log all requests using the `tracing` crate.
         .layer(
-            TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
-                // Log the matched route's path (with placeholders not filled in).
-                // Use request.uri() or OriginalUri if you want the real path.
-                let matched_path = request
-                    .extensions()
-                    .get::<MatchedPath>()
-                    .map(MatchedPath::as_str);
-
-                info_span!(
-                    "http_request",
-                    method = ?request.method(),
-                    matched_path,
-                    some_other_field = tracing::field::Empty,
-                )
-            }),
+            TraceLayer::new_for_http()
+                .make_span_with(tower_http::trace::DefaultMakeSpan::new().level(Level::INFO))
+                .on_response(tower_http::trace::DefaultOnResponse::new().level(Level::INFO)),
         )
         .with_state(aps)
         .into_make_service_with_connect_info::<SocketAddr>();
@@ -221,5 +201,5 @@ async fn shutdown_handler() {
         .expect("failed to install CTRL+C handler");
 
     // Received one? Print that, then hyper will shut down the server.
-    println!("Received shutdown signal ...");
+    tracing::info!("received signal to shut down server");
 }
