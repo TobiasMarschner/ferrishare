@@ -1,14 +1,14 @@
 use crate::*;
 
-/// Regularly cleans up expired files and sessions.
-///
-/// Every query
+/// Regularly clean up expired files and sessions.
 #[tracing::instrument(level = "info", skip(aps))]
 pub async fn cleanup_cronjob(aps: AppState) {
     // Run indefinitely.
     loop {
-        // Wait some time.
-        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        // It's completely fine if this only runs every 15 minutes.
+        // All of the queries are written in a way that they check the expiration
+        // time and will refuse to serve resources that still exist but have already expired.
+        tokio::time::sleep(tokio::time::Duration::from_secs(900)).await;
 
         // Now query all files from the database.
         #[derive(Debug, FromRow)]

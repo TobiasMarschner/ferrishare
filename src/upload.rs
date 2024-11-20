@@ -10,8 +10,9 @@ use minify_html::minify;
 use rand::prelude::*;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use std::{fs::File, io::prelude::*, net::SocketAddr};
+use std::net::SocketAddr;
 use tera::Context;
+use tokio::io::AsyncWriteExt;
 
 use crate::*;
 
@@ -143,13 +144,15 @@ pub async fn upload_endpoint(
         .ok_or_else(|| AppError::new500("failed to apply duration to current timestamp"))?
         .to_rfc3339();
 
-    // First, store the file using std::io.
-    let mut efile = File::create(format!("data/{efd_sha256sum}"))
-        .map_err(|e| AppError::new500(format!("failed to create file on disk: {e}")))?;
-    efile
+    // Store the file using asynchronous IO.
+    tokio::fs::File::create(format!("data/{efd_sha256sum}"))
+        .await
+        .map_err(|e| AppError::new500(format!("failed to create file on disk: {e}")))?
         .write_all(&e_filedata)
-        .map_err(|e| AppError::new500(format!("failed to write encrypted filedata to disk: {e}")))?;
-    drop(efile);
+        .await
+        .map_err(|e| {
+            AppError::new500(format!("failed to write encrypted filedata to disk: {e}"))
+        })?;
 
     // TODO Calculate entropy of the file.
     // TODO Also check for magic number.
@@ -171,7 +174,12 @@ pub async fn upload_endpoint(
         .await
         .map_err(|e| AppError::new500(format!("failed to insert row into database: {e}")))?;
 
-    tracing::info!(efd_sha256sum, filesize, hour_duration, "succesfully created new file");
+    tracing::info!(
+        efd_sha256sum,
+        filesize,
+        hour_duration,
+        "succesfully created new file"
+    );
 
     Ok((
         StatusCode::CREATED,
