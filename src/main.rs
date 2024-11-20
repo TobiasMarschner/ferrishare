@@ -24,6 +24,7 @@ mod download;
 mod error_handling;
 mod upload;
 mod auto_cleanup;
+mod config;
 
 /// Global variables provided to every single request handler.
 /// Contains pointers to the database-pool and HTML-templating-engine.
@@ -109,6 +110,7 @@ async fn custom_tracing(
 
 #[tokio::main]
 async fn main() {
+    config::setup_config();
     // Set up `tracing` (logging).
     // Use the default formatting subscriber provided by `tracing_subscriber`.
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
