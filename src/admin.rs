@@ -136,8 +136,12 @@ pub async fn admin_login(
     jar: CookieJar,
     Form(admin_login): Form<AdminLogin>,
 ) -> Result<(CookieJar, Redirect), AppError> {
-    // TODO Obviously read this from a config, this is just for dev purposes.
-    let admin_pw = PasswordHash::new("$argon2id$v=19$m=32768,t=2,p=1$GqrzTtRpoGeTSuq4$9rKEnqGUHRD1BkLq4IIa3CEFsuzsWwf646249huVPZk").unwrap();
+    // Parse the config's PasswordHash
+    let admin_pw = PasswordHash::new(&aps.conf.admin_password_hash).map_err(|e| {
+        AppError::new500(format!(
+            "the admin password hash in config.toml could not be parsed correctly: {e}"
+        ))
+    })?;
 
     // Verify the provided password.
     let password_result =

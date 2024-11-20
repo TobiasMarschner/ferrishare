@@ -19,10 +19,8 @@ Still to do:
   - [ ] subset the icon font, maybe remove the ligatures, and definitely remove them from the accessibility tree
   - [ ] run lighthouse on the final app to iron out any kinks
 - [ ] Set up WAL mode on sqlite and other possible settings
-- [ ] Proper app configuration
-  - [ ] There's lots of variables that need configuring, unify all of this.
-  - [ ] URL/HOSTNAME on which we're running
-  - [ ] IP and PORT that we're binding on
+- [x] Proper app configuration
+  - [x] IP and PORT that we're binding on
     - [ ] Special considerations for IPv6 support?
   - [ ] Rate Limit Settings
     - [ ] No. of requests per IP, No. of uploads per IP
@@ -30,9 +28,11 @@ Still to do:
     - [ ] The WebCrypto-API *requires* a secure context, meaning this site has to be served over HTTPS
     - [ ] Maybe we'll add TLS support in the server, but really, we should reverse proxy this thing
     - [ ] Trusted IPs for X-Forwarded-For, and also properly integrating that header, ofc
-  - [ ] Maximum allowed filesize
+  - [x] Maximum allowed filesize
     - [ ] Remember, we need to adjust the maximum allowed request length in axum, too.
-  - [ ] Some kind of setup routine where the admin can set the ADMIN PASSWORD.
+  - [x] File quota
+    - [ ] This still needs to be implemented, btw
+  - [x] Some kind of setup routine where the admin can set the ADMIN PASSWORD.
 - [ ] Rate Limiting
 - [ ] Documentation
   - [ ] Code-level documentation, both within and outside of code
