@@ -1,8 +1,7 @@
 use axum::{
     extract::ConnectInfo,
-    http::StatusCode,
     middleware::{self, Next},
-    response::{IntoResponse, Response},
+    response::Response,
     routing::{get, post},
     Router,
 };
@@ -15,10 +14,16 @@ use tower::ServiceBuilder;
 use tower_http::{compression::CompressionLayer, services::ServeDir};
 use tracing::{Instrument, Level};
 
+// Use 'pub use' here so that all the normal modules only have
+// to import 'crate::*' instead of also having to import 'crate::error_handling::AppError'.
+pub use error_handling::AppError;
+
 mod admin;
 mod delete;
 mod download;
+mod error_handling;
 mod upload;
+mod auto_cleanup;
 
 /// Global variables provided to every single request handler.
 /// Contains pointers to the database-pool and HTML-templating-engine.
@@ -30,73 +35,6 @@ mod upload;
 pub struct AppState {
     tera: Arc<Mutex<Tera>>,
     db: SqlitePool,
-}
-
-/// Use a custom error type that can be returned by handlers.
-///
-/// This follows recommendations from the axum documentation:
-/// <https://github.com/tokio-rs/axum/blob/main/examples/anyhow-error-response/src/main.rs>
-pub struct AppError {
-    status_code: StatusCode,
-    message: String,
-}
-
-impl AppError {
-    /// Create a new Result<T, AppError>::Err with the corresponding StatusCode and message.
-    ///
-    /// Useful for quickly returning a custom error in any of the request handlers.
-    fn err<T>(status_code: StatusCode, message: impl Into<String>) -> Result<T, Self> {
-        Err(Self {
-            status_code,
-            message: message.into(),
-        })
-    }
-
-    /// Create a new AppError with the corresponding StatusCode and message.
-    fn new(status_code: StatusCode, message: impl Into<String>) -> Self {
-        Self {
-            status_code,
-            message: message.into(),
-        }
-    }
-
-    /// Create a new AppError with the corresponding message and StatusCode 500.
-    fn new500(message: impl Into<String>) -> Self {
-        Self::new(StatusCode::INTERNAL_SERVER_ERROR, message)
-    }
-}
-
-/// Allows axum to automatically convert our custom AppError into a Response.
-impl IntoResponse for AppError {
-    fn into_response(self) -> Response {
-        // Report client-side errors that are not 404s as warnings.
-        // This might help identify implementation problems in the frontent.
-        if self.status_code.is_client_error() && self.status_code != StatusCode::NOT_FOUND {
-            tracing::warn!(status_code = self.status_code.to_string(), self.message);
-        // 5XXs are always severe errors, even if the server doesn't crash
-        } else if self.status_code.is_server_error() {
-            tracing::error!(status_code = self.status_code.to_string(), self.message);
-        }
-        (
-            self.status_code,
-            format!("{}: {}", self.status_code, self.message),
-        )
-            .into_response()
-    }
-}
-
-/// Ensure that our custom error type can be built automatically from anyhow::Error.
-/// This allows us to use the ?-operator in request-handlers to easily handle errors.
-impl<E> From<E> for AppError
-where
-    E: Into<anyhow::Error>,
-{
-    fn from(err: E) -> Self {
-        Self {
-            status_code: StatusCode::INTERNAL_SERVER_ERROR,
-            message: err.into().to_string(),
-        }
-    }
 }
 
 /// Global definition of the HTML-minifier configuration.
@@ -231,31 +169,11 @@ async fn main() {
         }
     }
 
+    // Create the AppState out of database and template-engine.
     let aps = AppState { tera, db };
 
-    // Set up all the async deletion / expiration tasks.
-    #[derive(Debug, FromRow)]
-    struct FileRow {
-        efd_sha256sum: String,
-        expiry_ts: String,
-    }
-
-    // Fetch all files from the database.
-    let all_files: Vec<FileRow> =
-        match sqlx::query_as("SELECT efd_sha256sum, expiry_ts FROM uploaded_files;")
-            .fetch_all(&aps.db)
-            .await
-        {
-            Ok(rows) => rows,
-            Err(e) => {
-                tracing::error!("failed to fetch files from databse: {e}");
-                return;
-            }
-        };
-
-    let now = chrono::Utc::now();
-    // Set up a deletion task for every single file.
-    for file in &all_files {}
+    // Start the background-task that regularly cleans up expired files and sessions.
+    tokio::spawn(auto_cleanup::cleanup_cronjob(aps.clone()));
 
     // Define the app's routes.
     let app = Router::new()

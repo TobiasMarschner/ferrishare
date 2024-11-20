@@ -93,9 +93,3 @@ pub async fn delete_endpoint(
     }
 }
 
-/// Regularly cleans up expired files and sessions.
-///
-/// Every query
-async fn cleanup_cronjob() {
-
-}
