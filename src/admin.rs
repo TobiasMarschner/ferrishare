@@ -33,13 +33,15 @@ pub async fn admin_page(
             .unwrap_or_default(),
     ));
 
-    let session_row: Option<i64> =
-        sqlx::query_scalar("SELECT 1 FROM admin_sessions WHERE session_id_sha256sum = ? LIMIT 1;")
-            .bind(&user_session_sha256sum)
-            .fetch_optional(&aps.db)
-            .await?;
+    let session_expiry: Option<String> = sqlx::query_scalar(
+        "SELECT expiry_ts FROM admin_sessions WHERE session_id_sha256sum = ? LIMIT 1;",
+    )
+    .bind(&user_session_sha256sum)
+    .fetch_optional(&aps.db)
+    .await?;
 
-    if session_row.is_some() {
+    // Only show the admin page if the session exists and has not yet expired.
+    if !session_expiry.map_or(Ok(true), |v| has_expired(&v))? {
         #[derive(FromRow)]
         struct FileRow {
             efd_sha256sum: String,
@@ -49,9 +51,11 @@ pub async fn admin_page(
             downloads: i64,
         }
         // Request info about all currently live files.
-        let all_files: Vec<FileRow> = sqlx::query_as("SELECT efd_sha256sum, filesize, upload_ts, expiry_ts, downloads FROM uploaded_files;")
-            .fetch_all(&aps.db)
-            .await?;
+        let all_files: Vec<FileRow> = sqlx::query_as(
+            "SELECT efd_sha256sum, filesize, upload_ts, expiry_ts, downloads FROM uploaded_files;",
+        )
+        .fetch_all(&aps.db)
+        .await?;
 
         #[derive(Debug, Serialize)]
         struct UploadedFile {
@@ -200,7 +204,11 @@ pub async fn admin_logout(
         .execute(&aps.db)
         .await?;
 
-    tracing::info!(user_session_sha256sum, "logging out {0} admin session(s)", db_results.rows_affected());
+    tracing::info!(
+        user_session_sha256sum,
+        "logging out {0} admin session(s)",
+        db_results.rows_affected()
+    );
 
     Ok((jar.remove("id"), Redirect::to("/admin")))
 }

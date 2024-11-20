@@ -38,23 +38,34 @@ pub async fn download_endpoint(
 
     // TODO: Think about what happens if the file is deleted / expires as it's being downloaded.
 
+    #[derive(Debug, FromRow)]
+    struct FileRow {
+        expiry_ts: String,
+        downloads: i64,
+    }
+
     // Next, query for the given file.
     // We only need to know
     // (1) whether the row exists
+    // (2) the expiry timestamp of the row
     // (2) the 'downloads' value of that row, as it's going to be incremented
-    let row: Option<i64> =
-        sqlx::query_scalar("SELECT downloads FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
-            .bind(hash)
-            .fetch_optional(&aps.db)
-            .await?;
+    let row: Option<FileRow> = sqlx::query_as(
+        "SELECT expiry_ts, downloads FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;",
+    )
+    .bind(hash)
+    .fetch_optional(&aps.db)
+    .await?;
 
     // Return 404 if the file genuinely does not exist or has already expired.
-    if row.is_none() {
+    if row
+        .as_ref()
+        .map_or(Ok(true), |v| has_expired(&v.expiry_ts))?
+    {
         return AppError::err(StatusCode::NOT_FOUND, "file not found or expired");
     }
 
     // Guaranteed to work.
-    let downloads = row.ok_or_else(|| AppError::new500("illegal unwrap"))?;
+    let row = row.ok_or_else(|| AppError::new500("illegal unwrap"))?;
 
     // Open the AsyncRead-stream for the file.
     let file = match tokio::fs::File::open(format!("data/{}", hash)).await {
@@ -72,7 +83,7 @@ pub async fn download_endpoint(
 
     // Add to the download count.
     sqlx::query("UPDATE uploaded_files SET downloads = ? WHERE efd_sha256sum = ?;")
-        .bind(downloads + 1)
+        .bind(row.downloads + 1)
         .bind(hash)
         .execute(&aps.db)
         .await?;
@@ -200,7 +211,10 @@ pub async fn download_page(
         .await?;
 
     // Return 404 if the file genuinely does not exist or has already expired.
-    if row.is_none() {
+    if row
+        .as_ref()
+        .map_or(Ok(true), |v| has_expired(&v.expiry_ts))?
+    {
         let dpc = DownloadPageContext {
             response_type: "error",
             error_head: "Not found",

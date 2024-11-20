@@ -236,12 +236,26 @@ async fn main() {
     // Set up all the async deletion / expiration tasks.
     #[derive(Debug, FromRow)]
     struct FileRow {
-
+        efd_sha256sum: String,
+        expiry_ts: String,
     }
 
-    // let row: Option<FileRow> = sqlx::query_as(
-    //     "SELECT efd_sha256sum, expiry_ts FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;",
-    // )
+    // Fetch all files from the database.
+    let all_files: Vec<FileRow> =
+        match sqlx::query_as("SELECT efd_sha256sum, expiry_ts FROM uploaded_files;")
+            .fetch_all(&aps.db)
+            .await
+        {
+            Ok(rows) => rows,
+            Err(e) => {
+                tracing::error!("failed to fetch files from databse: {e}");
+                return;
+            }
+        };
+
+    let now = chrono::Utc::now();
+    // Set up a deletion task for every single file.
+    for file in &all_files {}
 
     // Define the app's routes.
     let app = Router::new()
@@ -287,4 +301,12 @@ async fn shutdown_handler() {
 
     // Received one? Print that, then hyper will shut down the server.
     tracing::info!("received shutdown signal");
+}
+
+/// Returns true if the expiry_ts lies in the past, i.e. the resource has expired.
+pub fn has_expired(expiry_ts: &str) -> Result<bool, AppError> {
+    Ok(chrono::DateTime::parse_from_rfc3339(expiry_ts)?
+        .signed_duration_since(chrono::Utc::now())
+        .num_seconds()
+        .is_negative())
 }

@@ -14,7 +14,6 @@ pub struct DeleteRequest {
 
 pub async fn delete_endpoint(
     State(aps): State<AppState>,
-    // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     jar: CookieJar,
     Json(req): Json<DeleteRequest>,
 ) -> Result<StatusCode, AppError> {
@@ -92,4 +91,11 @@ pub async fn delete_endpoint(
     } else {
         AppError::err(StatusCode::UNAUTHORIZED, "unauthorized")
     }
+}
+
+/// Regularly cleans up expired files and sessions.
+///
+/// Every query
+async fn cleanup_cronjob() {
+
 }
