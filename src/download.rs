@@ -39,24 +39,22 @@ pub async fn download_endpoint(
     // TODO: Think about what happens if the file is deleted / expires as it's being downloaded.
 
     // Next, query for the given file.
-    // We only need to know whether
-    // (1) the row exists
-    // (2) the 'expired' value of the row
-    // (3) the 'downloads' value, as we're going to increment that
-    let row: Option<(i64, bool)> = sqlx::query_as(
-        "SELECT downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;",
-    )
-    .bind(&hash)
-    .fetch_optional(&aps.db)
-    .await?;
+    // We only need to know
+    // (1) whether the row exists
+    // (2) the 'downloads' value of that row, as it's going to be incremented
+    let row: Option<i64> =
+        sqlx::query_scalar("SELECT downloads FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
+            .bind(&hash)
+            .fetch_optional(&aps.db)
+            .await?;
 
     // Return 404 if the file genuinely does not exist or has already expired.
-    if row.as_ref().map_or(true, |e| e.1) {
+    if row.is_none() {
         return AppError::err(StatusCode::NOT_FOUND, "file not found or expired");
     }
 
     // Guaranteed to work.
-    let row = row.ok_or_else(|| AppError::new500("illegal unwrap"))?;
+    let downloads = row.ok_or_else(|| AppError::new500("illegal unwrap"))?;
 
     // Open the AsyncRead-stream for the file.
     let file = match tokio::fs::File::open(format!("data/{}", hash)).await {
@@ -74,7 +72,7 @@ pub async fn download_endpoint(
 
     // Add to the download count.
     sqlx::query("UPDATE uploaded_files SET downloads = ? WHERE efd_sha256sum = ?;")
-        .bind(&(row.0 + 1))
+        .bind(downloads + 1)
         .bind(&hash)
         .execute(&aps.db)
         .await?;
@@ -193,17 +191,16 @@ pub async fn download_page(
         upload_ts: String,
         expiry_ts: String,
         downloads: i64,
-        expired: bool,
     }
 
     // Grab the row from the DB.
-    let row: Option<FileRow> = sqlx::query_as("SELECT admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ts, expiry_ts, downloads, expired FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
+    let row: Option<FileRow> = sqlx::query_as("SELECT admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ts, expiry_ts, downloads FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
         .bind(&hash)
         .fetch_optional(&aps.db)
         .await?;
 
     // Return 404 if the file genuinely does not exist or has already expired.
-    if row.as_ref().map_or(true, |e| e.expired) {
+    if row.is_none() {
         let dpc = DownloadPageContext {
             response_type: "error",
             error_head: "Not found",

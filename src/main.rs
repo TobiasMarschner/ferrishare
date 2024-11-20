@@ -7,7 +7,7 @@ use axum::{
     Router,
 };
 use itertools::Itertools;
-use sqlx::{migrate::MigrateDatabase, Sqlite, SqlitePool};
+use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
 use std::{net::SocketAddr, sync::Arc};
 use tera::Tera;
 use tokio::sync::Mutex;
@@ -232,6 +232,16 @@ async fn main() {
     }
 
     let aps = AppState { tera, db };
+
+    // Set up all the async deletion / expiration tasks.
+    #[derive(Debug, FromRow)]
+    struct FileRow {
+
+    }
+
+    // let row: Option<FileRow> = sqlx::query_as(
+    //     "SELECT efd_sha256sum, expiry_ts FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;",
+    // )
 
     // Define the app's routes.
     let app = Router::new()

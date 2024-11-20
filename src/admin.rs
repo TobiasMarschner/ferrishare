@@ -49,7 +49,7 @@ pub async fn admin_page(
             downloads: i64,
         }
         // Request info about all currently live files.
-        let all_files: Vec<FileRow> = sqlx::query_as("SELECT efd_sha256sum, filesize, upload_ts, expiry_ts, downloads FROM uploaded_files WHERE expired = 0;")
+        let all_files: Vec<FileRow> = sqlx::query_as("SELECT efd_sha256sum, filesize, upload_ts, expiry_ts, downloads FROM uploaded_files;")
             .fetch_all(&aps.db)
             .await?;
 
