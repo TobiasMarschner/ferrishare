@@ -1,51 +1,50 @@
 Building a full-stack web-app has more moving parts than one might think.
 Still to do:
 
-- Complete core functionality
-  - Download FE and BE
-  - Delete FE (modal) and BE
-  - Admin overview page
-    - Pagination on the admin overview?
-  - Actually deleting expired files
-- Packaging the whole thing in a configurable Docker container
-  - Ensure the actual db, config and uploaded files live in their own directory.
-- Check that uploads are indeed encrypted (entropy and magic number(?) checks).
-- Ensure that uploaded files are immediately streamed to disk instead of memory.
-- Correct tracing / logging
-  - Perhaps into a dedicated file, perhaps into STDOUT so docker (compose) can pick it up
-- Correct error handling
-  - Obiously we need super robus endpoints, but I also want to ensure the client gets expressive error messages that will actually help them
-- Proper theming
-  - The whole app is B/W currently - that needs to improve
-  - subset the icon font, maybe remove the ligatures, and definitely remove them from the accessibility tree
-  - run lighthouse on the final app to iron out any kinks
-- Set up WAL mode on sqlite and other possible settings
-- Proper app configuration
-  - There's lots of variables that need configuring, unify all of this.
-  - URL/HOSTNAME on which we're running
-  - IP and PORT that we're binding on
-    - Special considerations for IPv6 support?
-  - Rate Limit Settings
-    - No. of requests per IP, No. of uploads per IP
-  - REVERSE PROXY SETTINGS
-    - The WebCrypto-API *requires* a secure context, meaning this site has to be served over HTTPS
-    - Maybe we'll add TLS support in the server, but really, we should reverse proxy this thing
-    - Trusted IPs for X-Forwarded-For, and also properly integrating that header, ofc
-  - Maximum allowed filesize
-    - Remember, we need to adjust the maximum allowed request length in axum, too.
-  - Some kind of setup routine where the admin can set the ADMIN PASSWORD.
-- Rate Limiting
-- Documentation
-  - Code-level documentation, both within and outside of code
-  - General development documentation
-  - Usage documentation
-    - How to install, how to configure
-- Marketing page / README
-  - What this is, what it does
-  - feature list
-  - screenshots / screen recordings showcasing how the app looks and what it does
-  - Might be a good idea to make GitHub the proper home for this since we'll probably want to accept contributions and issues.
-  - Add it to awesome selfhosted, announce it on reddit / lemmy once finished.
-- Demo Mode and Host
-  - We need a running demo of this.
-  - Maybe with restrictions on retention and who's allowed to download files, to prevent abuse.
+- [x] Complete core functionality
+  - [x] Download FE and BE
+  - [x] Delete FE (modal) and BE
+  - [x] Admin overview page
+    - [ ] Pagination on the admin overview?
+  - [x] Actually deleting expired files
+- [ ] Packaging the whole thing in a configurable Docker container
+  - [ ] Ensure the actual db, config and uploaded files live in their own directory.
+- [ ] Check that uploads are indeed encrypted (entropy and magic number(?) checks).
+- [ ] Ensure that uploaded files are immediately streamed to disk instead of memory.
+- [x] Correct tracing / logging
+- [x] Correct error handling
+  - [x] Obiously we need super robus endpoints, but I also want to ensure the client gets expressive error messages that will actually help them
+- [ ] Proper theming
+  - [ ] The whole app is B/W currently - that needs to improve
+  - [ ] subset the icon font, maybe remove the ligatures, and definitely remove them from the accessibility tree
+  - [ ] run lighthouse on the final app to iron out any kinks
+- [ ] Set up WAL mode on sqlite and other possible settings
+- [ ] Proper app configuration
+  - [ ] There's lots of variables that need configuring, unify all of this.
+  - [ ] URL/HOSTNAME on which we're running
+  - [ ] IP and PORT that we're binding on
+    - [ ] Special considerations for IPv6 support?
+  - [ ] Rate Limit Settings
+    - [ ] No. of requests per IP, No. of uploads per IP
+  - [ ] REVERSE PROXY SETTINGS
+    - [ ] The WebCrypto-API *requires* a secure context, meaning this site has to be served over HTTPS
+    - [ ] Maybe we'll add TLS support in the server, but really, we should reverse proxy this thing
+    - [ ] Trusted IPs for X-Forwarded-For, and also properly integrating that header, ofc
+  - [ ] Maximum allowed filesize
+    - [ ] Remember, we need to adjust the maximum allowed request length in axum, too.
+  - [ ] Some kind of setup routine where the admin can set the ADMIN PASSWORD.
+- [ ] Rate Limiting
+- [ ] Documentation
+  - [ ] Code-level documentation, both within and outside of code
+  - [ ] General development documentation
+  - [ ] Usage documentation
+    - [ ] How to install, how to configure
+- [ ] Marketing page / README
+  - [ ] What this is, what it does
+  - [ ] feature list
+  - [ ] screenshots / screen recordings showcasing how the app looks and what it does
+  - [ ] Might be a good idea to make GitHub the proper home for this since we'll probably want to accept contributions and issues.
+  - [ ] Add it to awesome selfhosted, announce it on reddit / lemmy once finished.
+- [ ] Demo Mode and Host
+  - [ ] We need a running demo of this.
+  - [ ] Maybe with restrictions on retention and who's allowed to download files, to prevent abuse.
