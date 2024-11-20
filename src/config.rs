@@ -1,3 +1,5 @@
+use std::{fs::File, io::Write};
+
 use anyhow::anyhow;
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use inquire::{validator::Validation, CustomUserError, Password, Select, Text};
@@ -10,12 +12,24 @@ use crate::*;
 /// Configuration for the entire application read from 'config.toml'.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AppConfiguration {
-    interface: String,
-    admin_password_hash: String,
-    maximum_filesize: u64,
-    maximum_quota: u64,
-    log_level: String,
-    demo_mode: bool,
+    pub interface: String,
+    pub admin_password_hash: String,
+    pub maximum_filesize: u64,
+    pub maximum_quota: u64,
+    pub log_level: String,
+    pub demo_mode: bool,
+}
+
+impl AppConfiguration {
+    /// Translate the log_level-String in the config.toml to the actual tracing::Level.
+    /// Should that fail the app will simply fall back to INFO.
+    pub fn translate_log_level(&self) -> Level {
+        match self.log_level.as_str() {
+            "ERROR" => Level::ERROR,
+            "WARN" => Level::WARN,
+            "INFO" | _ => Level::INFO,
+        }
+    }
 }
 
 /// Translate a filesize string to the actual number of bytes it represents.
@@ -57,7 +71,7 @@ fn format_filesize_input(input: &str) -> String {
     )
 }
 
-pub fn setup_config() -> Result<AppConfiguration, anyhow::Error> {
+pub fn setup_config() -> Result<(), anyhow::Error> {
     // TODO Check if a cfg already exists.
 
     eprintln!("Setting up new configuration at {DATA_PATH}/config.toml");
@@ -151,7 +165,7 @@ pub fn setup_config() -> Result<AppConfiguration, anyhow::Error> {
         .prompt()?;
 
     // Perform postprocessing on the given answers.
-    eprintln!("\nHashing password and generating config ...");
+    eprint!("\nHashing password and generating config ...");
 
     // Turn the filesize strings into the actual byte counts.
     let maximum_filesize = transform_filesize_input(&maximum_filesize).unwrap();
@@ -168,13 +182,23 @@ pub fn setup_config() -> Result<AppConfiguration, anyhow::Error> {
     .map_err(|e| anyhow!(e.to_string()))?
     .to_string();
 
-    Ok(AppConfiguration {
+    // Bring it all together.
+    let app_config = AppConfiguration {
         interface,
         admin_password_hash,
         maximum_filesize,
         maximum_quota,
         log_level: log_level.to_string(),
         demo_mode: false,
-    })
-}
+    };
 
+    // Serialize to TOML and write to disk as 'config.toml'.
+    File::create(format!("{DATA_PATH}/config.toml"))?
+        .write_all(toml::to_string(&app_config)?.as_bytes())?;
+
+    eprintln!(" done!");
+    eprintln!("Successfully wrote config to {DATA_PATH}/config.toml");
+    eprintln!("You can now launch the app normally.");
+
+    Ok(())
+}

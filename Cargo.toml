@@ -27,3 +27,4 @@ argon2 = { version = "0" }
 inquire = "0.7.5"
 clap = { version = "4.5.21", features = ["derive"] }
 crossterm = "0.28.1"
+toml = "0.8.19"

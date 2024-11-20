@@ -5,6 +5,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use clap::Parser;
 use itertools::Itertools;
 use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
 use std::{net::SocketAddr, sync::Arc};
@@ -12,11 +13,11 @@ use tera::Tera;
 use tokio::sync::Mutex;
 use tower::ServiceBuilder;
 use tower_http::{compression::CompressionLayer, services::ServeDir};
-use tracing::{Instrument, Level};
-use clap::Parser;
+use tracing::Instrument;
 
 // Use 'pub use' here so that all the normal modules only have
 // to import 'crate::*' instead of also having to import 'crate::error_handling::AppError'.
+pub use config::AppConfiguration;
 pub use error_handling::AppError;
 
 mod admin;
@@ -37,6 +38,7 @@ mod upload;
 pub struct AppState {
     tera: Arc<Mutex<Tera>>,
     db: SqlitePool,
+    conf: Arc<AppConfiguration>,
 }
 
 /// Global definition of the HTML-minifier configuration.
@@ -139,18 +141,57 @@ These are required for the applications to store all of its data"
     ));
 
     // Parse cmd-line arguments and check whether we're (re-)creating the config.toml.
-    let args = Args::parse();
-
-    if args.init {
+    if Args::parse().init {
         // Set up config and exit immediately.
-        let x = config::setup_config();
-        dbg!(&x);
-        return;
+        match config::setup_config() {
+            Ok(_) => {
+                return;
+            }
+            Err(e) => {
+                panic!("failed to create config: {e}");
+            }
+        }
     }
+
+    // Try to open and parse the configuration.
+    let config_string = match std::fs::read_to_string(format!("{DATA_PATH}/config.toml")) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Failed to open configuration file at {DATA_PATH}/config.toml: {e}");
+
+            eprintln!(
+                "\nIf you haven't already, configure the app by running it with the '--init' flag:"
+            );
+            eprintln!("  docker compose run -it [TODOTODO] --init     (for Docker Compose)");
+            eprintln!("  cargo run -- --init                          (for cargo)");
+
+            eprintln!("\nExiting!");
+            return;
+        }
+    };
+
+    let app_config: AppConfiguration = match toml::from_str(&config_string) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Failed to parse configuration file at {DATA_PATH}/config.toml: {e}");
+
+            eprintln!("\nIf your config file is causing trouble, consider regenerating it by running the app with the '--init' flag:");
+            eprintln!("  docker compose run -it [TODOTODO] --init     (for Docker Compose)");
+            eprintln!("  cargo run -- --init                          (for cargo)");
+
+            eprintln!("\nExiting!");
+            return;
+        }
+    };
 
     // Set up `tracing` (logging).
     // Use the default formatting subscriber provided by `tracing_subscriber`.
-    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+    // The log level is provided by the configuration.
+    tracing_subscriber::fmt()
+        .with_max_level(app_config.translate_log_level())
+        .init();
+
+    tracing::info!("read config from {DATA_PATH}/config.toml");
 
     // Create the database if it doesn't already exist.
     if !Sqlite::database_exists(DB_URL).await.unwrap_or(false) {
@@ -205,7 +246,13 @@ These are required for the applications to store all of its data"
     };
 
     // Create the AppState out of database and template-engine.
-    let aps = AppState { tera, db };
+    let aps = AppState {
+        tera,
+        db,
+        conf: Arc::new(app_config),
+    };
+    // Keep a copy of the interface, we'll need it after the AppState has already been moved.
+    let interface = aps.conf.interface.clone();
 
     // Start the background-task that regularly cleans up expired files and sessions.
     tokio::spawn(auto_cleanup::cleanup_cronjob(aps.clone()));
@@ -234,13 +281,13 @@ These are required for the applications to store all of its data"
         .into_make_service_with_connect_info::<SocketAddr>();
 
     // Bind to localhost for now.
-    let listener = match tokio::net::TcpListener::bind("127.0.0.1:8000").await {
+    let listener = match tokio::net::TcpListener::bind(&interface).await {
         Ok(v) => {
-            tracing::info!("listening on TODO");
+            tracing::info!("listening on {}", &interface);
             v
         }
         Err(e) => {
-            tracing::error!("failed to open TcpListener on TODO: {e}");
+            tracing::error!("failed to open TcpListener on {}: {}", &interface, e);
             return;
         }
     };
@@ -253,7 +300,7 @@ These are required for the applications to store all of its data"
         Err(e) => {
             tracing::error!("failed to serve application with axum: {e}");
             return;
-        },
+        }
     }
 }
 
