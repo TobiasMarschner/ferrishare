@@ -55,7 +55,7 @@ pub async fn cleanup_cronjob(aps: AppState) {
         // but sqlx currently makes this rather difficult, as I cannot bind a whole Vec
         // in the following query: "DELETE FROM uploaded_files WHERE efd_sha256sum IN (?)".
         for file in files {
-            match cleanup_file(&file.efd_sha256sum, &aps.db).await {
+            match delete::cleanup_file(&file.efd_sha256sum, &aps.db).await {
                 Ok(_) => {
                     tracing::info!(
                         efd_sha256sum = file.efd_sha256sum,
@@ -134,17 +134,3 @@ pub async fn cleanup_cronjob(aps: AppState) {
     }
 }
 
-/// Remove a single file identified by its efd_sha256sum from the database and disk.
-pub async fn cleanup_file(efd_sha256sum: &str, db: &SqlitePool) -> Result<(), anyhow::Error> {
-    // First, remove the corresponding row form the DB.
-    sqlx::query("DELETE FROM uploaded_files WHERE efd_sha256sum = ?;")
-        .bind(efd_sha256sum)
-        .execute(db)
-        .await?;
-
-    // Next, remove the actual file from disk.
-    tokio::fs::remove_file(format!("data/{}", efd_sha256sum)).await?;
-
-    // If neither yielded an Error, return Ok.
-    Ok(())
-}

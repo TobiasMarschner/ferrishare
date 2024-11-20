@@ -74,22 +74,27 @@ pub async fn delete_endpoint(
 
     // Now delete the file if we're authroized.
     if authorized {
-        // Remove the respective row from the database.
-        let db_result = sqlx::query("DELETE FROM uploaded_files WHERE efd_sha256sum = ?;")
-            .bind(&efd_sha256sum)
-            .execute(&aps.db)
-            .await?;
-
-        // TODO Actually delete the file, too.
-        // TODO We'll probably want to refactor this since deletions involve the same steps but can
-        // happen either as the result of a manual request like this, or as the result of timed
-        // expiry.
-
-        tracing::info!(efd_sha256sum, "deleted {0} file", db_result.rows_affected());
-
+        // Use the cleanup method and bubble up any internal server errors.
+        cleanup_file(&efd_sha256sum, &aps.db).await?;
+        // Log the successful deletion.
+        tracing::info!(efd_sha256sum, "manually deleted file");
         Ok(StatusCode::OK)
     } else {
         AppError::err(StatusCode::UNAUTHORIZED, "unauthorized")
     }
 }
 
+/// Remove a single file identified by its efd_sha256sum from the database and disk.
+pub async fn cleanup_file(efd_sha256sum: &str, db: &SqlitePool) -> Result<(), anyhow::Error> {
+    // First, remove the corresponding row form the DB.
+    sqlx::query("DELETE FROM uploaded_files WHERE efd_sha256sum = ?;")
+        .bind(efd_sha256sum)
+        .execute(db)
+        .await?;
+
+    // Next, remove the actual file from disk.
+    tokio::fs::remove_file(format!("data/{}", efd_sha256sum)).await?;
+
+    // If neither yielded an Error, return Ok.
+    Ok(())
+}
