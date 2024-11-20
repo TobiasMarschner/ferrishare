@@ -110,7 +110,7 @@ pub async fn upload_endpoint(
 
     // Generate a random admin password out of 256 bits of strong entropy.
     let admin_key_bytes = thread_rng().gen::<[u8; 32]>();
-    let admin_key = URL_SAFE_NO_PAD.encode(&admin_key_bytes);
+    let admin_key = URL_SAFE_NO_PAD.encode(admin_key_bytes);
 
     // Also generate a hash of this password using sha256 for storage in the databse.
     //
@@ -129,7 +129,7 @@ pub async fn upload_endpoint(
     //
     // In practice, this choice helps speed up requests
     // as a single sha256-digest can be computed very quickly.
-    let admin_key_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(&admin_key_bytes));
+    let admin_key_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(admin_key_bytes));
 
     // TODO Proxied IPs. You'll likely run this behind a reverse-proxy.
     // You need to be able to set up trusted proxy IPs and extract X-Forwarded-For instead.
@@ -163,7 +163,7 @@ pub async fn upload_endpoint(
         .bind(&e_filename)
         .bind(&iv_fd[..])
         .bind(&iv_fn[..])
-        .bind(&filesize)
+        .bind(filesize)
         .bind(&upload_ip)
         .bind(&upload_ts)
         .bind(&expiry_ts)

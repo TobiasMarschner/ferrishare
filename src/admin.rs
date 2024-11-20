@@ -145,10 +145,10 @@ pub async fn admin_login(
 
     // Create a new session.
     let session_id_bytes = thread_rng().gen::<[u8; 32]>();
-    let session_id = URL_SAFE_NO_PAD.encode(&session_id_bytes);
+    let session_id = URL_SAFE_NO_PAD.encode(session_id_bytes);
 
     // Use the sha256-digest in the databse.
-    let session_id_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(&session_id_bytes));
+    let session_id_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(session_id_bytes));
 
     // Build the cookie for the session id.
     let mut session_cookie = Cookie::build(("id", session_id))

@@ -3,7 +3,6 @@ use axum_extra::extract::CookieJar;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
-use sqlx::FromRow;
 
 use crate::*;
 

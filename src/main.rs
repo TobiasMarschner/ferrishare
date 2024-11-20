@@ -79,7 +79,7 @@ impl IntoResponse for AppError {
         }
         (
             self.status_code,
-            format!("{}: {}", self.status_code.to_string(), self.message),
+            format!("{}: {}", self.status_code, self.message),
         )
             .into_response()
     }

@@ -44,7 +44,7 @@ pub async fn download_endpoint(
     // (2) the 'downloads' value of that row, as it's going to be incremented
     let row: Option<i64> =
         sqlx::query_scalar("SELECT downloads FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
-            .bind(&hash)
+            .bind(hash)
             .fetch_optional(&aps.db)
             .await?;
 
@@ -73,7 +73,7 @@ pub async fn download_endpoint(
     // Add to the download count.
     sqlx::query("UPDATE uploaded_files SET downloads = ? WHERE efd_sha256sum = ?;")
         .bind(downloads + 1)
-        .bind(&hash)
+        .bind(hash)
         .execute(&aps.db)
         .await?;
 
@@ -195,7 +195,7 @@ pub async fn download_page(
 
     // Grab the row from the DB.
     let row: Option<FileRow> = sqlx::query_as("SELECT admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ts, expiry_ts, downloads FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;")
-        .bind(&hash)
+        .bind(hash)
         .fetch_optional(&aps.db)
         .await?;
 
