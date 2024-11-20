@@ -13,6 +13,7 @@ use tokio::sync::Mutex;
 use tower::ServiceBuilder;
 use tower_http::{compression::CompressionLayer, services::ServeDir};
 use tracing::{Instrument, Level};
+use clap::Parser;
 
 // Use 'pub use' here so that all the normal modules only have
 // to import 'crate::*' instead of also having to import 'crate::error_handling::AppError'.
@@ -116,6 +117,19 @@ async fn custom_tracing(
     .await
 }
 
+/// TODO app description
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Run the interactive setup to create the 'config.toml'. (required before first launch)
+    ///
+    /// The reason app configuration is performed interactively like this instead of just providing
+    /// an annotated config-file really boils down to the admin password. It needs to be stored as
+    /// an argon2id-hash and manually creating one (e.g. with the 'argon2' CLI) is quite annoying.
+    #[arg(long)]
+    init: bool,
+}
+
 #[tokio::main]
 async fn main() {
     // First things first, create the DATA_PATH and its subdirectories.
@@ -124,7 +138,16 @@ async fn main() {
 These are required for the applications to store all of its data"
     ));
 
-    config::setup_config();
+    // Parse cmd-line arguments and check whether we're (re-)creating the config.toml.
+    let args = Args::parse();
+
+    if args.init {
+        // Set up config and exit immediately.
+        let x = config::setup_config();
+        dbg!(&x);
+        return;
+    }
+
     // Set up `tracing` (logging).
     // Use the default formatting subscriber provided by `tracing_subscriber`.
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();

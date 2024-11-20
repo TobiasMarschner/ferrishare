@@ -1,10 +1,15 @@
+use anyhow::anyhow;
+use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use inquire::{validator::Validation, CustomUserError, Password, Select, Text};
+use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use tracing::Level;
 
+use crate::*;
+
 /// Configuration for the entire application read from 'config.toml'.
 #[derive(Debug, Deserialize, Serialize)]
-struct AppConfiguration {
+pub struct AppConfiguration {
     interface: String,
     admin_password_hash: String,
     maximum_filesize: u64,
@@ -52,11 +57,11 @@ fn format_filesize_input(input: &str) -> String {
     )
 }
 
-pub fn setup_config() {
+pub fn setup_config() -> Result<AppConfiguration, anyhow::Error> {
     // TODO Check if a cfg already exists.
 
-    eprintln!("Setting up new configuration!");
-    eprintln!("You will now be prompted for all settings ...\n");
+    eprintln!("Setting up new configuration at {DATA_PATH}/config.toml");
+    eprintln!("Interactively prompting for all settings ...\n");
 
     let interface = Text::new("Interface:")
         .with_initial_value("0.0.0.0:3000")
@@ -71,7 +76,7 @@ pub fn setup_config() {
   Using Docker with a reverse-proxy? Just leave this untouched.
 ",
         )
-        .prompt();
+        .prompt()?;
 
     let admin_password = Password::new("Admin Password:")
         .with_display_mode(inquire::PasswordDisplayMode::Masked)
@@ -89,9 +94,9 @@ pub fn setup_config() {
   This config-utility will create and store an argon2id-hash of your password.
 ",
         )
-        .prompt();
+        .prompt()?;
 
-    let max_filesize = Text::new("Maximum Filesize:")
+    let maximum_filesize = Text::new("Maximum Filesize:")
         .with_initial_value("25M")
         .with_validator(validate_filesize_input)
         .with_formatter(&format_filesize_input)
@@ -109,15 +114,15 @@ pub fn setup_config() {
       '5G' ->   5 GiB -> 5_368_709_120 Bytes
 ",
         )
-        .prompt();
+        .prompt()?;
 
-    let max_quota = Text::new("Maximum Storage:")
+    let maximum_quota = Text::new("Maximum Storage:")
         .with_initial_value("5G")
         .with_validator(validate_filesize_input)
         .with_formatter(&format_filesize_input)
         .with_help_message(
             "
-  How much storage all uploaded files are at most allowed to consume.
+  > How much storage all uploaded files are at most allowed to consume.
 
   Once this limit has been reached users will not be able to upload
   more files until old ones have expired and are cleared from disk.
@@ -128,39 +133,48 @@ pub fn setup_config() {
       '5G' ->   5 GiB -> 5_368_709_120 Bytes
 ",
         )
-        .prompt();
+        .prompt()?;
 
     let log_levels = vec![Level::INFO, Level::WARN, Level::ERROR];
     let log_level = Select::new("Log level:", log_levels)
         .with_help_message(
             "
-  Set the log level of the entire application.
+  Set the log level of the entire application. (↑↓ to move, enter to select)
   Unless terse logs are somehow required it is recommended to set this to INFO.
 
-  ERROR logs all internal server errors and failures:
-  - Failures to read from / write to the database.
-  - Failes to read from / write to disk storage.
-  - Failures to parse / process values that reside in the database.
-
-  WARN includes ERROR and additionally logs suspicious client-side errors:
-  - Malicious or malformed requests 
-  - Unauthorized requests on non-user facing endpoints
-
-  INFO includes WARN+ERROR and logs all HTTP requests and responses.
-  Additionally, all notable events on the application are logged separately:
-  - A file is uploaded by a user
-  - A file is deleted (either manually by a user/admin or b/c it expired)
-  - An admin has logged in
-  - An admin is logged out (either manually or automatically)
+  ERROR logs all internal server errors and failures.
+  WARN logs suspicious client-side errors.
+  INFO logs all HTTP responses and application events, such as
+  file creation/deletion/expiry or admin login/logout/session-expiry.
 ",
         )
-        .prompt();
+        .prompt()?;
+
+    // Perform postprocessing on the given answers.
+    eprintln!("\nHashing password and generating config ...");
+
+    // Turn the filesize strings into the actual byte counts.
+    let maximum_filesize = transform_filesize_input(&maximum_filesize).unwrap();
+    let maximum_quota = transform_filesize_input(&maximum_quota).unwrap();
+
+    // Hash the admin password.
+    // Use 32MB of memory and 4 iterations. That's a little stronger than the default parameters.
+    let admin_password_hash = Argon2::new(
+        argon2::Algorithm::default(),
+        argon2::Version::default(),
+        argon2::Params::new(32768, 4, 1, None).map_err(|e| anyhow!(e.to_string()))?,
+    )
+    .hash_password(admin_password.as_bytes(), &SaltString::generate(&mut OsRng))
+    .map_err(|e| anyhow!(e.to_string()))?
+    .to_string();
+
+    Ok(AppConfiguration {
+        interface,
+        admin_password_hash,
+        maximum_filesize,
+        maximum_quota,
+        log_level: log_level.to_string(),
+        demo_mode: false,
+    })
 }
 
-// TODO:
-// interface (with examples)
-// max filesize (with suffix and examples)
-// total quoate (with suffix and examples)
-// admin-password (with confirmation)
-// reverse-proxy settings (no idea yet)
-// log-level (maybe)
