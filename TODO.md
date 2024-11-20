@@ -8,6 +8,7 @@ Still to do:
     - Pagination on the admin overview?
   - Actually deleting expired files
 - Packaging the whole thing in a configurable Docker container
+  - Ensure the actual db, config and uploaded files live in their own directory.
 - Check that uploads are indeed encrypted (entropy and magic number(?) checks).
 - Ensure that uploaded files are immediately streamed to disk instead of memory.
 - Correct tracing / logging
@@ -16,6 +17,9 @@ Still to do:
   - Obiously we need super robus endpoints, but I also want to ensure the client gets expressive error messages that will actually help them
 - Proper theming
   - The whole app is B/W currently - that needs to improve
+  - subset the icon font, maybe remove the ligatures, and definitely remove them from the accessibility tree
+  - run lighthouse on the final app to iron out any kinks
+- Set up WAL mode on sqlite and other possible settings
 - Proper app configuration
   - There's lots of variables that need configuring, unify all of this.
   - URL/HOSTNAME on which we're running
