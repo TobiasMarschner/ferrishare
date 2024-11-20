@@ -93,7 +93,7 @@ pub async fn cleanup_file(efd_sha256sum: &str, db: &SqlitePool) -> Result<(), an
         .await?;
 
     // Next, remove the actual file from disk.
-    tokio::fs::remove_file(format!("data/{}", efd_sha256sum)).await?;
+    tokio::fs::remove_file(format!("{DATA_PATH}/uploaded_files/{}", efd_sha256sum)).await?;
 
     // If neither yielded an Error, return Ok.
     Ok(())

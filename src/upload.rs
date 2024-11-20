@@ -145,7 +145,7 @@ pub async fn upload_endpoint(
         .to_rfc3339();
 
     // Store the file using asynchronous IO.
-    tokio::fs::File::create(format!("data/{efd_sha256sum}"))
+    tokio::fs::File::create(format!("{DATA_PATH}/uploaded_files/{efd_sha256sum}"))
         .await
         .map_err(|e| AppError::new500(format!("failed to create file on disk: {e}")))?
         .write_all(&e_filedata)

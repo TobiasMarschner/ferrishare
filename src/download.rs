@@ -68,7 +68,7 @@ pub async fn download_endpoint(
     let row = row.ok_or_else(|| AppError::new500("illegal unwrap"))?;
 
     // Open the AsyncRead-stream for the file.
-    let file = match tokio::fs::File::open(format!("data/{}", hash)).await {
+    let file = match tokio::fs::File::open(format!("{DATA_PATH}/uploaded_files/{}", hash)).await {
         Ok(file) => file,
         Err(_) => {
             // A file being in the DB but not on disk should not be possible.

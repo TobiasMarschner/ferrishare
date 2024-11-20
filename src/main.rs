@@ -19,12 +19,12 @@ use tracing::{Instrument, Level};
 pub use error_handling::AppError;
 
 mod admin;
+mod auto_cleanup;
+mod config;
 mod delete;
 mod download;
 mod error_handling;
 mod upload;
-mod auto_cleanup;
-mod config;
 
 /// Global variables provided to every single request handler.
 /// Contains pointers to the database-pool and HTML-templating-engine.
@@ -59,7 +59,15 @@ pub const MINIFY_CFG: minify_html::Cfg = minify_html::Cfg {
     remove_processing_instructions: false,
 };
 
-const DB_URL: &str = "sqlite://sqlite.db";
+/// Path where all app-specific data will be stored.
+///
+/// This includes:
+/// - The configuration at 'config.toml'
+/// - The database at 'sqlite.db'
+/// - All uploaded files in 'uploaded_files/'
+const DATA_PATH: &str = "./data";
+
+const DB_URL: &str = "sqlite://data/sqlite.db";
 
 /// Custom middleware for tracing HTTP requests.
 ///
@@ -110,6 +118,12 @@ async fn custom_tracing(
 
 #[tokio::main]
 async fn main() {
+    // First things first, create the DATA_PATH and its subdirectories.
+    std::fs::create_dir_all(format!("{DATA_PATH}/uploaded_files")).expect(&format!(
+        "Failed to recursively create directories: {DATA_PATH}/uploaded_files
+These are required for the applications to store all of its data"
+    ));
+
     config::setup_config();
     // Set up `tracing` (logging).
     // Use the default formatting subscriber provided by `tracing_subscriber`.
