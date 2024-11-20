@@ -138,6 +138,7 @@ These are required for the applications to store all of its data"
             }
             Err(e) => {
                 tracing::error!("failed to create database: {e}");
+                return;
             }
         }
     }
@@ -168,22 +169,17 @@ These are required for the applications to store all of its data"
     // Wrap it in an Arc<Mutex<_>>, as required by AppState.
     let tera = Arc::new(Mutex::new(tera));
 
-    // Perform migrations, if necesary.
-    let crate_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
-    let migrations = std::path::Path::new(&crate_dir).join("./migrations");
-
-    let migration_results = sqlx::migrate::Migrator::new(migrations)
-        .await
-        .unwrap()
-        .run(&db)
-        .await;
-
-    match migration_results {
-        Ok(_) => println!("migration success"),
-        Err(e) => {
-            panic!("error: {e}");
+    // Perform database migrations (create all required tables).
+    // Note that the migrate!-macro includes these in the binary at compile time.
+    match sqlx::migrate!("./migrations").run(&db).await {
+        Ok(_) => {
+            tracing::info!("database migrations successful");
         }
-    }
+        Err(e) => {
+            tracing::error!("failed to perform databse migrations: {e}");
+            return;
+        }
+    };
 
     // Create the AppState out of database and template-engine.
     let aps = AppState { tera, db };
@@ -191,7 +187,7 @@ These are required for the applications to store all of its data"
     // Start the background-task that regularly cleans up expired files and sessions.
     tokio::spawn(auto_cleanup::cleanup_cronjob(aps.clone()));
 
-    // Define the app's routes.
+    // Define the actual application (routes, middlewares, services).
     let app = Router::new()
         // HTML routes
         .route("/", get(upload::upload_page))
@@ -203,28 +199,39 @@ These are required for the applications to store all of its data"
         .route("/upload_endpoint", post(upload::upload_endpoint))
         .route("/download_endpoint", get(download::download_endpoint))
         .route("/delete_endpoint", post(delete::delete_endpoint))
-        // Serve static assets from the 'static'-folder.
+        // Serve static assets from the 'static'-folder
         .nest_service("/static", ServeDir::new("static"))
-        // Enable response compression.
+        // Enable response compression of all responses
         .layer(ServiceBuilder::new().layer(CompressionLayer::new()))
-        // Use our custom middleware for tracing.
+        // Use our custom middleware for tracing
         .layer(middleware::from_fn(custom_tracing))
-        // Attach DB-pool and TERA-object as State.
+        // Attach DB-pool and TERA-object as State
         .with_state(aps)
-        // Ensure client IPs and ports can be extracted.
+        // Ensure client IPs and ports can be extracted
         .into_make_service_with_connect_info::<SocketAddr>();
 
     // Bind to localhost for now.
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:8000")
-        .await
-        .unwrap();
+    let listener = match tokio::net::TcpListener::bind("127.0.0.1:8000").await {
+        Ok(v) => {
+            tracing::info!("listening on TODO");
+            v
+        }
+        Err(e) => {
+            tracing::error!("failed to open TcpListener on TODO: {e}");
+            return;
+        }
+    };
 
-    tracing::info!("listening on {}", listener.local_addr().unwrap());
-
-    axum::serve(listener, app)
+    match axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_handler())
         .await
-        .unwrap();
+    {
+        Ok(_) => (),
+        Err(e) => {
+            tracing::error!("failed to serve application with axum: {e}");
+            return;
+        },
+    }
 }
 
 async fn shutdown_handler() {
