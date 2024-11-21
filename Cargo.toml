@@ -11,7 +11,7 @@ serde = { version = "1", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0" }
 tower = { version = "0", features = ["util"] }
-tower-http = { version = "0", features = [ "fs", "compression-full", "trace" ] }
+tower-http = { version = "0", features = [ "fs", "compression-full", "trace", "timeout" ] }
 tracing = { version = "0" }
 tracing-subscriber = { version = "0", features = ["env-filter"] }
 anyhow = { version = "1" }

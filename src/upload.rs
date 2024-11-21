@@ -31,7 +31,6 @@ pub async fn upload_endpoint(
 ) -> Result<(StatusCode, Json<UploadFileResponse>), AppError> {
     // Before we do anything with the request, check that the user is even allowed to do this.
 
-
     let mut e_filename: Option<Vec<u8>> = None;
     let mut e_filedata: Option<Vec<u8>> = None;
     let mut iv_fd: Option<[u8; 12]> = None;
@@ -105,7 +104,7 @@ pub async fn upload_endpoint(
     let hour_duration = hour_duration
         .ok_or_else(|| AppError::new(StatusCode::BAD_REQUEST, "no duration provided"))?;
     let filesize = e_filedata.len() as i64;
-    let upload_ip = client_address.ip().to_string();
+    let upload_ip = UploadIpPrefix::from(client_address).to_string();
 
     // Compute the sha256sum of the encrypted data.
     // Likelihood of collision is ridiculously small, so we can ignore it here.

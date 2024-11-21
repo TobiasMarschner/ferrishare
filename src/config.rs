@@ -152,8 +152,12 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
 
     let maximum_uploads_per_ip = Text::new("Maximum Uploads per IP:")
         .with_initial_value("10")
-        .with_validator(validate_filesize_input)
-        .with_formatter(&format_filesize_input)
+        .with_validator(|v: &str| {
+            v.parse::<usize>()
+                .map_or(Ok(Validation::Invalid("not a valid number".into())), |_| {
+                    Ok(Validation::Valid)
+                })
+        })
         .with_help_message(
             "
   How many uploaded files per IP address does the server permit?
@@ -166,7 +170,10 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
   'IP address' here refers to either an IPv4 address or an IPv6 /64-subnet.
 ",
         )
-        .prompt()?;
+        .prompt()?
+        // Due to the validator this parse should never fail.
+        .parse::<usize>()
+        .unwrap();
 
     let log_levels = vec![Level::INFO, Level::WARN, Level::ERROR];
     let log_level = Select::new("Log level:", log_levels)
@@ -207,6 +214,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         admin_password_hash,
         maximum_filesize,
         maximum_quota,
+        maximum_uploads_per_ip,
         log_level: log_level.to_string(),
         demo_mode: false,
     };

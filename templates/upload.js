@@ -125,6 +125,10 @@ async function uploadFile() {
   let xhr = new XMLHttpRequest();
   xhr.open("POST", "/upload_endpoint");
 
+  xhr.onerror = () => {
+    updateFsStatus("error", "Error during file upload")
+  }
+
   xhr.onload = () => {
     if (xhr.status == 201) {
       updateFsStatus("success", "Upload successful!");

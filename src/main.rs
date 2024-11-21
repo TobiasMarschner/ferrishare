@@ -8,11 +8,11 @@ use axum::{
 use clap::Parser;
 use itertools::Itertools;
 use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
-use std::{fmt::Display, net::SocketAddr, str::FromStr, sync::Arc};
+use std::{fmt::Display, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
 use tera::Tera;
 use tokio::sync::Mutex;
 use tower::ServiceBuilder;
-use tower_http::{compression::CompressionLayer, services::ServeDir};
+use tower_http::{compression::CompressionLayer, services::ServeDir, timeout::TimeoutLayer};
 use tracing::Instrument;
 
 // Use 'pub use' here so that all the normal modules only have
@@ -189,6 +189,7 @@ These are required for the applications to store all of its data"
     // The log level is provided by the configuration.
     tracing_subscriber::fmt()
         .with_max_level(app_config.translate_log_level())
+        // .with_span_events(tracing_subscriber::fmt::format::FmtSpan::FULL)
         .init();
 
     tracing::info!("read config from {DATA_PATH}/config.toml");
@@ -257,8 +258,20 @@ These are required for the applications to store all of its data"
     // Start the background-task that regularly cleans up expired files and sessions.
     tokio::spawn(auto_cleanup::cleanup_cronjob(aps.clone()));
 
+    // The up- and download uses a longer timeout than the default 30s on the usual routes.
+    // To accomodate very slow clients we assume each MB can take up to a full minute for up- or download.
+    // However, the minimum timeout is always set to 120s.
+    let file_endpoint_timeout_duration =
+        std::cmp::max(120, aps.conf.maximum_filesize as u64 / 17476);
+    tracing::info!(
+        "setting file endpoint timeout to {} seconds",
+        file_endpoint_timeout_duration
+    );
+
     // Define the actual application (routes, middlewares, services).
     let app = Router::new()
+        // Serve static assets from the 'static'-folder
+        .nest_service("/static", ServeDir::new("static"))
         // HTML routes
         .route("/", get(upload::upload_page))
         .route("/file", get(download::download_page))
@@ -266,16 +279,23 @@ These are required for the applications to store all of its data"
         // API / non-HTML routes
         .route("/admin_login", post(admin::admin_login))
         .route("/admin_logout", post(admin::admin_logout))
-        .route("/upload_endpoint", post(upload::upload_endpoint))
-        .route("/download_endpoint", get(download::download_endpoint))
         .route("/delete_endpoint", post(delete::delete_endpoint))
-        // Serve static assets from the 'static'-folder
-        .nest_service("/static", ServeDir::new("static"))
+        // Normal requests that don't download or upload files should finish in 30s.
+        .layer(TimeoutLayer::new(Duration::from_secs(30)))
+        // Set the upload size limit for the upload_endpoint to the accepted filesize
+        // plus a generous 256 KiB for the other metadata.
+        // The default limit is 2MB, not enough for most configurations.
+        .route(
+            "/upload_endpoint",
+            post(upload::upload_endpoint)
+                .layer(DefaultBodyLimit::max(aps.conf.maximum_filesize + 262144)),
+        )
+        .route("/download_endpoint", get(download::download_endpoint))
+        .layer(TimeoutLayer::new(Duration::from_secs(
+            file_endpoint_timeout_duration,
+        )))
         // Enable response compression of all responses
         .layer(ServiceBuilder::new().layer(CompressionLayer::new()))
-        // Set the request size limit to the accepted filesize + 256 KiB.
-        // The default is 2MB, not enough for most configurations.
-        .layer(DefaultBodyLimit::max(aps.conf.maximum_filesize + 262144))
         // Use our custom middleware for tracing
         .layer(middleware::from_fn(custom_tracing))
         // Attach DB-pool and TERA-object as State
@@ -328,7 +348,7 @@ pub fn has_expired(expiry_ts: &str) -> Result<bool, AppError> {
 /// Stores either a full IPv4 address or a /64 IPv6 subnet.
 ///
 /// Used for rate limiting and identifying uploading clients.
-enum UploadIpPrefix {
+pub enum UploadIpPrefix {
     V4([u8; 4]),
     V6([u8; 8]),
 }
@@ -370,7 +390,7 @@ impl Display for UploadIpPrefix {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-struct UploadIpPrefixParseError;
+pub struct UploadIpPrefixParseError;
 
 impl FromStr for UploadIpPrefix {
     type Err = UploadIpPrefixParseError;
