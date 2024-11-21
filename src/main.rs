@@ -1,5 +1,5 @@
 use axum::{
-    extract::ConnectInfo,
+    extract::{ConnectInfo, DefaultBodyLimit},
     middleware::{self, Next},
     response::Response,
     routing::{get, post},
@@ -8,7 +8,7 @@ use axum::{
 use clap::Parser;
 use itertools::Itertools;
 use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
-use std::{net::SocketAddr, sync::Arc};
+use std::{fmt::Display, net::SocketAddr, str::FromStr, sync::Arc};
 use tera::Tera;
 use tokio::sync::Mutex;
 use tower::ServiceBuilder;
@@ -273,6 +273,9 @@ These are required for the applications to store all of its data"
         .nest_service("/static", ServeDir::new("static"))
         // Enable response compression of all responses
         .layer(ServiceBuilder::new().layer(CompressionLayer::new()))
+        // Set the request size limit to the accepted filesize + 256 KiB.
+        // The default is 2MB, not enough for most configurations.
+        .layer(DefaultBodyLimit::max(aps.conf.maximum_filesize + 262144))
         // Use our custom middleware for tracing
         .layer(middleware::from_fn(custom_tracing))
         // Attach DB-pool and TERA-object as State
@@ -320,4 +323,69 @@ pub fn has_expired(expiry_ts: &str) -> Result<bool, AppError> {
         .signed_duration_since(chrono::Utc::now())
         .num_seconds()
         .is_negative())
+}
+
+/// Stores either a full IPv4 address or a /64 IPv6 subnet.
+///
+/// Used for rate limiting and identifying uploading clients.
+enum UploadIpPrefix {
+    V4([u8; 4]),
+    V6([u8; 8]),
+}
+
+impl From<SocketAddr> for UploadIpPrefix {
+    fn from(addr: SocketAddr) -> Self {
+        match addr.ip() {
+            std::net::IpAddr::V4(ipv4_addr) => UploadIpPrefix::V4(ipv4_addr.octets()),
+            std::net::IpAddr::V6(ipv6_addr) => {
+                // I originally used "ipv6_addr.octets()[..8].try_into().unwrap()" for this,
+                // but this might (?) be better since it removes the try_into and unwrap.
+                let [b0, b1, b2, b3, b4, b5, b6, b7, ..] = ipv6_addr.octets();
+                UploadIpPrefix::V6([b0, b1, b2, b3, b4, b5, b6, b7])
+            }
+        }
+    }
+}
+
+impl Display for UploadIpPrefix {
+    /// Use a custom string-serialization that is constant-size by using
+    /// hexadeximal encoding. This also makes for canonical encodings.
+    ///
+    /// This makes storing and comparing values in a database easier.
+    /// Moreover, it enabled parsing the canonical representation
+    /// back into an UploadIpPrefix.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            UploadIpPrefix::V4([b0, b1, b2, b3]) => {
+                write!(f, "v4_{b0:02x}{b1:02x}{b2:02x}{b3:02x}")
+            }
+            UploadIpPrefix::V6([b0, b1, b2, b3, b4, b5, b6, b7]) => {
+                write!(
+                    f,
+                    "v6_{b0:02x}{b1:02x}{b2:02x}{b3:02x}{b4:02x}{b5:02x}{b6:02x}{b7:02x}"
+                )
+            }
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct UploadIpPrefixParseError;
+
+impl FromStr for UploadIpPrefix {
+    type Err = UploadIpPrefixParseError;
+
+    /// Parse the canonical string represantation back into the struct.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (prefix, octet_str) = s.split_at_checked(3).ok_or(UploadIpPrefixParseError)?;
+        let octets = hex::decode(octet_str).map_err(|_| UploadIpPrefixParseError)?;
+
+        if let ("v4_", [b0, b1, b2, b3]) = (prefix, octets.as_slice()) {
+            Ok(UploadIpPrefix::V4([*b0, *b1, *b2, *b3]))
+        } else if let ("v6_", [b0, b1, b2, b3, b4, b5, b6, b7]) = (prefix, octets.as_slice()) {
+            Ok(UploadIpPrefix::V6([*b0, *b1, *b2, *b3, *b4, *b5, *b6, *b7]))
+        } else {
+            Err(UploadIpPrefixParseError)
+        }
+    }
 }

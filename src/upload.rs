@@ -29,6 +29,9 @@ pub async fn upload_endpoint(
     ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<UploadFileResponse>), AppError> {
+    // Before we do anything with the request, check that the user is even allowed to do this.
+
+
     let mut e_filename: Option<Vec<u8>> = None;
     let mut e_filedata: Option<Vec<u8>> = None;
     let mut iv_fd: Option<[u8; 12]> = None;
@@ -50,10 +53,10 @@ pub async fn upload_endpoint(
                 e_filename = Some(Vec::from(field_data));
             }
             "e_filedata" => {
-                if field_data.len() > 10485760 {
+                if field_data.len() > aps.conf.maximum_filesize {
                     return AppError::err(
                         StatusCode::BAD_REQUEST,
-                        "encrypted file is too large (larger than 10MiB)",
+                        "encrypted file is too large",
                     );
                 }
                 e_filedata = Some(Vec::from(field_data));

@@ -14,8 +14,9 @@ use crate::*;
 pub struct AppConfiguration {
     pub interface: String,
     pub admin_password_hash: String,
-    pub maximum_filesize: u64,
-    pub maximum_quota: u64,
+    pub maximum_filesize: usize,
+    pub maximum_quota: usize,
+    pub maximum_uploads_per_ip: usize,
     pub log_level: String,
     pub demo_mode: bool,
 }
@@ -38,11 +39,11 @@ impl AppConfiguration {
 ///    '25M' ->  25 MiB ->    26_214_400 Bytes
 ///   '250K' -> 250 KiB ->       256_000 Bytes
 ///     '5G' ->   5 GiB -> 5_368_709_120 Bytes
-fn transform_filesize_input(input: &str) -> Option<u64> {
+fn transform_filesize_input(input: &str) -> Option<usize> {
     // Split the string into number and suffix.
     let (number_str, suffix) = input.split_at(input.len() - 1);
     // Try to parse the number.
-    let number = number_str.parse::<u64>().ok();
+    let number = number_str.parse::<usize>().ok();
     // Next, try to parse the suffix and return the actual byte value.
     match suffix {
         "K" => number.map(|n| n.checked_mul(1024)).flatten(),
@@ -136,7 +137,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         .with_formatter(&format_filesize_input)
         .with_help_message(
             "
-  > How much storage all uploaded files are at most allowed to consume.
+  How much storage all uploaded files are at most allowed to consume.
 
   Once this limit has been reached users will not be able to upload
   more files until old ones have expired and are cleared from disk.
@@ -145,6 +146,24 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
      '25M' ->  25 MiB ->    26_214_400 Bytes
     '250K' -> 250 KiB ->       256_000 Bytes
       '5G' ->   5 GiB -> 5_368_709_120 Bytes
+",
+        )
+        .prompt()?;
+
+    let maximum_uploads_per_ip = Text::new("Maximum Uploads per IP:")
+        .with_initial_value("10")
+        .with_validator(validate_filesize_input)
+        .with_formatter(&format_filesize_input)
+        .with_help_message(
+            "
+  How many uploaded files per IP address does the server permit?
+
+  The database associates each upload with the IP address of the uploading client.
+  If the number of uploads associated with a single IP reaches this threshold,
+  they receive an error that they've already uploaded too many files and need
+  to wait until old ones expire (or delete them manually).
+
+  'IP address' here refers to either an IPv4 address or an IPv6 /64-subnet.
 ",
         )
         .prompt()?;

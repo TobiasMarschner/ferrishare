@@ -875,6 +875,7 @@ dependencies = [
  "clap",
  "cookie",
  "crossterm 0.28.1",
+ "hex",
  "inquire",
  "itertools 0.13.0",
  "minify-html",
