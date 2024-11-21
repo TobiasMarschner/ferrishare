@@ -17,7 +17,7 @@ pub struct AppConfiguration {
     pub maximum_filesize: usize,
     pub maximum_quota: usize,
     pub maximum_uploads_per_ip: usize,
-    pub daily_request_limit_per_ip: usize,
+    pub daily_request_limit_per_ip: u64,
     pub log_level: String,
     pub demo_mode: bool,
 }
@@ -179,7 +179,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
     let daily_request_limit_per_ip = Text::new("Daily request limit per IP:")
         .with_initial_value("1000")
         .with_validator(|v: &str| {
-            v.parse::<usize>()
+            v.parse::<u64>()
                 .map_or(Ok(Validation::Invalid("not a valid number".into())), |_| {
                     Ok(Validation::Valid)
                 })
@@ -196,7 +196,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         )
         .prompt()?
         // Due to the validator this parse should never fail.
-        .parse::<usize>()
+        .parse::<u64>()
         .unwrap();
 
     let log_levels = vec![Level::INFO, Level::WARN, Level::ERROR];

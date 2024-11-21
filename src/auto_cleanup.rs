@@ -10,6 +10,26 @@ pub async fn cleanup_cronjob(aps: AppState) {
         // time and will refuse to serve resources that still exist but have already expired.
         tokio::time::sleep(tokio::time::Duration::from_secs(900)).await;
 
+        // Acquire the rate-limiter.
+        let mut rl = aps.rate_limiter.write().await;
+
+        // Leak from the bucket, i.e. reduce the request count for all IPs.
+        for (_, v) in rl.iter_mut() {
+            // Decrease, but ensure no underflows take place.
+            // If the value would be below 0, simply insert 0.
+            *v = v
+                .checked_sub(std::cmp::max(aps.conf.daily_request_limit_per_ip / 96, 1))
+                .unwrap_or_default();
+        }
+
+        // Next up, clear all IPs that have fully cooled down.
+        // If we don't do this the rate-limiter will simply collect
+        // a list of *all* IPs that ever talked to the server - no good.
+        rl.retain(|_, v| *v > 0);
+
+        // Free the guard before continuing - this way we can serve requests again.
+        drop(rl);
+
         // Now query all files from the database.
         #[derive(Debug, FromRow)]
         struct FileRow {
@@ -133,4 +153,3 @@ pub async fn cleanup_cronjob(aps: AppState) {
         }
     }
 }
-

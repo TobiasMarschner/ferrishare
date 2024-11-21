@@ -106,8 +106,18 @@ pub async fn ip_prefix_ratelimiter(
     ExtractIpPrefix(eip): ExtractIpPrefix,
     request: Request,
     next: Next,
-) -> Result<Response, StatusCode> {
-    // Count the request.
-    // aps.rate_limiter.
-    Ok(next.run(request).await)
+) -> Result<Response, AppError> {
+    // Acquire a writing reference to the rate-limiter.
+    let mut rl = aps.rate_limiter.write().await;
+    // Insert the key if it wasn't already here and update its counter.
+    let counter = rl.entry(eip).and_modify(|v| *v = *v + 1).or_insert(1);
+    // Rate limit, if need be.
+    if *counter <= aps.conf.daily_request_limit_per_ip {
+        Ok(next.run(request).await)
+    } else {
+        AppError::err(
+            StatusCode::TOO_MANY_REQUESTS,
+            "too many requests, come back later",
+        )
+    }
 }
