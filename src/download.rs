@@ -20,7 +20,6 @@ use crate::*;
 pub async fn download_endpoint(
     Query(params): Query<HashMap<String, String>>,
     State(aps): State<AppState>,
-    // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
 ) -> Result<(StatusCode, impl IntoResponse), AppError> {
     // Only the file parameter is permitted here.
     let hash = params.get("hash");
@@ -156,7 +155,6 @@ pub fn pretty_print_delta<Tz1: TimeZone, Tz2: TimeZone>(
 pub async fn download_page(
     Query(params): Query<HashMap<String, String>>,
     State(aps): State<AppState>,
-    // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
 ) -> Result<(StatusCode, Html<String>), AppError> {
     aps.tera.lock().await.full_reload()?;
 

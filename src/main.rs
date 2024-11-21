@@ -8,9 +8,9 @@ use axum::{
 use clap::Parser;
 use itertools::Itertools;
 use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
-use std::{fmt::Display, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Duration};
 use tera::Tera;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 use tower::ServiceBuilder;
 use tower_http::{compression::CompressionLayer, services::ServeDir, timeout::TimeoutLayer};
 use tracing::Instrument;
@@ -19,6 +19,7 @@ use tracing::Instrument;
 // to import 'crate::*' instead of also having to import 'crate::error_handling::AppError'.
 pub use config::AppConfiguration;
 pub use error_handling::AppError;
+pub use ip_prefix::{ExtractIpPrefix, IpPrefix};
 
 mod admin;
 mod auto_cleanup;
@@ -26,6 +27,7 @@ mod config;
 mod delete;
 mod download;
 mod error_handling;
+mod ip_prefix;
 mod upload;
 
 /// Global variables provided to every single request handler.
@@ -39,6 +41,7 @@ pub struct AppState {
     tera: Arc<Mutex<Tera>>,
     db: SqlitePool,
     conf: Arc<AppConfiguration>,
+    rate_limiter: Arc<RwLock<HashMap<IpPrefix, u64>>>,
 }
 
 /// Global definition of the HTML-minifier configuration.
@@ -135,10 +138,12 @@ struct Args {
 #[tokio::main]
 async fn main() {
     // First things first, create the DATA_PATH and its subdirectories.
-    std::fs::create_dir_all(format!("{DATA_PATH}/uploaded_files")).expect(&format!(
-        "Failed to recursively create directories: {DATA_PATH}/uploaded_files
+    std::fs::create_dir_all(format!("{DATA_PATH}/uploaded_files")).unwrap_or_else(|_| {
+        panic!(
+            "Failed to recursively create directories: {DATA_PATH}/uploaded_files
 These are required for the applications to store all of its data"
-    ));
+        )
+    });
 
     // Parse cmd-line arguments and check whether we're (re-)creating the config.toml.
     if Args::parse().init {
@@ -251,6 +256,7 @@ These are required for the applications to store all of its data"
         tera,
         db,
         conf: Arc::new(app_config),
+        rate_limiter: Arc::new(RwLock::new(HashMap::new())),
     };
     // Keep a copy of the interface, we'll need it after the AppState has already been moved.
     let interface = aps.conf.interface.clone();
@@ -296,6 +302,8 @@ These are required for the applications to store all of its data"
         )))
         // Enable response compression of all responses
         .layer(ServiceBuilder::new().layer(CompressionLayer::new()))
+        // Use our custom middleware for rate limiting.
+        .layer(middleware::from_fn_with_state(aps.clone(), ip_prefix::ip_prefix_ratelimiter))
         // Use our custom middleware for tracing
         .layer(middleware::from_fn(custom_tracing))
         // Attach DB-pool and TERA-object as State
@@ -343,69 +351,4 @@ pub fn has_expired(expiry_ts: &str) -> Result<bool, AppError> {
         .signed_duration_since(chrono::Utc::now())
         .num_seconds()
         .is_negative())
-}
-
-/// Stores either a full IPv4 address or a /64 IPv6 subnet.
-///
-/// Used for rate limiting and identifying uploading clients.
-pub enum UploadIpPrefix {
-    V4([u8; 4]),
-    V6([u8; 8]),
-}
-
-impl From<SocketAddr> for UploadIpPrefix {
-    fn from(addr: SocketAddr) -> Self {
-        match addr.ip() {
-            std::net::IpAddr::V4(ipv4_addr) => UploadIpPrefix::V4(ipv4_addr.octets()),
-            std::net::IpAddr::V6(ipv6_addr) => {
-                // I originally used "ipv6_addr.octets()[..8].try_into().unwrap()" for this,
-                // but this might (?) be better since it removes the try_into and unwrap.
-                let [b0, b1, b2, b3, b4, b5, b6, b7, ..] = ipv6_addr.octets();
-                UploadIpPrefix::V6([b0, b1, b2, b3, b4, b5, b6, b7])
-            }
-        }
-    }
-}
-
-impl Display for UploadIpPrefix {
-    /// Use a custom string-serialization that is constant-size by using
-    /// hexadeximal encoding. This also makes for canonical encodings.
-    ///
-    /// This makes storing and comparing values in a database easier.
-    /// Moreover, it enabled parsing the canonical representation
-    /// back into an UploadIpPrefix.
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            UploadIpPrefix::V4([b0, b1, b2, b3]) => {
-                write!(f, "v4_{b0:02x}{b1:02x}{b2:02x}{b3:02x}")
-            }
-            UploadIpPrefix::V6([b0, b1, b2, b3, b4, b5, b6, b7]) => {
-                write!(
-                    f,
-                    "v6_{b0:02x}{b1:02x}{b2:02x}{b3:02x}{b4:02x}{b5:02x}{b6:02x}{b7:02x}"
-                )
-            }
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct UploadIpPrefixParseError;
-
-impl FromStr for UploadIpPrefix {
-    type Err = UploadIpPrefixParseError;
-
-    /// Parse the canonical string represantation back into the struct.
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (prefix, octet_str) = s.split_at_checked(3).ok_or(UploadIpPrefixParseError)?;
-        let octets = hex::decode(octet_str).map_err(|_| UploadIpPrefixParseError)?;
-
-        if let ("v4_", [b0, b1, b2, b3]) = (prefix, octets.as_slice()) {
-            Ok(UploadIpPrefix::V4([*b0, *b1, *b2, *b3]))
-        } else if let ("v6_", [b0, b1, b2, b3, b4, b5, b6, b7]) = (prefix, octets.as_slice()) {
-            Ok(UploadIpPrefix::V6([*b0, *b1, *b2, *b3, *b4, *b5, *b6, *b7]))
-        } else {
-            Err(UploadIpPrefixParseError)
-        }
-    }
 }

@@ -23,7 +23,6 @@ use crate::*;
 pub async fn admin_page(
     Query(params): Query<HashMap<String, String>>,
     State(aps): State<AppState>,
-    // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     jar: CookieJar,
 ) -> Result<impl IntoResponse, AppError> {
     // Calculate the base64url-encoded sha256sum of the session cookie, if any.
@@ -132,7 +131,6 @@ pub struct AdminLogin {
 
 pub async fn admin_login(
     State(aps): State<AppState>,
-    // ConnectInfo(client_address): ConnectInfo<SocketAddr>,
     jar: CookieJar,
     Form(admin_login): Form<AdminLogin>,
 ) -> Result<(CookieJar, Redirect), AppError> {

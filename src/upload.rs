@@ -1,5 +1,5 @@
 use axum::{
-    extract::{ConnectInfo, Multipart, State},
+    extract::{Multipart, State},
     http::StatusCode,
     response::Html,
     Json,
@@ -10,7 +10,6 @@ use minify_html::minify;
 use rand::prelude::*;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use std::net::SocketAddr;
 use tera::Context;
 use tokio::io::AsyncWriteExt;
 
@@ -26,7 +25,7 @@ pub async fn upload_page(State(aps): State<AppState>) -> Result<Html<String>, Ap
 
 pub async fn upload_endpoint(
     State(aps): State<AppState>,
-    ConnectInfo(client_address): ConnectInfo<SocketAddr>,
+    ExtractIpPrefix(eip): ExtractIpPrefix,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<UploadFileResponse>), AppError> {
     // Before we do anything with the request, check that the user is even allowed to do this.
@@ -53,10 +52,7 @@ pub async fn upload_endpoint(
             }
             "e_filedata" => {
                 if field_data.len() > aps.conf.maximum_filesize {
-                    return AppError::err(
-                        StatusCode::BAD_REQUEST,
-                        "encrypted file is too large",
-                    );
+                    return AppError::err(StatusCode::BAD_REQUEST, "encrypted file is too large");
                 }
                 e_filedata = Some(Vec::from(field_data));
             }
@@ -104,7 +100,7 @@ pub async fn upload_endpoint(
     let hour_duration = hour_duration
         .ok_or_else(|| AppError::new(StatusCode::BAD_REQUEST, "no duration provided"))?;
     let filesize = e_filedata.len() as i64;
-    let upload_ip = UploadIpPrefix::from(client_address).to_string();
+    let upload_ip = eip.to_string();
 
     // Compute the sha256sum of the encrypted data.
     // Likelihood of collision is ridiculously small, so we can ignore it here.

@@ -17,6 +17,7 @@ pub struct AppConfiguration {
     pub maximum_filesize: usize,
     pub maximum_quota: usize,
     pub maximum_uploads_per_ip: usize,
+    pub daily_request_limit_per_ip: usize,
     pub log_level: String,
     pub demo_mode: bool,
 }
@@ -28,7 +29,7 @@ impl AppConfiguration {
         match self.log_level.as_str() {
             "ERROR" => Level::ERROR,
             "WARN" => Level::WARN,
-            "INFO" | _ => Level::INFO,
+            _ => Level::INFO,
         }
     }
 }
@@ -46,9 +47,9 @@ fn transform_filesize_input(input: &str) -> Option<usize> {
     let number = number_str.parse::<usize>().ok();
     // Next, try to parse the suffix and return the actual byte value.
     match suffix {
-        "K" => number.map(|n| n.checked_mul(1024)).flatten(),
-        "M" => number.map(|n| n.checked_mul(1024 * 1024)).flatten(),
-        "G" => number.map(|n| n.checked_mul(1024 * 1024 * 1024)).flatten(),
+        "K" => number.and_then(|n| n.checked_mul(1024)),
+        "M" => number.and_then(|n| n.checked_mul(1024 * 1024)),
+        "G" => number.and_then(|n| n.checked_mul(1024 * 1024 * 1024)),
         _ => None,
     }
 }
@@ -93,7 +94,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         )
         .prompt()?;
 
-    let admin_password = Password::new("Admin Password:")
+    let admin_password = Password::new("Admin password:")
         .with_display_mode(inquire::PasswordDisplayMode::Masked)
         .with_help_message(
             "
@@ -111,7 +112,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         )
         .prompt()?;
 
-    let maximum_filesize = Text::new("Maximum Filesize:")
+    let maximum_filesize = Text::new("Maximum filesize:")
         .with_initial_value("25M")
         .with_validator(validate_filesize_input)
         .with_formatter(&format_filesize_input)
@@ -131,7 +132,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         )
         .prompt()?;
 
-    let maximum_quota = Text::new("Maximum Storage:")
+    let maximum_quota = Text::new("Maximum storage:")
         .with_initial_value("5G")
         .with_validator(validate_filesize_input)
         .with_formatter(&format_filesize_input)
@@ -150,7 +151,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         )
         .prompt()?;
 
-    let maximum_uploads_per_ip = Text::new("Maximum Uploads per IP:")
+    let maximum_uploads_per_ip = Text::new("Maximum uploads per IP:")
         .with_initial_value("10")
         .with_validator(|v: &str| {
             v.parse::<usize>()
@@ -168,6 +169,29 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
   to wait until old ones expire (or delete them manually).
 
   'IP address' here refers to either an IPv4 address or an IPv6 /64-subnet.
+",
+        )
+        .prompt()?
+        // Due to the validator this parse should never fail.
+        .parse::<usize>()
+        .unwrap();
+
+    let daily_request_limit_per_ip = Text::new("Daily request limit per IP:")
+        .with_initial_value("1000")
+        .with_validator(|v: &str| {
+            v.parse::<usize>()
+                .map_or(Ok(Validation::Invalid("not a valid number".into())), |_| {
+                    Ok(Validation::Valid)
+                })
+        })
+        .with_help_message(
+            "
+  How many requests of any kind (GET + POST) can a single IP make per day?
+
+  Essentially a rate-limiter to ensure the server doesn't get DDoS'd.
+  Uses a leaky bucket algorithm where the app keeps track of the number of
+  recieved requests and decreases that count by 1/96th of the specified value
+  every 15 minutes.
 ",
         )
         .prompt()?
@@ -215,6 +239,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         maximum_filesize,
         maximum_quota,
         maximum_uploads_per_ip,
+        daily_request_limit_per_ip,
         log_level: log_level.to_string(),
         demo_mode: false,
     };
@@ -225,7 +250,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
 
     eprintln!(" done!");
     eprintln!("Successfully wrote config to {DATA_PATH}/config.toml");
-    eprintln!("You can now launch the app normally.");
+    eprintln!("You can now launch the app.");
 
     Ok(())
 }
