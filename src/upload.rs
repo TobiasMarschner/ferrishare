@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Multipart, State},
+    extract::{multipart::MultipartRejection, Multipart, Request, State},
     http::StatusCode,
     response::Html,
     Json,
@@ -23,12 +23,70 @@ pub async fn upload_page(State(aps): State<AppState>) -> Result<Html<String>, Ap
     Ok(Html(response_body))
 }
 
+/// Middleware that keeps track which IpPrefixes are currently uploading in aps.uploading.
+///
+/// Implemented as a middleware to ensure the IpPrefix is guaranteed to be removed from
+/// aps.uploading regardless of whether the handler returns 2XX, 4XX or even 5XX.
+///
+/// Moreover, when implemented as a middleware the request is never accepted to begin with.
+/// This makes for immediate and much cleaner error messages on the frontend.
+pub async fn upload_endpoint_wrapper(
+    State(aps): State<AppState>,
+    ExtractIpPrefix(eip): ExtractIpPrefix,
+    request: Request,
+    next: Next,
+) -> Result<Response, AppError> {
+    if !aps.uploading.write().await.insert(eip) {
+        return AppError::err(
+            StatusCode::TOO_MANY_REQUESTS,
+            "you are already uploading a file, please wait",
+        );
+    } else {
+        // Handle the request.
+        let response = next.run(request).await;
+        // Remove the IpPrefix from the request.
+        if !aps.uploading.write().await.remove(&eip) {
+            tracing::error!("tried to remove {eip} from aps.uploading on successful upload, but it wasn't in the set");
+        }
+        Ok(response)
+    }
+}
+
 pub async fn upload_endpoint(
     State(aps): State<AppState>,
     ExtractIpPrefix(eip): ExtractIpPrefix,
-    mut multipart: Multipart,
+    multipart: Result<Multipart, MultipartRejection>,
 ) -> Result<(StatusCode, Json<UploadFileResponse>), AppError> {
-    // Before we do anything with the request, check that the user is even allowed to do this.
+    // Handle bad multipart form data in here.
+    // If something went wrong parsing it, blame the client.
+    let mut multipart = multipart.map_err(|_| {
+        AppError::new(
+            StatusCode::BAD_REQUEST,
+            "failed to parse form data; is your file too large?",
+        )
+    })?;
+
+    // Find out how many files this user has already uploaded.
+    let uploads_by_eip: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM uploaded_files WHERE upload_ip = ?;")
+            .bind(eip.to_string())
+            .fetch_one(&aps.db)
+            .await?;
+
+    // Check if the user has hit their upload limit.
+    if uploads_by_eip as usize > aps.conf.maximum_uploads_per_ip {
+        return AppError::err(StatusCode::TOO_MANY_REQUESTS, "your computer has reached the file upload limit; delete old files or wait for them to expire")
+    }
+
+    // Also determine the total size of files uploaded so far.
+    let total_quota: i64 = sqlx::query_scalar("SELECT SUM(filesize) FROM uploaded_files;")
+        .fetch_one(&aps.db)
+        .await?;
+
+    // Check if we've hit the global limit.
+    if total_quota as usize > aps.conf.maximum_quota {
+        return AppError::err(StatusCode::INSUFFICIENT_STORAGE, "server has reached maximum storage capacity; please try again later")
+    }
 
     let mut e_filename: Option<Vec<u8>> = None;
     let mut e_filedata: Option<Vec<u8>> = None;

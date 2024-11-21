@@ -10,7 +10,7 @@ use std::{fmt::Display, net::SocketAddr, str::FromStr};
 /// Stores either a full IPv4 address or a /64 IPv6 subnet.
 ///
 /// Used for rate limiting and identifying uploading clients.
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum IpPrefix {
     V4([u8; 4]),
     V6([u8; 8]),
@@ -110,9 +110,15 @@ pub async fn ip_prefix_ratelimiter(
     // Acquire a writing reference to the rate-limiter.
     let mut rl = aps.rate_limiter.write().await;
     // Insert the key if it wasn't already here and update its counter.
-    let counter = rl.entry(eip).and_modify(|v| *v = *v + 1).or_insert(1);
+    let counter = rl
+        .entry(eip)
+        .and_modify(|v| *v = *v + 1)
+        .or_insert(1)
+        .clone();
+    // Drop our borrow, or we can only process one request at a time, lol.
+    drop(rl);
     // Rate limit, if need be.
-    if *counter <= aps.conf.daily_request_limit_per_ip {
+    if counter <= aps.conf.daily_request_limit_per_ip {
         Ok(next.run(request).await)
     } else {
         AppError::err(

@@ -8,7 +8,12 @@ use axum::{
 use clap::Parser;
 use itertools::Itertools;
 use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
-use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    net::SocketAddr,
+    sync::Arc,
+    time::Duration,
+};
 use tera::Tera;
 use tokio::sync::{Mutex, RwLock};
 use tower::ServiceBuilder;
@@ -38,10 +43,22 @@ mod upload;
 /// indirection on the database pool (as SqlitePool is itself essentially an Arc).
 #[derive(Debug, Clone)]
 pub struct AppState {
+    /// global HTML/JS templating engine
     tera: Arc<Mutex<Tera>>,
+    /// sqlite database
+    ///
+    /// Is internally implemented as an Arc, so no need to wrap it here.
     db: SqlitePool,
+    /// immutable global configuration for the application
     conf: Arc<AppConfiguration>,
+    /// table of request counts for rate limiting
     rate_limiter: Arc<RwLock<HashMap<IpPrefix, u64>>>,
+    /// list of IpPrefixes who are currently uploading a file
+    ///
+    /// Any given IP is only allowed to stream one file at a time.
+    /// Otherwise, a malicious client could start hundreds of uploads
+    /// simultaneously and bypass quota restrictions.
+    uploading: Arc<RwLock<HashSet<IpPrefix>>>,
 }
 
 /// Global definition of the HTML-minifier configuration.
@@ -257,6 +274,7 @@ These are required for the applications to store all of its data"
         db,
         conf: Arc::new(app_config),
         rate_limiter: Arc::new(RwLock::new(HashMap::new())),
+        uploading: Arc::new(RwLock::new(HashSet::new())),
     };
     // Keep a copy of the interface, we'll need it after the AppState has already been moved.
     let interface = aps.conf.interface.clone();
@@ -294,7 +312,11 @@ These are required for the applications to store all of its data"
         .route(
             "/upload_endpoint",
             post(upload::upload_endpoint)
-                .layer(DefaultBodyLimit::max(aps.conf.maximum_filesize + 262144)),
+                .layer(DefaultBodyLimit::max(aps.conf.maximum_filesize + 262144))
+                .layer(axum::middleware::from_fn_with_state(
+                    aps.clone(),
+                    upload::upload_endpoint_wrapper,
+                )),
         )
         .route("/download_endpoint", get(download::download_endpoint))
         .layer(TimeoutLayer::new(Duration::from_secs(
@@ -303,7 +325,10 @@ These are required for the applications to store all of its data"
         // Enable response compression of all responses
         .layer(ServiceBuilder::new().layer(CompressionLayer::new()))
         // Use our custom middleware for rate limiting.
-        .layer(middleware::from_fn_with_state(aps.clone(), ip_prefix::ip_prefix_ratelimiter))
+        .layer(middleware::from_fn_with_state(
+            aps.clone(),
+            ip_prefix::ip_prefix_ratelimiter,
+        ))
         // Use our custom middleware for tracing
         .layer(middleware::from_fn(custom_tracing))
         // Attach DB-pool and TERA-object as State
