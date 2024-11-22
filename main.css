@@ -129,11 +129,11 @@
 
   /* primary button for big actions */
   .btn-primary {
-    @apply flex items-center justify-center gap-4 p-4 rounded-full bg-zinc-300 text-zinc-800 text-xl font-bold cursor-pointer shadow-md;
+    @apply flex items-center justify-center gap-4 p-4 rounded-full bg-zinc-300 text-zinc-800 text-xl font-bold cursor-pointer shadow-none;
   }
 
   .btn-primary:hover {
-    @apply bg-zinc-200;
+    @apply bg-zinc-200 shadow-md;
   }
 
   .btn-primary:active {
@@ -145,14 +145,47 @@
   }
 
   .btn-primary.btn-primary-green {
-    @apply bg-emerald-300 text-emerald-900
+    @apply bg-emerald-200 text-emerald-800
   }
 
   .btn-primary.btn-primary-green:hover {
-    @apply bg-emerald-200
+    @apply bg-emerald-100
   }
 
   .btn-primary.btn-primary-green:disabled {
+    @apply text-zinc-400 bg-zinc-200;
+  }
+
+  /* secondary button for smaller actions */
+  .btn-secondary {
+    @apply flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-zinc-300 text-zinc-800 font-bold cursor-pointer shadow-none;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-zinc-200 shadow-md;
+  }
+
+  .btn-secondary:active {
+    @apply shadow-none;
+  }
+
+  .btn-secondary:disabled {
+    @apply shadow-none text-zinc-400 bg-zinc-200 cursor-not-allowed;
+  }
+
+  .btn-secondary.btn-secondary-sky {
+    @apply bg-sky-100 text-sky-700 border-2 border-sky-500;
+  }
+
+  .btn-secondary.btn-secondary-sky:disabled {
+    @apply text-zinc-400 bg-zinc-200;
+  }
+
+  .btn-secondary.btn-secondary-amber {
+    @apply bg-amber-100 text-amber-700 border-2 border-amber-500;
+  }
+
+  .btn-secondary.btn-secondary-amber:disabled {
     @apply text-zinc-400 bg-zinc-200;
   }
 }

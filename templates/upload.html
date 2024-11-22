@@ -87,57 +87,60 @@ Upload a File - E2EE Fileshare
         </button>
       </div>
     </form>
-    <div id="filesubmit-progress" class="hidden flex-col gap-4 p-4 rounded-md bg-gray-200 shadow-md border-2 border-emerald-500">
+    <div id="infobox" class="hidden flex-col rounded-lg shadow-md border-2 overflow-hidden p-4 gap-4">
       <div class="flex flex-row gap-4">
-        <span class="matsym text-4xl" id="fs-status-icon"></span>
+        <span class="matsym text-4xl" id="infobox-icon"></span>
         <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
-          <div id="fs-status-text" class="text-lg font-bold"></div>
-          <div id="fs-pbar" class="hidden min-h-2 bg-gray-200 rounded-full">
-            <div id="fs-pbar-inner" class="mr-auto bg-gray-400 rounded-full transition-width duration-500 ease-out"
+          <div id="infobox-text" class="text-lg font-bold"></div>
+          <div id="infobox-pbar-outer" class="hidden min-h-2 bg-sky-200 rounded-full">
+            <div id="infobox-pbar-inner" class="mr-auto bg-sky-500 rounded-full transition-width duration-500 ease-out"
               style="width: 0%;"></div>
           </div>
         </div>
       </div>
+    </div>
+    <div id="successbox" class="hidden flex-col gap-8">
+      <div class="flex flex-row items-center justify-center gap-4 text-emerald-700">
+        <span class="matsym text-4xl">check_circle</span>
+        <div id="infobox-text" class="text-lg font-bold">
+          Upload successful!
+        </div>
+      </div>
       <div id="fs-success-download-box"
-        class="hidden flex-col items-center rounded-lg shadow-md bg-gray-200 py-2 gap-2">
-        <span class="center text-gray-800 font-bold text-xl p-2 flex gap-2">
+        class="hidden flex-col items-center bg-zinc-200 py-2 gap-2 rounded-lg shadow-md">
+        <span class="center text-sky-700 font-bold text-xl p-2 flex gap-4">
           <span class="matsym">public</span>
           <span>
             Public Download Link
           </span>
         </span>
-        <input id="fs-success-download-input" class="self-stretch text-md p-2 shadow-inner border-2 border-gray-200"
-          type="text" readonly>
+        <input id="fs-success-download-input" class="self-stretch text-sm mx-4 p-2 rounded-md shadow-inner" readonly>
         <div class="flex gap-4 p-2">
-          <a id="fs-success-download-link" target="_blank"
-            class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+          <a id="fs-success-download-link" target="_blank" class="btn-secondary btn-secondary-sky">
             <span class="matsym">open_in_new</span>
             <span>Open</span>
           </a>
-          <button id="fs-success-download-copy" type="button"
-            class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+          <button id="fs-success-download-copy" type="button" class="btn-secondary btn-secondary-sky">
             <span class="matsym">content_paste</span>
             <span>Copy to Clipboard</span>
           </button>
         </div>
       </div>
-      <div id="fs-success-admin-box" class="hidden flex-col items-center rounded-lg shadow-md bg-gray-200 py-2 gap-2">
-        <span class="center text-gray-800 font-bold text-xl p-2 flex gap-2">
+      <div id="fs-success-admin-box"
+        class="hidden flex-col items-center bg-zinc-200 py-2 gap-2 rounded-lg shadow-md">
+        <span class="center text-amber-700 font-bold text-xl p-2 flex gap-4">
           <span class="matsym">security</span>
           <span>
             Administration Link
           </span>
         </span>
-        <input id="fs-success-admin-input" class="self-stretch text-md p-2 shadow-inner border-2 border-gray-200"
-          type="text" readonly>
+        <input id="fs-success-admin-input" class="self-stretch text-sm mx-4 p-2 rounded-md shadow-inner" readonly>
         <div class="flex gap-4 p-2">
-          <a id="fs-success-admin-link" target="_blank"
-            class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+          <a id="fs-success-admin-link" target="_blank" class="btn-secondary btn-secondary-amber">
             <span class="matsym">open_in_new</span>
             <span>Open</span>
           </a>
-          <button id="fs-success-admin-copy" type="button"
-            class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+          <button id="fs-success-admin-copy" type="button" class="btn-secondary btn-secondary-amber">
             <span class="matsym">content_paste</span>
             <span>Copy to Clipboard</span>
           </button>

@@ -2,53 +2,56 @@
   * type: One of "success", "error"
   * message: The actual text to display
 */
-function updateFsStatus(type, message) {
-  let fsStatus = document.getElementById("filesubmit-progress");
-  let fsIcon = document.getElementById("fs-status-icon");
-  let fsText = document.getElementById("fs-status-text");
-  let fsPbar = document.getElementById("fs-pbar");
+function updateInfoBox(type, message) {
+  let ib = document.getElementById("infobox");
+  let ibIcon = document.getElementById("infobox-icon");
+  let ibText = document.getElementById("infobox-text");
+  let ibPbarOuter = document.getElementById("infobox-pbar-outer");
 
   // Clear previous coloring of the status element.
-  fsStatus.classList.remove('bg-gray-200', 'bg-green-100', 'bg-red-100', 'bg-blue-100');
-  fsIcon.classList.remove('text-gray-800', 'text-green-800', 'text-red-800', 'text-blue-800', 'animate-spin');
-  fsText.classList.remove('text-gray-800', 'text-green-800', 'text-red-800', 'text-blue-800');
+  ib.classList.remove('bg-emerald-50', 'bg-rose-50', 'bg-sky-50', 'border-emerald-500', 'border-rose-500', 'border-sky-500');
+  ibIcon.classList.remove('text-emerald-700', 'text-rose-700', 'text-sky-700', 'animate-spin');
+  ibText.classList.remove('text-emerald-700', 'text-rose-700', 'text-sky-700');
 
   // Set up colors and icon accordingly.
   switch (type) {
     case 'success':
-      fsIcon.textContent = 'check_circle';
-      fsStatus.classList.add('bg-green-100');
-      fsIcon.classList.add('text-green-800');
-      fsText.classList.add('text-green-800');
-      fsPbar.style.display = "none";
+      ibIcon.textContent = 'check_circle';
+      ib.classList.add('bg-emerald-50');
+      ib.classList.add('border-emerald-500');
+      ibIcon.classList.add('text-emerald-700');
+      ibText.classList.add('text-emerald-700');
+      ibPbarOuter.style.display = "none";
       break;
     case 'error':
-      fsIcon.textContent = 'error';
-      fsStatus.classList.add('bg-red-100');
-      fsIcon.classList.add('text-red-800');
-      fsText.classList.add('text-red-800');
-      fsPbar.style.display = "none";
+      ibIcon.textContent = 'error';
+      ib.classList.add('bg-rose-50');
+      ib.classList.add('border-rose-500');
+      ibIcon.classList.add('text-rose-700');
+      ibText.classList.add('text-rose-700');
+      ibPbarOuter.style.display = "none";
       break;
     case 'inprogress':
-      fsIcon.textContent = 'progress_activity';
-      fsStatus.classList.add('bg-blue-100');
-      fsIcon.classList.add('text-blue-800', 'animate-spin');
-      fsText.classList.add('text-blue-800');
-      fsPbar.style.display = "flex";
+      ibIcon.textContent = 'progress_activity';
+      ib.classList.add('bg-sky-50');
+      ib.classList.add('border-sky-500');
+      ibIcon.classList.add('text-sky-700', 'animate-spin');
+      ibText.classList.add('text-sky-700');
+      ibPbarOuter.style.display = "flex";
       break;
   }
 
   // And copy over the message.
-  fsText.textContent = message;
+  ibText.textContent = message;
 }
 
 async function uploadFile() {
   // Turn the status-display visible.
-  document.getElementById("filesubmit-progress").style.display = "flex";
+  document.getElementById("infobox").style.display = "flex";
 
   // Determine the expiry time.
   if (!document.querySelector("input[type='radio'][name='expires']:checked")) {
-    updateFsStatus("error", "Please choose an expiry time.");
+    updateInfoBox("error", "Please choose an expiry time.");
     return;
   }
 
@@ -59,7 +62,7 @@ async function uploadFile() {
   let formData = new FormData();
 
   if (!file) {
-    updateFsStatus("error", "No file selected");
+    updateInfoBox("error", "No file selected");
     return;
   }
 
@@ -68,7 +71,7 @@ async function uploadFile() {
   document.getElementById("fs-filebutton").disabled = true;
   document.getElementById("fs-submit").disabled = true;
 
-  updateFsStatus("inprogress", "Encrypting");
+  updateInfoBox("inprogress", "Encrypting");
 
   // Extract and encode the raw file data and its filename.
   let encoder = new TextEncoder();
@@ -126,12 +129,14 @@ async function uploadFile() {
   xhr.open("POST", "/upload_endpoint");
 
   xhr.onerror = () => {
-    updateFsStatus("error", "Error during file upload")
+    updateInfoBox("error", "Error during file upload")
   }
 
   xhr.onload = () => {
     if (xhr.status == 201) {
-      updateFsStatus("success", "Upload successful!");
+      // Close the normal display box and transition to the successbox.
+      document.getElementById("infobox").style.display = 'none';
+      document.getElementById("successbox").style.display = 'flex';
 
       let response = JSON.parse(xhr.response);
 
@@ -150,17 +155,17 @@ async function uploadFile() {
       document.getElementById("fs-success-download-box").style.display = "flex";
       document.getElementById("fs-success-admin-box").style.display = "flex";
     } else {
-      updateFsStatus("error", xhr.responseText);
+      updateInfoBox("error", xhr.responseText);
     }
   }
 
   xhr.upload.onprogress = (event) => {
     let progress = (event.loaded / event.total) * 100;
-    document.getElementById("fs-pbar-inner").style.width = progress.toString() + "%";
+    document.getElementById("infobox-pbar-inner").style.width = progress.toString() + "%";
     if (event.loaded < event.total) {
-      updateFsStatus("inprogress", `Uploading ${(event.loaded / 1000000).toFixed(2)} / ${(event.total / 1000000).toFixed(2)} MB (${progress.toFixed(0)}%)`);
+      updateInfoBox("inprogress", `Uploading ${(event.loaded / 1000000).toFixed(2)} / ${(event.total / 1000000).toFixed(2)} MB (${progress.toFixed(0)}%)`);
     } else {
-      updateFsStatus("inprogress", `Processing`);
+      updateInfoBox("inprogress", `Processing`);
     }
   }
 
