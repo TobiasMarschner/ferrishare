@@ -8,7 +8,7 @@ Still to do:
     - [ ] Pagination on the admin overview?
   - [x] Actually deleting expired files
 - [ ] Packaging the whole thing in a configurable Docker container
-  - [ ] Ensure the actual db, config and uploaded files live in their own directory.
+  - [x] Ensure the actual db, config and uploaded files live in their own directory.
 - [ ] Check that uploads are indeed encrypted (entropy and magic number(?) checks).
 - [ ] Ensure that uploaded files are immediately streamed to disk instead of memory.
 - [x] Correct tracing / logging
@@ -23,6 +23,7 @@ Still to do:
   - [ ] Prevent uploads that are too large in the client, too
   - [ ] Perhaps show the quota-error already when requesting the upload-page. (it would be better UX)
   - [ ] Also add the storage-quota to the admin page.
+  - [ ] noscript / nojs users
 - [ ] Set up WAL mode on sqlite and other possible settings
 - [x] Proper app configuration
   - [x] IP and PORT that we're binding on
