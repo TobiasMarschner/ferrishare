@@ -80,7 +80,7 @@ Upload a File - E2EE Fileshare
             </label>
           </div>
         </fieldset>
-        <button type="submit" id="fs-submit" class="btn-primary btn-primary-green">
+        <button type="submit" id="fs-submit" class="btn-primary">
           <span class="flex justify-center items-center gap-4">
             <span class="matsym">upload_file</span> Encrypt and Upload
           </span>
@@ -98,17 +98,9 @@ Upload a File - E2EE Fileshare
           </div>
         </div>
       </div>
-    </div>
-    <div id="successbox" class="hidden flex-col gap-8">
-      <div class="flex flex-row items-center justify-center gap-4 text-emerald-700">
-        <span class="matsym text-4xl">check_circle</span>
-        <div id="infobox-text" class="text-lg font-bold">
-          Upload successful!
-        </div>
-      </div>
       <div id="fs-success-download-box"
-        class="hidden flex-col items-center bg-zinc-200 py-2 gap-2 rounded-lg shadow-md">
-        <span class="center text-sky-700 font-bold text-xl p-2 flex gap-4">
+        class="hidden flex-col items-center bg-zinc-100 py-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
+        <span class="center font-bold text-xl p-2 flex gap-4">
           <span class="matsym">public</span>
           <span>
             Public Download Link
@@ -116,19 +108,18 @@ Upload a File - E2EE Fileshare
         </span>
         <input id="fs-success-download-input" class="self-stretch text-sm mx-4 p-2 rounded-md shadow-inner" readonly>
         <div class="flex gap-4 p-2">
-          <a id="fs-success-download-link" target="_blank" class="btn-secondary btn-secondary-sky">
+          <a id="fs-success-download-link" target="_blank" class="btn-secondary">
             <span class="matsym">open_in_new</span>
             <span>Open</span>
           </a>
-          <button id="fs-success-download-copy" type="button" class="btn-secondary btn-secondary-sky">
+          <button id="fs-success-download-copy" type="button" class="btn-secondary">
             <span class="matsym">content_paste</span>
             <span>Copy to Clipboard</span>
           </button>
         </div>
       </div>
-      <div id="fs-success-admin-box"
-        class="hidden flex-col items-center bg-zinc-200 py-2 gap-2 rounded-lg shadow-md">
-        <span class="center text-amber-700 font-bold text-xl p-2 flex gap-4">
+      <div id="fs-success-admin-box" class="hidden flex-col items-center bg-zinc-100 py-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
+        <span class="center font-bold text-xl p-2 flex gap-4">
           <span class="matsym">security</span>
           <span>
             Administration Link
@@ -136,11 +127,11 @@ Upload a File - E2EE Fileshare
         </span>
         <input id="fs-success-admin-input" class="self-stretch text-sm mx-4 p-2 rounded-md shadow-inner" readonly>
         <div class="flex gap-4 p-2">
-          <a id="fs-success-admin-link" target="_blank" class="btn-secondary btn-secondary-amber">
+          <a id="fs-success-admin-link" target="_blank" class="btn-secondary">
             <span class="matsym">open_in_new</span>
             <span>Open</span>
           </a>
-          <button id="fs-success-admin-copy" type="button" class="btn-secondary btn-secondary-amber">
+          <button id="fs-success-admin-copy" type="button" class="btn-secondary">
             <span class="matsym">content_paste</span>
             <span>Copy to Clipboard</span>
           </button>

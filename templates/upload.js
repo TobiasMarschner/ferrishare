@@ -135,8 +135,9 @@ async function uploadFile() {
   xhr.onload = () => {
     if (xhr.status == 201) {
       // Close the normal display box and transition to the successbox.
-      document.getElementById("infobox").style.display = 'none';
-      document.getElementById("successbox").style.display = 'flex';
+      // document.getElementById("infobox").style.display = 'none';
+      // document.getElementById("successbox").style.display = 'flex';
+      updateInfoBox('success', "Upload successful!");
 
       let response = JSON.parse(xhr.response);
 

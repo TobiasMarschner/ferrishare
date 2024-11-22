@@ -144,21 +144,9 @@
     @apply shadow-none text-zinc-400 bg-zinc-200 cursor-not-allowed;
   }
 
-  .btn-primary.btn-primary-green {
-    @apply bg-emerald-200 text-emerald-800
-  }
-
-  .btn-primary.btn-primary-green:hover {
-    @apply bg-emerald-100
-  }
-
-  .btn-primary.btn-primary-green:disabled {
-    @apply text-zinc-400 bg-zinc-200;
-  }
-
   /* secondary button for smaller actions */
   .btn-secondary {
-    @apply flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-zinc-300 text-zinc-800 font-bold cursor-pointer shadow-none;
+    @apply flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-zinc-200 text-zinc-800 font-bold cursor-pointer shadow-none;
   }
 
   .btn-secondary:hover {
@@ -171,21 +159,5 @@
 
   .btn-secondary:disabled {
     @apply shadow-none text-zinc-400 bg-zinc-200 cursor-not-allowed;
-  }
-
-  .btn-secondary.btn-secondary-sky {
-    @apply bg-sky-100 text-sky-700 border-2 border-sky-500;
-  }
-
-  .btn-secondary.btn-secondary-sky:disabled {
-    @apply text-zinc-400 bg-zinc-200;
-  }
-
-  .btn-secondary.btn-secondary-amber {
-    @apply bg-amber-100 text-amber-700 border-2 border-amber-500;
-  }
-
-  .btn-secondary.btn-secondary-amber:disabled {
-    @apply text-zinc-400 bg-zinc-200;
   }
 }
