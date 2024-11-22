@@ -5,16 +5,24 @@ Download a File - E2EE Fileshare
 {%- endblock %}
 
 {% block content %}
-<div class="m-8">
+<div class="m-4 mt-8 sm:m-8">
   <div id="error-box"
-    class="hidden max-w-lg mx-auto flex-col gap-4 p-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 mb-8 shadow-lg">
+    class="hidden max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 shadow-lg">
     <div class="flex items-center gap-4">
       <span id="error-box-icon" class="matsym text-4xl">warning</span>
       <span id="error-box-head" class="text-lg font-bold"></span>
     </div>
     <p id="error-box-text"></p>
   </div>
-  <div id="dl-box" class="hidden max-w-lg shadow-lg bg-zinc-100 rounded-xl flex-col p-8 gap-8 mx-auto">
+  <div id="success-box"
+    class="hidden max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 rounded-xl bg-emerald-50 text-emerald-700 border-2 border-emerald-500 shadow-lg">
+    <div class="flex items-center gap-4">
+      <span id="success-box-icon" class="matsym text-4xl">warning</span>
+      <span id="success-box-head" class="text-lg font-bold"></span>
+    </div>
+    <p id="success-box-text"></p>
+  </div>
+  <div id="dl-box" class="hidden max-w-lg sm:shadow-lg bg-zinc-100 sm:rounded-xl flex-col sm:p-8 gap-8 mx-auto">
     <h2 class="admin-only hidden gap-4 text-2xl self-center">
       <span class="matsym text-3xl">security</span>
       Admin Page
@@ -38,7 +46,7 @@ Download a File - E2EE Fileshare
         <span class="matsym text-2xl text-gray-500">note_add</span>
         <div class="flex flex-col">
           <span class="text-gray-500">Created</span>
-          <div class="flex items-baseline gap-2">
+          <div class="flex flex-col sm:flex-row items-baseline sm:gap-2">
             <span id="dl-upload-pretty" class="text-xl"></span>
             <span id="dl-upload-ts" class="text-gray-500"></span>
           </div>
@@ -48,7 +56,7 @@ Download a File - E2EE Fileshare
         <span class="matsym text-2xl text-gray-500">auto_delete</span>
         <div class="flex flex-col">
           <span class="text-gray-500">Expires in</span>
-          <div class="flex items-baseline gap-2">
+          <div class="flex flex-col sm:flex-row items-baseline sm:gap-2">
             <span id="dl-expiry-pretty" class="text-xl"></span>
             <span id="dl-expiry-ts" class="text-gray-500"></span>
           </div>
@@ -79,38 +87,25 @@ Download a File - E2EE Fileshare
           </div>
         </div>
       </div>
-      <!-- <div id="infobox" class="hidden flex-row gap-4 p-4 rounded-md bg-gray-200"> -->
-      <!--   <span class="matsym text-4xl animate-spin" id="infobox-icon">progress_activity</span> -->
-      <!--   <div class="flex-1 flex flex-col items-stretch justify-center gap-2"> -->
-      <!--     <div id="infobox-text" class="text-lg font-bold"></div> -->
-      <!--     <div id="infobox-pbar-outer" class="flex min-h-2 bg-gray-200 rounded-full"> -->
-      <!--       <div id="infobox-pbar-inner" class="mr-auto bg-gray-400 rounded-full transition-width duration-500 ease-out" -->
-      <!--         style="width: 0%;"></div> -->
-      <!--     </div> -->
-      <!--   </div> -->
-      <!-- </div> -->
       <button type="button" id="delete-button" class="admin-only hidden btn-primary">
         <span class="matsym">delete</span>
         Delete from Server
       </button>
       <div id="admin-download-box"
-        class="admin-only hidden flex-col items-center rounded-lg shadow-md bg-gray-200 py-2 gap-2">
-        <span class="center text-gray-800 font-bold text-xl p-2 flex gap-2">
+        class="admin-only hidden flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
+        <span class="center font-bold sm:text-xl py-2 flex justify-center gap-2 sm:gap-4">
           <span class="matsym">public</span>
           <span>
             Public Download Link
           </span>
         </span>
-        <input id="admin-download-input" class="self-stretch text-md p-2 shadow-inner border-2 border-gray-200"
-          type="text" readonly>
-        <div class="flex gap-4 p-2">
-          <a id="admin-download-link" target="_blank"
-            class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+        <input id="admin-download-input" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
+        <div class="flex flex-col sm:flex-row justify-center gap-4 py-2">
+          <a id="admin-download-link" target="_blank" class="btn-secondary">
             <span class="matsym">open_in_new</span>
             <span>Open</span>
           </a>
-          <button id="admin-download-copy" type="button"
-            class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+          <button id="admin-download-copy" type="button" class="btn-secondary">
             <span class="matsym">content_paste</span>
             <span>Copy to Clipboard</span>
           </button>

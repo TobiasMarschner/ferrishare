@@ -143,10 +143,10 @@ document.getElementById("delete-button").addEventListener("click", () => {
 
   xhr.onload = () => {
     if (xhr.status === 200) {
-      document.getElementById('error-box-head').textContent = 'The file has been deleted';
-      document.getElementById('error-box-icon').textContent = 'check_circle';
-      document.getElementById('error-box-text').style.display = 'none';
-      document.getElementById('error-box').style.display = 'flex';
+      document.getElementById('success-box-head').textContent = 'The file has been deleted';
+      document.getElementById('success-box-icon').textContent = 'check_circle';
+      document.getElementById('success-box-text').style.display = 'none';
+      document.getElementById('success-box').style.display = 'flex';
       document.getElementById('dl-box').style.display = 'none';
     } else {
       updateInfoBox('error', xhr.responseText);

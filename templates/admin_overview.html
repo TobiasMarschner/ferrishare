@@ -5,15 +5,15 @@ Upload a File - E2EE Fileshare
 {%- endblock %}
 
 {% block content %}
-<div class="m-8">
-  <div class="max-w-lg lg:max-w-6xl lg:shadow-lg lg:bg-gray-100 lg:rounded-xl flex flex-col lg:p-8 gap-8 mx-auto">
-    <div class="flex items-stretch">
-      <h2 class="flex gap-4 text-2xl items-center justify-center lg:justify-start mr-4">
+<div class="m-4 mt-8 lg:m-8">
+  <div class="max-w-lg lg:max-w-6xl lg:shadow-lg lg:bg-zinc-100 lg:rounded-xl flex flex-col lg:p-8 gap-8 mx-auto">
+    <div class="flex flex-col-reverse sm:rounded-xl sm:shadow-lg sm:p-4 lg:p-0 lg:rounded-none lg:shadow-none bg-zinc-100 lg:flex-row items-stretch gap-8">
+      <h2 class="flex gap-4 text-2xl items-center justify-center lg:justify-start sm:mr-4">
         <span class="matsym text-3xl">home_storage</span>
-        Viewing All Uploaded Files
+        <span class="text-balance">Viewing All Uploaded Files</span>
       </h2>
-      <form method="post" action="/admin_logout" class="ml-auto flex items-center">
-        <button type="submit" class="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-gray-300 font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm">
+      <form method="post" action="/admin_logout" class="lg:ml-auto flex justify-center items-center">
+        <button type="submit" class="btn-secondary">
           <span>Logout</span>
           <span class="matsym">logout</span>
         </button>
@@ -22,12 +22,11 @@ Upload a File - E2EE Fileshare
     {% if files %}
     <table>
       <thead>
-        <tr class="hidden lg:table-row text-left *:font-bold *:p-4 text-gray-500">
+        <tr class="hidden lg:table-row text-left *:font-bold *:p-4 text-zinc-500">
           <th class=""> File Hash </th>
           <th class=""> Size </th>
           <th class=""> Uploaded </th>
           <th class=""> Expires in </th>
-          <!-- <th class=""> <span class="matsym">visibility</span> </th> -->
           <th class=""> <span class="matsym">download</span> </th>
           <th class=""> <span class="matsym">delete</span> </th>
         </tr>
@@ -35,7 +34,7 @@ Upload a File - E2EE Fileshare
       <tbody class="lg:table-row-group flex flex-col gap-8">
         {% for file in files %}
         <tr
-          class="flex lg:table-row flex-col lg:*:p-4 gap-6 lg:border-t-2 lg:border-gray-200 rounded-xl bg-gray-100 lg:bg-inherit shadow-lg lg:shadow-none p-8 lg:p-0">
+          class="flex lg:table-row flex-col lg:*:p-4 gap-4 sm:gap-6 lg:border-t-2 lg:border-gray-200 rounded-xl bg-zinc-200 sm:bg-zinc-100 lg:bg-inherit shadow-lg lg:shadow-none p-4 sm:p-8 lg:p-0">
           <td class="flex lg:table-cell flex-row gap-4">
             <div class="lg:hidden matsym text-2xl text-gray-500">code</div>
             <div class="flex flex-col">
@@ -54,7 +53,7 @@ Upload a File - E2EE Fileshare
             <div class="lg:hidden matsym text-2xl text-gray-500">note_add</div>
             <div class="flex flex-col">
               <div class="lg:hidden text-gray-500">Uploaded</div>
-              <div class="flex lg:flex-col gap-2 lg:gap-0 items-baseline text-xl lg:text-lg">
+              <div class="flex flex-col gap-0 items-baseline text-xl lg:text-lg">
                 <div class="text-xl lg:text-lg">
                   {{ file.upload_ts_pretty }}
                 </div>
@@ -68,7 +67,7 @@ Upload a File - E2EE Fileshare
             <div class="lg:hidden matsym text-2xl text-gray-500">auto_delete</div>
             <div class="flex flex-col">
               <div class="lg:hidden text-gray-500">Expires in</div>
-              <div class="flex lg:flex-col gap-2 lg:gap-0 items-baseline text-xl lg:text-lg">
+              <div class="flex flex-col gap-0 items-baseline text-xl lg:text-lg">
                 <div class="text-xl lg:text-lg">
                   {{ file.expiry_ts_pretty }}
                 </div>
@@ -87,7 +86,7 @@ Upload a File - E2EE Fileshare
           </td>
           <td>
             <button type="button" data-efdhash="{{ file.efd_sha256sum }}"
-              class="admin-delete-button no-underline w-full lg:w-auto lg:mx-auto flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed">
+              class="admin-delete-button no-underline w-full lg:w-auto lg:mx-auto flex items-center justify-center gap-4 p-4 rounded-full bg-zinc-300 font-bold cursor-pointer shadow-none hover:shadow-md active:shadow-none disabled:shadow-none disabled:text-zinc-400 disabled:bg-zinc-300 disabled:cursor-not-allowed">
               <span class="matsym no-underline">delete</span>
               <span class="lg:hidden">Delete from Server</span>
             </button>

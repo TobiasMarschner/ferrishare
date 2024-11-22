@@ -129,7 +129,7 @@
 
   /* primary button for big actions */
   .btn-primary {
-    @apply flex items-center justify-center gap-4 p-4 rounded-full bg-zinc-300 text-zinc-800 text-xl font-bold cursor-pointer shadow-none;
+    @apply flex items-center justify-center gap-4 px-8 py-4 rounded-full bg-zinc-300 text-zinc-800 text-xl font-bold cursor-pointer shadow-none;
   }
 
   .btn-primary:hover {
@@ -146,11 +146,11 @@
 
   /* secondary button for smaller actions */
   .btn-secondary {
-    @apply flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-zinc-200 text-zinc-800 font-bold cursor-pointer shadow-none;
+    @apply flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-zinc-300 text-zinc-800 font-bold cursor-pointer shadow-none;
   }
 
   .btn-secondary:hover {
-    @apply bg-zinc-200 shadow-md;
+    @apply bg-zinc-300 shadow-md;
   }
 
   .btn-secondary:active {

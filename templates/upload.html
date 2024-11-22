@@ -5,33 +5,33 @@ Upload a File - E2EE Fileshare
 {%- endblock %}
 
 {% block content %}
-<div class="m-8">
-  <div class="max-w-lg shadow-md bg-zinc-100 rounded-xl flex flex-col p-8 gap-8 mx-auto">
+<div class="m-4 mt-8 sm:m-8">
+  <div class="max-w-lg sm:shadow-md bg-zinc-100 sm:rounded-xl flex flex-col gap-8 sm:p-8 mx-auto">
     <h2 class="flex gap-4 text-2xl self-center">
       <span class="matsym text-3xl">upload_file</span>
       Upload new file
     </h2>
     <ul class="flex flex-col gap-4">
       <li class="flex gap-4">
-        <span class="matsym text-gray-500">clock_loader_90</span>
+        <span class="matsym text-zinc-500">clock_loader_90</span>
         <span>
           Files up to {{ max_filesize }} supported
         </span>
       </li>
       <li class="flex gap-4">
-        <span class="matsym text-gray-500">lock</span>
+        <span class="matsym text-zinc-500">lock</span>
         <span class="text-balance">
           File and filename are encrypted in your browser before being sent over the network
         </span>
       </li>
       <li class="flex gap-4">
-        <span class="matsym text-gray-500">visibility_off</span>
+        <span class="matsym text-zinc-500">visibility_off</span>
         <span>
           The server cannot view or decrypt your data
         </span>
       </li>
       <li class="flex gap-4">
-        <span class="matsym text-gray-500">key</span>
+        <span class="matsym text-zinc-500">key</span>
         <div class="flex flex-col">
           <span>
             The decryption key is stored in the download link's <a
@@ -49,23 +49,23 @@ Upload a File - E2EE Fileshare
       <div id="filesubmit-details" class="hidden flex-col gap-8">
         <ul class="flex flex-col gap-4">
           <li class="flex gap-4">
-            <span class="matsym text-2xl text-gray-500">draft</span>
+            <span class="matsym text-2xl text-zinc-500">draft</span>
             <div class="flex flex-col">
-              <span class="text-gray-500">Filename</span>
+              <span class="text-zinc-500">Filename</span>
               <span id="fs-filename" class="text-xl [word-break:break-word]"></span>
             </div>
           </li>
           <li class="flex gap-4">
-            <span class="matsym text-2xl text-gray-500">clock_loader_90</span>
+            <span class="matsym text-2xl text-zinc-500">clock_loader_90</span>
             <div class="flex flex-col">
-              <span class="text-gray-500">Size</span>
+              <span class="text-zinc-500">Size</span>
               <span id="fs-filesize" class="text-xl"></span>
             </div>
           </li>
         </ul>
         <fieldset id="fs-expiry-fieldset">
-          <legend class="text-gray-500 mb-1">Expires in</legend>
-          <div class="flex gap-4 items-stretch">
+          <legend class="text-zinc-500 mb-1">Expires in</legend>
+          <div class="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch">
             <label class="radio-fieldset-option">
               <input type="radio" name="expires" value="hour" class="">
               <span class="mx-auto">1 hour</span>
@@ -99,15 +99,15 @@ Upload a File - E2EE Fileshare
         </div>
       </div>
       <div id="fs-success-download-box"
-        class="hidden flex-col items-center bg-zinc-100 py-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
-        <span class="center font-bold text-xl p-2 flex gap-4">
+        class="hidden flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
+        <span class="center font-bold sm:text-xl py-2 flex justify-center gap-2 sm:gap-4">
           <span class="matsym">public</span>
           <span>
             Public Download Link
           </span>
         </span>
-        <input id="fs-success-download-input" class="self-stretch text-sm mx-4 p-2 rounded-md shadow-inner" readonly>
-        <div class="flex gap-4 p-2">
+        <input id="fs-success-download-input" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
+        <div class="flex flex-col sm:flex-row justify-center gap-4 py-2">
           <a id="fs-success-download-link" target="_blank" class="btn-secondary">
             <span class="matsym">open_in_new</span>
             <span>Open</span>
@@ -118,15 +118,15 @@ Upload a File - E2EE Fileshare
           </button>
         </div>
       </div>
-      <div id="fs-success-admin-box" class="hidden flex-col items-center bg-zinc-100 py-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
-        <span class="center font-bold text-xl p-2 flex gap-4">
+      <div id="fs-success-admin-box" class="hidden flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
+        <span class="center font-bold sm:text-xl py-2 flex justify-center gap-2 sm:gap-4">
           <span class="matsym">security</span>
           <span>
             Administration Link
           </span>
         </span>
-        <input id="fs-success-admin-input" class="self-stretch text-sm mx-4 p-2 rounded-md shadow-inner" readonly>
-        <div class="flex gap-4 p-2">
+        <input id="fs-success-admin-input" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
+        <div class="flex flex-col sm:flex-row justify-center gap-4 py-2">
           <a id="fs-success-admin-link" target="_blank" class="btn-secondary">
             <span class="matsym">open_in_new</span>
             <span>Open</span>

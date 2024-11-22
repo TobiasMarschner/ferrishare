@@ -9,21 +9,21 @@
   {% block head %}{% endblock %}
 </head>
 
-<body class="flex flex-col min-h-[100svh] bg-zinc-300 text-zinc-800">
-  <div class="shadow-md z-10 bg-zinc-100">
-    <div class="flex items-center px-8 py-4 gap-2 max-w-5xl mx-auto">
-      <h1 class="text-3xl leading-none text-zinc-700 font-light tracking-tight">
+<body class="flex flex-col min-h-[100svh] bg-zinc-100 sm:bg-zinc-300 text-zinc-800">
+  <div class="shadow-md z-10 bg-zinc-300 sm:bg-zinc-100">
+    <div class="flex items-center px-4 p-2 gap-2 sm:px-8 sm:py-4 max-w-5xl mx-auto">
+      <h1 class="text-xl sm:text-3xl leading-none text-zinc-700 font-light tracking-tight">
         <a href="/">Cool Servicename</a>
       </h1>
-      <nav class="flex items-center gap-2 ml-auto">
-        <a class="font-bold p-4 rounded-md hover:bg-gray-200 flex gap-2 hover:shadow-lg active:shadow-none" href="/">
+      <nav class="flex items-center gap-4 ml-auto">
+        <a class="font-bold p-2 sm:p-4 rounded-lg hover:bg-zinc-200 flex gap-2 hover:shadow-md active:shadow-none" href="/">
           <span class="matsym">upload_file</span>
-          Upload
+          <span class="hidden sm:block">Upload</span>
         </a>
-        <a class="font-bold p-4 rounded-md hover:bg-gray-200 flex gap-2 hover:shadow-lg active:shadow-none"
+        <a class="font-bold p-2 sm:p-4 rounded-lg hover:bg-zinc-200 flex gap-2 hover:shadow-md active:shadow-none"
           href="/admin">
           <span class="matsym">manage_accounts</span>
-          Administration
+          <span class="hidden sm:block">Administration</span>
         </a>
       </nav>
     </div>
@@ -31,11 +31,11 @@
   <div class="flex-1">
     {% block content %}{% endblock %}
   </div>
-  <div class="flex flex-col items-center gap-2 p-4 text-zinc-500">
-    <p class="flex gap-1 items-center">
+  <div class="flex flex-col items-center mt-8 sm:mt-0 gap-2 p-4 bg-zinc-300 text-zinc-500">
+    <p class="text-center text-balance py-2">
       built with <a href="">Rust</a> and &#x2665; by <a href="https://tobiasm.dev">Tobias Marschner</a>
     </p>
-    <ul class="flex gap-6">
+    <ul class="flex flex-wrap items-center justify-center gap-y-2 gap-x-6">
       <li><a href="/">Source Code</a></li>
       <li><a href="/">Acknowledgements</a></li>
       <li><a href="/">Report a Bug</a></li>
