@@ -377,3 +377,21 @@ pub fn has_expired(expiry_ts: &str) -> Result<bool, AppError> {
         .num_seconds()
         .is_negative())
 }
+
+/// Takes a value in bytes and pretty prints it with a binary suffix.
+pub fn pretty_print_bytes(bytes: usize) -> String {
+    match bytes {
+        0..1_024 => {
+            format!("{} Bytes", bytes)
+        }
+        1_024..1_048_576 => {
+            format!("{:1} KiB", bytes as f64 / 1_024.0)
+        }
+        1_048_576..1_073_741_824 => {
+            format!("{:1} MiB", bytes as f64 / 1_048_576.0)
+        }
+        _ => {
+            format!("{:1} GiB", bytes as f64 / 1_073_741_824.0)
+        }
+    }
+}

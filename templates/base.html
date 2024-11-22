@@ -9,26 +9,40 @@
   {% block head %}{% endblock %}
 </head>
 
-<body>
-  <div class="border-b-2 border-gray-100">
-    <div class="flex items-center p-4 gap-2 max-w-5xl mx-auto">
-      <span class="matsym text-4xl">lock</span>
-      <h1 class="text-2xl leading-none font-light">
-        E2EE<br>Fileshare
+<body class="flex flex-col min-h-[100svh] bg-zinc-300 text-zinc-800">
+  <div class="shadow-md z-10">
+    <div class="flex items-center px-8 py-4 gap-2 max-w-5xl mx-auto bg-zinc-100">
+      <h1 class="text-3xl leading-none text-zinc-700 font-light tracking-tight">
+        <a href="/">Cool Servicename</a>
       </h1>
       <nav class="flex items-center gap-2 ml-auto">
         <a class="font-bold p-4 rounded-md hover:bg-gray-200 flex gap-2 hover:shadow-lg active:shadow-none" href="/">
           <span class="matsym">upload_file</span>
           Upload
         </a>
-        <a class="font-bold p-4 rounded-md hover:bg-gray-200 flex gap-2 hover:shadow-lg active:shadow-none" href="/admin">
+        <a class="font-bold p-4 rounded-md hover:bg-gray-200 flex gap-2 hover:shadow-lg active:shadow-none"
+          href="/admin">
           <span class="matsym">manage_accounts</span>
           Administration
         </a>
       </nav>
     </div>
   </div>
-  {% block content %}{% endblock %}
+  <div class="flex-1">
+    {% block content %}{% endblock %}
+  </div>
+  <div class="flex flex-col items-center gap-2 p-4 text-zinc-500">
+    <p class="flex gap-1 items-center">
+      built with <a href="">Rust</a> and &#x2665; by <a href="https://tobiasm.dev">Tobias Marschner</a>
+    </p>
+    <ul class="flex gap-6">
+      <li><a href="/">Source Code</a></li>
+      <li><a href="/">Acknowledgements</a></li>
+      <li><a href="/">Report a Bug</a></li>
+      <li><a href="/">Legal Notice</a></li>
+      <li><a href="/">Privacy Policy</a></li>
+    </ul>
+  </div>
 </body>
 
 </html>

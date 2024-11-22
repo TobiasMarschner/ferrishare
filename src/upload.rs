@@ -17,7 +17,11 @@ use crate::*;
 
 pub async fn upload_page(State(aps): State<AppState>) -> Result<Html<String>, AppError> {
     aps.tera.lock().await.full_reload()?;
-    let context = Context::new();
+    let mut context = Context::new();
+    context.insert(
+        "max_filesize",
+        &pretty_print_bytes(aps.conf.maximum_filesize),
+    );
     let h = aps.tera.lock().await.render("upload.html", &context)?;
     let response_body = String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?;
     Ok(Html(response_body))
@@ -75,7 +79,7 @@ pub async fn upload_endpoint(
 
     // Check if the user has hit their upload limit.
     if uploads_by_eip as usize > aps.conf.maximum_uploads_per_ip {
-        return AppError::err(StatusCode::TOO_MANY_REQUESTS, "your computer has reached the file upload limit; delete old files or wait for them to expire")
+        return AppError::err(StatusCode::TOO_MANY_REQUESTS, "your computer has reached the file upload limit; delete old files or wait for them to expire");
     }
 
     // Also determine the total size of files uploaded so far.
@@ -85,7 +89,10 @@ pub async fn upload_endpoint(
 
     // Check if we've hit the global limit.
     if total_quota as usize > aps.conf.maximum_quota {
-        return AppError::err(StatusCode::INSUFFICIENT_STORAGE, "server has reached maximum storage capacity; please try again later")
+        return AppError::err(
+            StatusCode::INSUFFICIENT_STORAGE,
+            "server has reached maximum storage capacity; please try again later",
+        );
     }
 
     let mut e_filename: Option<Vec<u8>> = None;

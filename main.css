@@ -4,6 +4,7 @@
 
 /* Add this in base so that Tailwind's classed can override properties */
 @layer base {
+
   /* MATERIAL SYMBOLS */
   @font-face {
     font-family: 'Material Symbols Rounded';
@@ -75,7 +76,7 @@
 
   input[type="radio"] {
     /* Use tailwind classes for the optics ... */
-    @apply min-w-6 min-h-6 max-w-6 max-h-6 rounded-full border-gray-600 bg-white shadow-inner flex items-center justify-center;
+    @apply min-w-6 min-h-6 max-w-6 max-h-6 rounded-full border-zinc-500 bg-white shadow-inner flex items-center justify-center cursor-pointer;
     /* ... and manual CSS for the checkmark. */
     appearance: none;
   }
@@ -85,15 +86,73 @@
   }
 
   input[type="radio"]:active {
-    @apply bg-gray-50 shadow-inner;
+    @apply bg-zinc-50 shadow-inner;
   }
 
   input[type="radio"]:checked {
-    @apply border-[0.5rem];
+    @apply border-[0.5rem] cursor-auto;
   }
 
-  fieldset:disabled input[type="radio"], input[type="radio"]:disabled {
-    @apply shadow-none bg-gray-100;
+  fieldset:disabled input[type="radio"],
+  input[type="radio"]:disabled {
+    @apply shadow-none bg-zinc-100 cursor-not-allowed;
   }
 }
 
+/* common components across the app */
+@layer components {
+
+  /* single label in a fieldset of options */
+  .radio-fieldset-option {
+    @apply flex-1 p-2 rounded-md bg-zinc-300 text-zinc-800 flex items-center gap-1 text-lg border-2 border-zinc-300 shadow-md cursor-pointer;
+  }
+
+  .radio-fieldset-option:hover {
+    @apply bg-zinc-200 border-zinc-200;
+  }
+
+  .radio-fieldset-option:active {
+    @apply shadow-none;
+  }
+
+  .radio-fieldset-option:has(:checked) {
+    @apply shadow-inner bg-zinc-50 text-zinc-800 border-zinc-500 cursor-auto;
+  }
+
+  .radio-fieldset-option:has(:disabled) {
+    @apply bg-zinc-200 text-zinc-400 border-zinc-200 shadow-none cursor-not-allowed;
+  }
+
+  .radio-fieldset-option:has(:checked:disabled) {
+    @apply cursor-not-allowed;
+  }
+
+  /* primary button for big actions */
+  .btn-primary {
+    @apply flex items-center justify-center gap-4 p-4 rounded-full bg-zinc-300 text-zinc-800 text-xl font-bold cursor-pointer shadow-md;
+  }
+
+  .btn-primary:hover {
+    @apply bg-zinc-200;
+  }
+
+  .btn-primary:active {
+    @apply shadow-none;
+  }
+
+  .btn-primary:disabled {
+    @apply shadow-none text-zinc-400 bg-zinc-200 cursor-not-allowed;
+  }
+
+  .btn-primary.btn-primary-green {
+    @apply bg-emerald-300 text-emerald-900
+  }
+
+  .btn-primary.btn-primary-green:hover {
+    @apply bg-emerald-200
+  }
+
+  .btn-primary.btn-primary-green:disabled {
+    @apply text-zinc-400 bg-zinc-200;
+  }
+}

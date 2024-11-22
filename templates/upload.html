@@ -6,45 +6,47 @@ Upload a File - E2EE Fileshare
 
 {% block content %}
 <div class="m-8">
-  <div class="max-w-lg shadow-lg bg-gray-100 rounded-xl flex flex-col p-8 gap-8 mx-auto">
+  <div class="max-w-lg shadow-md bg-zinc-100 rounded-xl flex flex-col p-8 gap-8 mx-auto">
     <h2 class="flex gap-4 text-2xl self-center">
       <span class="matsym text-3xl">upload_file</span>
-      Upload a File
+      Upload new file
     </h2>
     <ul class="flex flex-col gap-4">
       <li class="flex gap-4">
         <span class="matsym text-gray-500">clock_loader_90</span>
         <span>
-          Files up to 10 MB supported
+          Files up to {{ max_filesize }} supported
         </span>
       </li>
       <li class="flex gap-4">
         <span class="matsym text-gray-500">lock</span>
-        <span>
-          File and filename are encrypted in your browser
+        <span class="text-balance">
+          File and filename are encrypted in your browser before being sent over the network
         </span>
       </li>
       <li class="flex gap-4">
         <span class="matsym text-gray-500">visibility_off</span>
         <span>
-          The server receives and stores the encrypted data
+          The server cannot view or decrypt your data
         </span>
       </li>
       <li class="flex gap-4">
         <span class="matsym text-gray-500">key</span>
-        <span>
-          The download-link contains the key to decrypt the file
-        </span>
+        <div class="flex flex-col">
+          <span>
+            The decryption key is stored in the download link's <a
+              href="https://en.wikipedia.org/wiki/URI_fragment">fragment</a> which is never sent over the network
+          </span>
+        </div>
       </li>
     </ul>
-    <form id="filesubmit" class="flex flex-col gap-4">
+    <form id="filesubmit" class="flex flex-col gap-8">
       <input class="hidden" type="file" id="fs-file">
-      <button type="button" id="fs-filebutton"
-        class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed">
+      <button type="button" id="fs-filebutton" class="btn-primary">
         <span class="matsym">folder_open</span>
         Select a File
       </button>
-      <div id="filesubmit-details" class="hidden flex-col gap-4">
+      <div id="filesubmit-details" class="hidden flex-col gap-8">
         <ul class="flex flex-col gap-4">
           <li class="flex gap-4">
             <span class="matsym text-2xl text-gray-500">draft</span>
@@ -64,32 +66,28 @@ Upload a File - E2EE Fileshare
         <fieldset id="fs-expiry-fieldset">
           <legend class="text-gray-500 mb-1">Expires in</legend>
           <div class="flex gap-4 items-stretch">
-            <label
-              class="flex-1 p-2 rounded-md bg-gray-200 flex items-center justify-content gap-1 text-lg border-4 border-gray-200 has-[:checked]:shadow-inner has-[:checked]:bg-gray-50 hover:shadow-md active:shadow-none has-[:disabled]:bg-gray-200 has-[:disabled]:text-gray-400 has-[:disabled]:shadow-none">
+            <label class="radio-fieldset-option">
               <input type="radio" name="expires" value="hour" class="">
               <span class="mx-auto">1 hour</span>
             </label>
-            <label
-              class="flex-1 p-2 rounded-md bg-gray-200 flex items-center justify-content gap-1 text-lg border-4 border-gray-200 has-[:checked]:shadow-inner has-[:checked]:bg-gray-50 hover:shadow-md active:shadow-none has-[:disabled]:bg-gray-200 has-[:disabled]:text-gray-400 has-[:disabled]:shadow-none">
+            <label class="radio-fieldset-option">
               <input type="radio" name="expires" value="day" checked class="">
               <span class="mx-auto">1 day</span>
             </label>
-            <label
-              class="flex-1 p-2 rounded-md bg-gray-200 flex items-center justify-content gap-1 text-lg border-4 border-gray-200 has-[:checked]:shadow-inner has-[:checked]:bg-gray-50 hover:shadow-md active:shadow-none has-[:disabled]:bg-gray-200 has-[:disabled]:text-gray-400 has-[:disabled]:shadow-none">
+            <label class="radio-fieldset-option">
               <input type="radio" name="expires" value="week" class="">
               <span class="mx-auto">1 week</span>
             </label>
           </div>
         </fieldset>
-        <button type="submit" id="fs-submit"
-          class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm mt-4 disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed">
+        <button type="submit" id="fs-submit" class="btn-primary btn-primary-green">
           <span class="flex justify-center items-center gap-4">
             <span class="matsym">upload_file</span> Encrypt and Upload
           </span>
         </button>
       </div>
     </form>
-    <div id="filesubmit-progress" class="hidden flex-col gap-4 p-4 rounded-md bg-gray-200">
+    <div id="filesubmit-progress" class="hidden flex-col gap-4 p-4 rounded-md bg-gray-200 shadow-md border-2 border-emerald-500">
       <div class="flex flex-row gap-4">
         <span class="matsym text-4xl" id="fs-status-icon"></span>
         <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
