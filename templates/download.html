@@ -6,14 +6,15 @@ Download a File - E2EE Fileshare
 
 {% block content %}
 <div class="m-8">
-  <div id="error-box" class="hidden max-w-lg mx-auto flex-col gap-4 p-8 rounded-xl bg-gray-200 mb-8 shadow-lg">
+  <div id="error-box"
+    class="hidden max-w-lg mx-auto flex-col gap-4 p-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 mb-8 shadow-lg">
     <div class="flex items-center gap-4">
       <span id="error-box-icon" class="matsym text-4xl">warning</span>
       <span id="error-box-head" class="text-lg font-bold"></span>
     </div>
     <p id="error-box-text"></p>
   </div>
-  <div id="dl-box" class="hidden max-w-lg shadow-lg bg-gray-100 rounded-xl flex-col p-8 gap-8 mx-auto">
+  <div id="dl-box" class="hidden max-w-lg shadow-lg bg-zinc-100 rounded-xl flex-col p-8 gap-8 mx-auto">
     <h2 class="admin-only hidden gap-4 text-2xl self-center">
       <span class="matsym text-3xl">security</span>
       Admin Page
@@ -62,23 +63,33 @@ Download a File - E2EE Fileshare
       </li>
     </ul>
     <div class="flex flex-col gap-6">
-      <button type="button" id="download-button"
-        class="flex items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed">
+      <button type="button" id="download-button" class="btn-primary">
         <span class="matsym">download</span>
         Download and Decrypt
       </button>
-      <div id="download-progress" class="hidden flex-row gap-4 p-4 rounded-md bg-gray-200">
-        <span class="matsym text-4xl animate-spin" id="dl-status-icon">progress_activity</span>
-        <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
-          <div id="dl-status-text" class="text-lg font-bold"></div>
-          <div id="dl-pbar" class="flex min-h-2 bg-gray-200 rounded-full">
-            <div id="dl-pbar-inner" class="mr-auto bg-gray-400 rounded-full transition-width duration-500 ease-out"
-              style="width: 0%;"></div>
+      <div id="infobox" class="hidden flex-col rounded-lg shadow-md border-2 overflow-hidden p-4 gap-4">
+        <div class="flex flex-row gap-4">
+          <span class="matsym text-4xl" id="infobox-icon"></span>
+          <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
+            <div id="infobox-text" class="text-lg font-bold"></div>
+            <div id="infobox-pbar-outer" class="hidden min-h-2 bg-sky-200 rounded-full">
+              <div id="infobox-pbar-inner"
+                class="mr-auto bg-sky-500 rounded-full transition-width duration-500 ease-out" style="width: 0%;"></div>
+            </div>
           </div>
         </div>
       </div>
-      <button type="button" id="delete-button"
-        class="admin-only hidden items-center justify-center gap-4 p-4 rounded-full bg-gray-300 text-xl font-bold cursor-pointer shadow-sm hover:shadow-md active:shadow-sm disabled:shadow-none disabled:text-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed">
+      <!-- <div id="infobox" class="hidden flex-row gap-4 p-4 rounded-md bg-gray-200"> -->
+      <!--   <span class="matsym text-4xl animate-spin" id="infobox-icon">progress_activity</span> -->
+      <!--   <div class="flex-1 flex flex-col items-stretch justify-center gap-2"> -->
+      <!--     <div id="infobox-text" class="text-lg font-bold"></div> -->
+      <!--     <div id="infobox-pbar-outer" class="flex min-h-2 bg-gray-200 rounded-full"> -->
+      <!--       <div id="infobox-pbar-inner" class="mr-auto bg-gray-400 rounded-full transition-width duration-500 ease-out" -->
+      <!--         style="width: 0%;"></div> -->
+      <!--     </div> -->
+      <!--   </div> -->
+      <!-- </div> -->
+      <button type="button" id="delete-button" class="admin-only hidden btn-primary">
         <span class="matsym">delete</span>
         Delete from Server
       </button>
@@ -109,31 +120,31 @@ Download a File - E2EE Fileshare
   </div>
 </div>
 <script>
-{% include "common.js" %}
+  {% include "common.js" %}
 
-// TEMPLATE VARIABLES
-let response_type = '{{ response_type | safe }}';
-let error_head = '{{ error_head | safe }}';
-let error_text = '{{ error_text | safe }}';
-let e_filename = new Uint8Array({{ e_filename | safe }});
-let iv_fd = new Uint8Array({{ iv_fd | safe }});
-let iv_fn = new Uint8Array({{ iv_fn | safe }});
-let filesize = {{ filesize | safe }};
-let upload_ts = '{{ upload_ts | safe }}';
-let upload_ts_pretty = '{{ upload_ts_pretty | safe }}';
-let expiry_ts = '{{ expiry_ts | safe }}';
-let expiry_ts_pretty = '{{ expiry_ts_pretty | safe }}';
-let downloads = {{ downloads | safe }};
+  // TEMPLATE VARIABLES
+  let response_type = '{{ response_type | safe }}';
+  let error_head = '{{ error_head | safe }}';
+  let error_text = '{{ error_text | safe }}';
+  let e_filename = new Uint8Array({{e_filename | safe }});
+  let iv_fd = new Uint8Array({{iv_fd | safe }});
+  let iv_fn = new Uint8Array({{iv_fn | safe }});
+  let filesize = {{filesize | safe }};
+  let upload_ts = '{{ upload_ts | safe }}';
+  let upload_ts_pretty = '{{ upload_ts_pretty | safe }}';
+  let expiry_ts = '{{ expiry_ts | safe }}';
+  let expiry_ts_pretty = '{{ expiry_ts_pretty | safe }}';
+  let downloads = {{downloads | safe }};
 
-const urlParams = new URLSearchParams(window.location.search);
-const efd_sha256sum = urlParams.get('hash');
-const admin_key = urlParams.get('admin');
-const key_string = window.location.hash.substring(5);
+  const urlParams = new URLSearchParams(window.location.search);
+  const efd_sha256sum = urlParams.get('hash');
+  const admin_key = urlParams.get('admin');
+  const key_string = window.location.hash.substring(5);
 
-let key;
-let d_filename;
-let d_filedata;
+  let key;
+  let d_filename;
+  let d_filedata;
 
-{% include "download.js" %}
+  {% include "download.js" %}
 </script>
 {% endblock %}

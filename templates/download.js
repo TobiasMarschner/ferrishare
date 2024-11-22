@@ -70,49 +70,6 @@ document.addEventListener('DOMContentLoaded', async (event) => {
   }
 });
 
-function updateDlStatus(type, message) {
-  let fsStatus = document.getElementById("download-progress");
-  let fsIcon = document.getElementById("dl-status-icon");
-  let fsText = document.getElementById("dl-status-text");
-  let fsPbar = document.getElementById("dl-pbar");
-
-  // Ensure the box itself is always visible.
-  fsStatus.style.display = 'flex';
-
-  // Clear previous coloring of the status element.
-  fsStatus.classList.remove('bg-gray-200', 'bg-green-100', 'bg-red-100', 'bg-blue-100');
-  fsIcon.classList.remove('text-gray-800', 'text-green-800', 'text-red-800', 'text-blue-800', 'animate-spin');
-  fsText.classList.remove('text-gray-800', 'text-green-800', 'text-red-800', 'text-blue-800');
-
-  // Set up colors and icon accordingly.
-  switch (type) {
-    case 'success':
-      fsIcon.textContent = 'check_circle';
-      fsStatus.classList.add('bg-green-100');
-      fsIcon.classList.add('text-green-800');
-      fsText.classList.add('text-green-800');
-      fsPbar.style.display = "none";
-      break;
-    case 'error':
-      fsIcon.textContent = 'error';
-      fsStatus.classList.add('bg-red-100');
-      fsIcon.classList.add('text-red-800');
-      fsText.classList.add('text-red-800');
-      fsPbar.style.display = "none";
-      break;
-    case 'inprogress':
-      fsIcon.textContent = 'progress_activity';
-      fsStatus.classList.add('bg-blue-100');
-      fsIcon.classList.add('text-blue-800', 'animate-spin');
-      fsText.classList.add('text-blue-800');
-      fsPbar.style.display = "flex";
-      break;
-  }
-
-  // And copy over the message.
-  fsText.textContent = message;
-}
-
 // Set up the handler for the actual download button.
 document.getElementById("download-button").addEventListener("click", (_) => {
   // I'd love to use fetch for modern posting,
@@ -123,13 +80,12 @@ document.getElementById("download-button").addEventListener("click", (_) => {
   xhr.responseType = 'arraybuffer';
 
   let dlbutton = document.getElementById("download-button");
-  let dlprogress = document.getElementById("download-progress");
-  let dlprog_pbar_inner = document.getElementById("dl-pbar-inner");
+  let dlprog_pbar_inner = document.getElementById("infobox-pbar-inner");
 
   xhr.onload = async () => {
     if (xhr.status == 200) {
       try {
-        updateDlStatus('inprogress', "Decrypting");
+        updateInfoBox('inprogress', "Decrypting");
 
         // Now actually decrypt the file.
         d_filedata = await window.crypto.subtle.decrypt(
@@ -152,19 +108,19 @@ document.getElementById("download-button").addEventListener("click", (_) => {
         link.click();
       } catch (e) {
         console.log(e);
-        updateDlStatus("error", "Could not decrypt file");
+        updateInfoBox("error", "Could not decrypt file");
       }
 
-      updateDlStatus('success', "File downloaded");
+      updateInfoBox('success', "File downloaded");
     } else {
-      updateDlStatus("error", new TextDecoder().decode(xhr.response));
+      updateInfoBox("error", new TextDecoder().decode(xhr.response));
     }
   }
 
   xhr.onprogress = (event) => {
     let progress = (event.loaded / filesize) * 100;
     dlprog_pbar_inner.style.width = progress.toString() + "%";
-    updateDlStatus("inprogress", `Downloading ${(event.loaded / 1000000).toFixed(2)} / ${(filesize / 1000000).toFixed(2)} MB (${progress.toFixed(0)}%)`);
+    updateInfoBox("inprogress", `Downloading ${(event.loaded / 1000000).toFixed(2)} / ${(filesize / 1000000).toFixed(2)} MB (${progress.toFixed(0)}%)`);
   }
 
   // Disable download button while the operation is ongoing.
@@ -193,7 +149,7 @@ document.getElementById("delete-button").addEventListener("click", () => {
       document.getElementById('error-box').style.display = 'flex';
       document.getElementById('dl-box').style.display = 'none';
     } else {
-      updateDlStatus('error', xhr.responseText);
+      updateInfoBox('error', xhr.responseText);
       document.getElementById('download-button').disabled = false;
       document.getElementById('delete-button').disabled = false;
     }
