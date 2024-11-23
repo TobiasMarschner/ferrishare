@@ -35,6 +35,11 @@ pub async fn download_endpoint(
     // Guaranteed to work.
     let hash = hash.ok_or_else(|| AppError::new500("illegal unwrap"))?;
 
+    // Do not even entertain the notion of hashes with invalid length.
+    if hash.len() != 43 {
+        return AppError::err(StatusCode::BAD_REQUEST, "invalid hash length");
+    }
+
     // TODO: Think about what happens if the file is deleted / expires as it's being downloaded.
 
     #[derive(Debug, FromRow)]
@@ -190,6 +195,27 @@ pub async fn download_page(
     // Guaranteed to work thanks to the previous match.
     let hash = hash.ok_or_else(|| AppError::new500("illegal unwrap"))?;
 
+    // Do not even entertain the notion of hashes with invalid length.
+    if hash.len() != 43 {
+        let dpc = DownloadPageContext {
+            response_type: "error",
+            error_head: "Invalid hash length",
+            error_text: "The hash parameter is not correctly formatted. Is your link correct?",
+            ..Default::default()
+        };
+
+        let h = aps
+            .tera
+            .lock()
+            .await
+            .render("download.html", &Context::from_serialize(&dpc)?)?;
+
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?),
+        ));
+    }
+
     #[derive(FromRow)]
     struct FileRow {
         admin_key_sha256sum: String,
@@ -260,12 +286,20 @@ pub async fn download_page(
 
     // Now, branch depending on whether there's an admin key.
     if let Some(admin) = admin {
-        // Perform three steps:
+        // Perform the following steps:
         // 1) Turn the base64url-encoded admin_key to binary.
+        // 2) Check that the binary key is exactly 32 bytes long.
+        //    Yes, sha256 is preimage-resistant for any length of data,
+        //    but we know this invariant must hold for legitimate keys,
+        //    so we might as well check it here regardless.
         // 2) Calculate the sha256sum of that key in binary format.
         // 3) Reencode the digest to base64url.
         let admin_key_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(
-            URL_SAFE_NO_PAD.decode(admin).unwrap_or_default(),
+            URL_SAFE_NO_PAD
+                .decode(admin)
+                .ok()
+                .filter(|v| v.len() == 32)
+                .unwrap_or_default(),
         ));
 
         // Now, check if the hashes match.

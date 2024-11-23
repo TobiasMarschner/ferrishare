@@ -21,6 +21,11 @@ pub async fn delete_endpoint(
     let efd_sha256sum = req.hash;
     let admin_key = req.admin;
 
+    // Do not even entertain the notion of hashes with invalid length.
+    if efd_sha256sum.len() != 43 {
+        return AppError::err(StatusCode::BAD_REQUEST, "invalid hash length");
+    }
+
     // Query the databse for the entry.
     let row: Option<String> = sqlx::query_scalar(
         "SELECT admin_key_sha256sum FROM uploaded_files WHERE efd_sha256sum = ? LIMIT 1;",
@@ -42,7 +47,11 @@ pub async fn delete_endpoint(
     // Compute the sha256-digest of the admin_key if it was provided.
     if let Some(admin_key) = admin_key {
         let admin_key_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(
-            URL_SAFE_NO_PAD.decode(admin_key).unwrap_or_default(),
+            URL_SAFE_NO_PAD
+                .decode(admin_key)
+                .ok()
+                .filter(|v| v.len() == 32)
+                .unwrap_or_default(),
         ));
 
         // If the admin key matches, the request can go through.
