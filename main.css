@@ -38,6 +38,8 @@
     word-wrap: normal;
     white-space: nowrap;
     direction: ltr;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   /* PROPER CHECKBOXES AND RADIO BUTTONS */
