@@ -9,7 +9,7 @@
   @font-face {
     font-family: 'Material Symbols Rounded';
     font-style: normal;
-    src: url('/static/font/MaterialSymbolsRounded.woff2') format('woff2');
+    src: url('/static/font/MaterialSymbolsRounded-subset.woff2') format('woff2');
   }
 
   a.classic-link {
