@@ -54,3 +54,4 @@ Still to do:
 - [ ] Demo Mode and Host
   - [ ] We need a running demo of this.
   - [ ] Maybe with restrictions on retention and who's allowed to download files, to prevent abuse.
+- [ ] Cut off uploads (and other broken requests) produce 500s, that needs to change.
