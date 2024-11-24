@@ -10,7 +10,15 @@ document.addEventListener('DOMContentLoaded', async (event) => {
 
     // Attempt to decrypt the filename with the given key.
     // Grab the key and convert it back to binary.
-    let key_bytes = b64u_decBytes(key_string);
+    let key_bytes;
+    try {
+      key_bytes = b64u_decBytes(key_string);
+    } catch(e) {
+      document.getElementById('error-box-head').textContent = 'Invalid key';
+      document.getElementById('error-box-text').textContent = 'Your decryption key is not base64url-encoded and therefore invalid. This makes decrypting the file and filename impossible.';
+      document.getElementById('error-box').style.display = 'flex';
+      return;
+    }
 
     // Construct the AES key, if possible.
     try {
