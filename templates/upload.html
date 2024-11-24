@@ -8,29 +8,29 @@ Upload a File - E2EE Fileshare
 <div class="m-4 mt-8 sm:m-8">
   <div class="max-w-lg sm:shadow-md bg-zinc-100 sm:rounded-xl flex flex-col gap-8 sm:p-8 mx-auto">
     <h2 class="flex gap-4 text-2xl self-center">
-      <span class="matsym text-3xl">upload_file</span>
+      <span class="matsym big">upload_file</span>
       Upload new file
     </h2>
     <ul class="flex flex-col gap-4">
-      <li class="flex gap-4">
+      <li class="flex items-center gap-4">
         <span class="matsym text-zinc-500">clock_loader_90</span>
         <span>
           Files up to {{ max_filesize }} supported
         </span>
       </li>
-      <li class="flex gap-4">
+      <li class="flex items-center gap-4">
         <span class="matsym text-zinc-500">lock</span>
         <span class="text-balance">
           File and filename are encrypted in your browser before being sent over the network
         </span>
       </li>
-      <li class="flex gap-4">
+      <li class="flex items-center gap-4">
         <span class="matsym text-zinc-500">visibility_off</span>
         <span>
           The server cannot view or decrypt your data
         </span>
       </li>
-      <li class="flex gap-4">
+      <li class="flex items-center gap-4">
         <span class="matsym text-zinc-500">key</span>
         <div class="flex flex-col">
           <span>
@@ -48,15 +48,15 @@ Upload a File - E2EE Fileshare
       </button>
       <div id="filesubmit-details" class="hidden flex-col gap-8">
         <ul class="flex flex-col gap-4">
-          <li class="flex gap-4">
-            <span class="matsym text-2xl text-zinc-500">draft</span>
+          <li class="flex items-center gap-4">
+            <span class="matsym text-zinc-500">draft</span>
             <div class="flex flex-col">
               <span class="text-zinc-500">Filename</span>
               <span id="fs-filename" class="text-xl [word-break:break-word]"></span>
             </div>
           </li>
-          <li class="flex gap-4">
-            <span class="matsym text-2xl text-zinc-500">clock_loader_90</span>
+          <li class="flex items-center gap-4">
+            <span class="matsym text-zinc-500">clock_loader_90</span>
             <div class="flex flex-col">
               <span class="text-zinc-500">Size</span>
               <span id="fs-filesize" class="text-xl"></span>
@@ -89,7 +89,7 @@ Upload a File - E2EE Fileshare
     </form>
     <div id="infobox" class="hidden flex-col rounded-lg shadow-md border-2 overflow-hidden p-4 gap-4">
       <div class="flex flex-row gap-4">
-        <span class="matsym text-4xl" id="infobox-icon"></span>
+        <span class="matsym big" id="infobox-icon"></span>
         <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
           <div id="infobox-text" class="text-lg font-bold"></div>
           <div id="infobox-pbar-outer" class="hidden min-h-2 bg-sky-200 rounded-full">
@@ -100,7 +100,7 @@ Upload a File - E2EE Fileshare
       </div>
       <div id="fs-success-download-box"
         class="hidden flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
-        <span class="center font-bold sm:text-xl py-2 flex justify-center gap-2 sm:gap-4">
+        <span class="center font-bold sm:text-xl py-2 flex items-center justify-center gap-2 sm:gap-4">
           <span class="matsym">public</span>
           <span>
             Public Download Link
@@ -119,7 +119,7 @@ Upload a File - E2EE Fileshare
         </div>
       </div>
       <div id="fs-success-admin-box" class="hidden flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
-        <span class="center font-bold sm:text-xl py-2 flex justify-center gap-2 sm:gap-4">
+        <span class="center font-bold sm:text-xl py-2 flex items-center justify-center gap-2 sm:gap-4">
           <span class="matsym">security</span>
           <span>
             Administration Link

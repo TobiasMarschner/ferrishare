@@ -29,9 +29,15 @@
     font-weight: normal;
     font-style: normal;
     font-size: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    min-width: 24px;
+    min-height: 24px;
+    max-width: 24px;
+    max-height: 24px;
+    overflow: hidden;
+    /* display: flex; */
+    display: block;
+    /* align-items: center; */
+    /* justify-content: center; */
     line-height: 1;
     text-transform: none;
     letter-spacing: normal;
@@ -40,6 +46,22 @@
     direction: ltr;
     user-select: none;
     -webkit-user-select: none;
+  }
+
+  .matsym.big {
+    font-size: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    max-width: 32px;
+    max-height: 32px;
+  }
+
+  .matsym.bigger {
+    font-size: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    max-width: 40px;
+    max-height: 40px;
   }
 
   /* PROPER CHECKBOXES AND RADIO BUTTONS */
