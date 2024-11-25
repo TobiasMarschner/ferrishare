@@ -6,19 +6,44 @@ Upload a File - E2EE Fileshare
 
 {% block content %}
 <div class="m-4 mt-8 lg:m-8">
-  <div class="max-w-lg lg:max-w-6xl lg:shadow-lg lg:bg-zinc-100 lg:rounded-xl flex flex-col lg:p-8 gap-8 mx-auto">
-    <div class="flex flex-col-reverse sm:rounded-xl sm:shadow-lg sm:p-4 lg:p-0 lg:rounded-none lg:shadow-none bg-zinc-100 lg:flex-row items-stretch gap-8">
-      <h2 class="flex gap-4 text-2xl items-center justify-center lg:justify-start sm:mr-4">
-        <span class="matsym big">home_storage</span>
-        <span class="text-balance">Viewing All Uploaded Files</span>
+  <div class="max-w-lg sm:shadow-md bg-zinc-100 sm:rounded-xl flex flex-col gap-8 sm:p-8 mx-auto mb-8">
+    <div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-8 items-stretch">
+      <h2 class="flex gap-4 text-2xl self-center">
+        <span class="matsym big">query_stats</span>
+        <span>Admin Statistics</span>
       </h2>
-      <form method="post" action="/admin_logout" class="lg:ml-auto flex justify-center items-center">
+      <form method="post" action="/admin_logout" class="flex justify-center items-center">
         <button type="submit" class="btn-secondary">
           <span>Logout</span>
           <span class="matsym">logout</span>
         </button>
       </form>
     </div>
+    <ul class="flex flex-col gap-6">
+      <li class="flex items-center gap-4">
+        <span class="matsym big text-zinc-500">bar_chart</span>
+        <div class="flex flex-col">
+          <span class="text-zinc-500">Files Currently Live</span>
+          <span class="text-2xl font-bold">{{ full_file_count }}</span>
+        </div>
+      </li>
+      <li class="flex items-center gap-4">
+        <span class="matsym big text-zinc-500">data_usage</span>
+        <div class="flex flex-col">
+          <span class="text-zinc-500">Storage Use</span>
+          <span class="flex items-baseline gap-2">
+            <span class="text-2xl font-bold">{{ used_quota }}</span>
+            <span>/ {{ maximum_quota }}</span>
+          </span>
+        </div>
+      </li>
+    </ul>
+  </div>
+  <div class="max-w-lg lg:max-w-6xl lg:shadow-lg lg:bg-zinc-100 lg:rounded-xl flex flex-col lg:p-8 gap-8 mx-auto">
+    <h2 class="flex gap-4 text-2xl items-center justify-center lg:justify-start sm:mr-4 mt-8 sm:mt-0">
+      <span class="matsym big">home_storage</span>
+      <span class="text-balance">All Uploaded Files</span>
+    </h2>
     {% if files %}
     <table>
       <thead>
@@ -100,45 +125,46 @@ Upload a File - E2EE Fileshare
             </button>
           </td>
         </tr>
-      {% endfor %}
+        {% endfor %}
       </tbody>
     </table>
     {% else %}
-    <p class="text-center text-xl">No files are currently stored on the server. <a class="classic-link" href="/">Upload one!</a></p>
+    <p class="text-center text-xl">No files are currently stored on the server. <a class="classic-link" href="/">Upload
+        one!</a></p>
     {% endif %}
   </div>
 </div>
 <script>
-async function delete_handler(btn, event) {
-  // Disable the button while the request is being processed.
-  btn.disabled = true;
+  async function delete_handler(btn, event) {
+    // Disable the button while the request is being processed.
+    btn.disabled = true;
 
-  // Create the new request to the deletion-endpoint.
-  let xhr = new XMLHttpRequest();
-  xhr.open('POST', '/delete_endpoint');
-  xhr.setRequestHeader('Content-Type', 'application/json');
+    // Create the new request to the deletion-endpoint.
+    let xhr = new XMLHttpRequest();
+    xhr.open('POST', '/delete_endpoint');
+    xhr.setRequestHeader('Content-Type', 'application/json');
 
-  xhr.onload = () => {
-    if (xhr.status === 200) {
-      // Successful? Strike through all values in the row. (first five <td>s in it)
-      for (let i = 0; i < 5; i++) {
-        let item = btn.parentElement.parentElement.childNodes[i];
-        item.classList.add("line-through");
-        item.classList.add("text-gray-400");
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        // Successful? Strike through all values in the row. (first five <td>s in it)
+        for (let i = 0; i < 5; i++) {
+          let item = btn.parentElement.parentElement.childNodes[i];
+          item.classList.add("line-through");
+          item.classList.add("text-gray-400");
+        }
+      } else {
+        // No fancy interface here, just console.
+        console.log(xhr.responseText);
       }
-    } else {
-      // No fancy interface here, just console.
-      console.log(xhr.responseText);
     }
+
+    xhr.send(JSON.stringify({
+      hash: btn.dataset.efdhash,
+    }))
   }
 
-  xhr.send(JSON.stringify({
-    hash: btn.dataset.efdhash,
-  }))
-}
-
-for (btn of document.querySelectorAll(".admin-delete-button")) {
-  btn.addEventListener("click", delete_handler.bind(null, btn));
-}
+  for (btn of document.querySelectorAll(".admin-delete-button")) {
+    btn.addEventListener("click", delete_handler.bind(null, btn));
+  }
 </script>
 {% endblock %}

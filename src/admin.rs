@@ -56,6 +56,8 @@ pub async fn admin_page(
         .fetch_all(&aps.db)
         .await?;
 
+        let used_quota: usize = all_files.iter().map(|e| e.filesize as usize).sum();
+
         #[derive(Debug, Serialize)]
         struct UploadedFile {
             efd_sha256sum: String,
@@ -105,6 +107,9 @@ pub async fn admin_page(
         aps.tera.lock().await.full_reload()?;
         let mut context = Context::new();
         context.insert("files", &ufs);
+        context.insert("full_file_count", &ufs.len());
+        context.insert("maximum_quota", &pretty_print_bytes(aps.conf.maximum_quota));
+        context.insert("used_quota", &pretty_print_bytes(used_quota));
         let h = aps
             .tera
             .lock()
