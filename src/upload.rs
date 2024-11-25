@@ -103,7 +103,9 @@ pub async fn upload_endpoint(
 
     while let Some(field) = multipart.next_field().await? {
         let field_name = field.name().map_or(String::new(), |e| e.to_string());
-        let field_data = field.bytes().await?;
+        let field_data = field.bytes().await.map_err(|_| {
+            AppError::new(StatusCode::BAD_REQUEST, format!("failed to extract form data for field {field_name}; is your file too large?"))
+        })?;
 
         match field_name.as_str() {
             "e_filename" => {
