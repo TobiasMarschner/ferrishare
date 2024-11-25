@@ -17,21 +17,23 @@
       </h1>
       <nav class="flex items-center gap-4 ml-auto">
         <a class="font-bold p-2 sm:p-4 rounded-lg hover:bg-zinc-200 flex gap-2 hover:shadow-md active:shadow-none" href="/">
-          <span class="matsym">upload_file</span>
+          <span class="matsym" aria-hidden="true">upload_file</span>
           <span class="hidden sm:block">Upload</span>
         </a>
         <a class="font-bold p-2 sm:p-4 rounded-lg hover:bg-zinc-200 flex gap-2 hover:shadow-md active:shadow-none"
           href="/admin">
-          <span class="matsym">manage_accounts</span>
+          <span class="matsym" aria-hidden="true">manage_accounts</span>
           <span class="hidden sm:block">Administration</span>
         </a>
       </nav>
     </div>
   </div>
   <div class="flex-1">
-    {% block content %}{% endblock %}
+    <main class="m-4 mt-8 sm:m-8">
+      {% block content %}{% endblock %}
+    </main>
   </div>
-  <div class="flex flex-col items-center mt-8 sm:mt-0 gap-2 p-4 bg-zinc-300 text-zinc-500">
+  <footer class="flex flex-col items-center mt-8 sm:mt-0 gap-2 p-4 bg-zinc-300 text-zinc-500">
     <p class="text-center text-balance py-2">
       built with <a href="">Rust</a> and &#x2665; by <a href="https://tobiasm.dev">Tobias Marschner</a>
     </p>
@@ -42,7 +44,7 @@
       <li><a href="/">Legal Notice</a></li>
       <li><a href="/">Privacy Policy</a></li>
     </ul>
-  </div>
+  </footer>
 </body>
 
 </html>

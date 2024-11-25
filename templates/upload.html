@@ -5,137 +5,136 @@ Upload a File - E2EE Fileshare
 {%- endblock %}
 
 {% block content %}
-<div class="m-4 mt-8 sm:m-8">
-  <div class="max-w-lg sm:shadow-md bg-zinc-100 sm:rounded-xl flex flex-col gap-8 sm:p-8 mx-auto">
-    <h2 class="flex gap-4 text-2xl self-center">
-      <span class="matsym big">upload_file</span>
-      Upload new file
-    </h2>
-    <ul class="flex flex-col gap-4">
-      <li class="flex items-center gap-4">
-        <span class="matsym text-zinc-500">clock_loader_90</span>
+<div class="max-w-lg sm:shadow-md bg-zinc-100 sm:rounded-xl flex flex-col gap-8 sm:p-8 mx-auto">
+  <h2 class="flex gap-4 text-2xl self-center">
+    <span class="matsym big" aria-hidden="true">upload_file</span>
+    Upload new file
+  </h2>
+  <ul class="flex flex-col gap-4">
+    <li class="flex items-center gap-4">
+      <span class="matsym text-zinc-500" aria-hidden="true">clock_loader_90</span>
+      <span>
+        Files up to {{ max_filesize }} supported
+      </span>
+    </li>
+    <li class="flex items-center gap-4">
+      <span class="matsym text-zinc-500" aria-hidden="true">lock</span>
+      <span class="text-balance">
+        File and filename are encrypted in your browser before being sent over the network
+      </span>
+    </li>
+    <li class="flex items-center gap-4">
+      <span class="matsym text-zinc-500" aria-hidden="true">visibility_off</span>
+      <span>
+        The server cannot view or decrypt your data
+      </span>
+    </li>
+    <li class="flex items-center gap-4">
+      <span class="matsym text-zinc-500" aria-hidden="true">key</span>
+      <div class="flex flex-col">
         <span>
-          Files up to {{ max_filesize }} supported
+          The decryption key is stored in the download link's <a
+            href="https://en.wikipedia.org/wiki/URI_fragment">fragment</a> which is never sent over the network
         </span>
-      </li>
-      <li class="flex items-center gap-4">
-        <span class="matsym text-zinc-500">lock</span>
-        <span class="text-balance">
-          File and filename are encrypted in your browser before being sent over the network
-        </span>
-      </li>
-      <li class="flex items-center gap-4">
-        <span class="matsym text-zinc-500">visibility_off</span>
-        <span>
-          The server cannot view or decrypt your data
-        </span>
-      </li>
-      <li class="flex items-center gap-4">
-        <span class="matsym text-zinc-500">key</span>
-        <div class="flex flex-col">
-          <span>
-            The decryption key is stored in the download link's <a
-              href="https://en.wikipedia.org/wiki/URI_fragment">fragment</a> which is never sent over the network
-          </span>
-        </div>
-      </li>
-    </ul>
-    <form id="filesubmit" class="flex flex-col gap-8">
-      <input class="hidden" type="file" id="fs-file">
-      <button type="button" id="fs-filebutton" class="btn-primary">
-        <span class="matsym">folder_open</span>
-        Select a File
-      </button>
-      <div id="filesubmit-details" class="hidden flex-col gap-8">
-        <ul class="flex flex-col gap-4">
-          <li class="flex items-center gap-4">
-            <span class="matsym text-zinc-500">draft</span>
-            <div class="flex flex-col">
-              <span class="text-zinc-500">Filename</span>
-              <span id="fs-filename" class="text-xl [word-break:break-word]"></span>
-            </div>
-          </li>
-          <li class="flex items-center gap-4">
-            <span class="matsym text-zinc-500">clock_loader_90</span>
-            <div class="flex flex-col">
-              <span class="text-zinc-500">Size</span>
-              <span id="fs-filesize" class="text-xl"></span>
-            </div>
-          </li>
-        </ul>
-        <fieldset id="fs-expiry-fieldset">
-          <legend class="text-zinc-500 mb-1">Expires in</legend>
-          <div class="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch">
-            <label class="radio-fieldset-option">
-              <input type="radio" name="expires" value="hour" class="">
-              <span class="mx-auto">1 hour</span>
-            </label>
-            <label class="radio-fieldset-option">
-              <input type="radio" name="expires" value="day" checked class="">
-              <span class="mx-auto">1 day</span>
-            </label>
-            <label class="radio-fieldset-option">
-              <input type="radio" name="expires" value="week" class="">
-              <span class="mx-auto">1 week</span>
-            </label>
+      </div>
+    </li>
+  </ul>
+  <form id="filesubmit" class="flex flex-col gap-8">
+    <input class="hidden" type="file" id="fs-file">
+    <button type="button" id="fs-filebutton" class="btn-primary">
+      <span class="matsym" aria-hidden="true">folder_open</span>
+      Select a File
+    </button>
+    <div id="filesubmit-details" class="hidden flex-col gap-8">
+      <ul class="flex flex-col gap-4">
+        <li class="flex items-center gap-4">
+          <span class="matsym text-zinc-500" aria-hidden="true">draft</span>
+          <div class="flex flex-col">
+            <span class="text-zinc-500">Filename</span>
+            <span id="fs-filename" class="text-xl [word-break:break-word]"></span>
           </div>
-        </fieldset>
-        <button type="submit" id="fs-submit" class="btn-primary">
-          <span class="flex justify-center items-center gap-4">
-            <span class="matsym">upload_file</span> Encrypt and Upload
-          </span>
+        </li>
+        <li class="flex items-center gap-4">
+          <span class="matsym text-zinc-500" aria-hidden="true">clock_loader_90</span>
+          <div class="flex flex-col">
+            <span class="text-zinc-500">Size</span>
+            <span id="fs-filesize" class="text-xl"></span>
+          </div>
+        </li>
+      </ul>
+      <fieldset id="fs-expiry-fieldset">
+        <legend class="text-zinc-500 mb-1">Expires in</legend>
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch">
+          <label class="radio-fieldset-option">
+            <input type="radio" name="expires" value="hour" class="">
+            <span class="mx-auto">1 hour</span>
+          </label>
+          <label class="radio-fieldset-option">
+            <input type="radio" name="expires" value="day" checked class="">
+            <span class="mx-auto">1 day</span>
+          </label>
+          <label class="radio-fieldset-option">
+            <input type="radio" name="expires" value="week" class="">
+            <span class="mx-auto">1 week</span>
+          </label>
+        </div>
+      </fieldset>
+      <button type="submit" id="fs-submit" class="btn-primary">
+        <span class="flex justify-center items-center gap-4">
+          <span class="matsym" aria-hidden="true">upload_file</span> Encrypt and Upload
+        </span>
+      </button>
+    </div>
+  </form>
+  <div id="infobox" class="hidden flex-col rounded-lg shadow-md border-2 overflow-hidden p-4 gap-4">
+    <div class="flex flex-row gap-4">
+      <span class="matsym big" id="infobox-icon" aria-hidden="true"></span>
+      <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
+        <h3 id="infobox-text" class="text-lg font-bold"></h3>
+        <div id="infobox-pbar-outer" class="hidden min-h-2 bg-sky-200 rounded-full">
+          <div id="infobox-pbar-inner" class="mr-auto bg-sky-500 rounded-full transition-width duration-500 ease-out"
+            style="width: 0%;"></div>
+        </div>
+      </div>
+    </div>
+    <div id="fs-success-download-box"
+      class="hidden flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
+      <h4 class="center font-bold sm:text-xl py-2 flex items-center justify-center gap-2 sm:gap-4">
+        <span class="matsym" aria-hidden="true">public</span>
+        <span>
+          Public Download Link
+        </span>
+      </h4>
+      <input id="fs-success-download-input" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
+      <div class="flex flex-col sm:flex-row justify-center gap-4 py-2">
+        <a id="fs-success-download-link" target="_blank" class="btn-secondary">
+          <span class="matsym" aria-hidden="true">open_in_new</span>
+          <span>Open</span>
+        </a>
+        <button id="fs-success-download-copy" type="button" class="btn-secondary">
+          <span class="matsym" aria-hidden="true">content_paste</span>
+          <span>Copy to Clipboard</span>
         </button>
       </div>
-    </form>
-    <div id="infobox" class="hidden flex-col rounded-lg shadow-md border-2 overflow-hidden p-4 gap-4">
-      <div class="flex flex-row gap-4">
-        <span class="matsym big" id="infobox-icon"></span>
-        <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
-          <div id="infobox-text" class="text-lg font-bold"></div>
-          <div id="infobox-pbar-outer" class="hidden min-h-2 bg-sky-200 rounded-full">
-            <div id="infobox-pbar-inner" class="mr-auto bg-sky-500 rounded-full transition-width duration-500 ease-out"
-              style="width: 0%;"></div>
-          </div>
-        </div>
-      </div>
-      <div id="fs-success-download-box"
-        class="hidden flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
-        <span class="center font-bold sm:text-xl py-2 flex items-center justify-center gap-2 sm:gap-4">
-          <span class="matsym">public</span>
-          <span>
-            Public Download Link
-          </span>
+    </div>
+    <div id="fs-success-admin-box"
+      class="hidden flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
+      <h4 class="center font-bold sm:text-xl py-2 flex items-center justify-center gap-2 sm:gap-4">
+        <span class="matsym" aria-hidden="true">security</span>
+        <span>
+          Administration Link
         </span>
-        <input id="fs-success-download-input" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
-        <div class="flex flex-col sm:flex-row justify-center gap-4 py-2">
-          <a id="fs-success-download-link" target="_blank" class="btn-secondary">
-            <span class="matsym">open_in_new</span>
-            <span>Open</span>
-          </a>
-          <button id="fs-success-download-copy" type="button" class="btn-secondary">
-            <span class="matsym">content_paste</span>
-            <span>Copy to Clipboard</span>
-          </button>
-        </div>
-      </div>
-      <div id="fs-success-admin-box" class="hidden flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
-        <span class="center font-bold sm:text-xl py-2 flex items-center justify-center gap-2 sm:gap-4">
-          <span class="matsym">security</span>
-          <span>
-            Administration Link
-          </span>
-        </span>
-        <input id="fs-success-admin-input" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
-        <div class="flex flex-col sm:flex-row justify-center gap-4 py-2">
-          <a id="fs-success-admin-link" target="_blank" class="btn-secondary">
-            <span class="matsym">open_in_new</span>
-            <span>Open</span>
-          </a>
-          <button id="fs-success-admin-copy" type="button" class="btn-secondary">
-            <span class="matsym">content_paste</span>
-            <span>Copy to Clipboard</span>
-          </button>
-        </div>
+      </h4>
+      <input id="fs-success-admin-input" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
+      <div class="flex flex-col sm:flex-row justify-center gap-4 py-2">
+        <a id="fs-success-admin-link" target="_blank" class="btn-secondary">
+          <span class="matsym" aria-hidden="true">open_in_new</span>
+          <span>Open</span>
+        </a>
+        <button id="fs-success-admin-copy" type="button" class="btn-secondary">
+          <span class="matsym" aria-hidden="true">content_paste</span>
+          <span>Copy to Clipboard</span>
+        </button>
       </div>
     </div>
   </div>

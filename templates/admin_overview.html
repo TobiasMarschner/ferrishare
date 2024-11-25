@@ -5,135 +5,134 @@ Upload a File - E2EE Fileshare
 {%- endblock %}
 
 {% block content %}
-<div class="m-4 mt-8 lg:m-8">
-  <div class="max-w-lg sm:shadow-md bg-zinc-100 sm:rounded-xl flex flex-col gap-8 sm:p-8 mx-auto mb-8">
-    <div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-8 items-stretch">
-      <h2 class="flex gap-4 text-2xl self-center">
-        <span class="matsym big">query_stats</span>
-        <span>Admin Statistics</span>
-      </h2>
-      <form method="post" action="/admin_logout" class="flex justify-center items-center">
-        <button type="submit" class="btn-secondary">
-          <span>Logout</span>
-          <span class="matsym">logout</span>
-        </button>
-      </form>
-    </div>
-    <ul class="flex flex-col gap-6">
-      <li class="flex items-center gap-4">
-        <span class="matsym big text-zinc-500">bar_chart</span>
-        <div class="flex flex-col">
-          <span class="text-zinc-500">Files Currently Live</span>
-          <span class="text-2xl font-bold">{{ full_file_count }}</span>
-        </div>
-      </li>
-      <li class="flex items-center gap-4">
-        <span class="matsym big text-zinc-500">data_usage</span>
-        <div class="flex flex-col">
-          <span class="text-zinc-500">Storage Use</span>
-          <span class="flex items-baseline gap-2">
-            <span class="text-2xl font-bold">{{ used_quota }}</span>
-            <span>/ {{ maximum_quota }}</span>
-          </span>
-        </div>
-      </li>
-    </ul>
-  </div>
-  <div class="max-w-lg lg:max-w-6xl lg:shadow-lg lg:bg-zinc-100 lg:rounded-xl flex flex-col lg:p-8 gap-8 mx-auto">
-    <h2 class="flex gap-4 text-2xl items-center justify-center lg:justify-start sm:mr-4 mt-8 sm:mt-0">
-      <span class="matsym big">home_storage</span>
-      <span class="text-balance">All Uploaded Files</span>
+<div class="max-w-lg sm:shadow-md bg-zinc-100 sm:rounded-xl flex flex-col gap-8 sm:p-8 mx-auto mb-8">
+  <div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-8 items-stretch">
+    <h2 class="flex gap-4 text-2xl self-center">
+      <span class="matsym big" aria-hidden="true">query_stats</span>
+      <span>Admin Statistics</span>
     </h2>
-    {% if files %}
-    <table>
-      <thead>
-        <tr class="hidden lg:table-row text-left *:font-bold *:p-4 text-zinc-500">
-          <th> File Hash </th>
-          <th> Size </th>
-          <th> Uploaded </th>
-          <th> Expires in </th>
-          <th>
-            <div class="flex justify-center">
-              <span class="matsym">download</span>
-            </div>
-          </th>
-          <th>
-            <div class="flex justify-center">
-              <span class="matsym">delete</span>
-            </div>
-          </th>
-        </tr>
-      </thead>
-      <tbody class="lg:table-row-group flex flex-col gap-8">
-        {% for file in files %}
-        <tr
-          class="flex lg:table-row flex-col lg:*:p-4 gap-4 sm:gap-6 lg:border-t-2 lg:border-gray-200 rounded-xl bg-zinc-200 sm:bg-zinc-100 lg:bg-inherit shadow-lg lg:shadow-none p-4 sm:p-8 lg:p-0">
-          <td class="flex lg:table-cell flex-row items-center gap-4">
-            <div class="lg:hidden matsym text-gray-500">code</div>
-            <div class="flex flex-col">
-              <div class="lg:hidden text-gray-500">File Hash</div>
-              <div class="text-base lg:text-sm font-mono break-all max-w-[22ch]">{{ file.efd_sha256sum }}</div>
-            </div>
-          </td>
-          <td class="flex lg:table-cell flex-row items-center gap-4">
-            <div class="lg:hidden matsym text-gray-500">clock_loader_90</div>
-            <div class="flex flex-col">
-              <div class="lg:hidden text-gray-500">Size</div>
-              <div class="text-xl lg:text-lg">{{ file.formatted_filesize }}</div>
-            </div>
-          </td>
-          <td class="flex lg:table-cell flex-row items-center gap-4">
-            <div class="lg:hidden matsym text-gray-500">note_add</div>
-            <div class="flex flex-col">
-              <div class="lg:hidden text-gray-500">Uploaded</div>
-              <div class="flex flex-col gap-0 items-baseline text-xl lg:text-lg">
-                <div class="text-xl lg:text-lg">
-                  {{ file.upload_ts_pretty }}
-                </div>
-                <div class="text-gray-500 text-sm">
-                  {{ file.upload_ts }}
-                </div>
-              </div>
-            </div>
-          </td>
-          <td class="flex lg:table-cell flex-row items-center gap-4">
-            <div class="lg:hidden matsym text-gray-500">auto_delete</div>
-            <div class="flex flex-col">
-              <div class="lg:hidden text-gray-500">Expires in</div>
-              <div class="flex flex-col gap-0 items-baseline text-xl lg:text-lg">
-                <div class="text-xl lg:text-lg">
-                  {{ file.expiry_ts_pretty }}
-                </div>
-                <div class="text-gray-500 text-sm">
-                  {{ file.expiry_ts }}
-                </div>
-              </div>
-            </div>
-          </td>
-          <td class="flex lg:table-cell flex-row items-center gap-4">
-            <div class="lg:hidden matsym text-gray-500">download</div>
-            <div class="flex flex-col">
-              <div class="lg:hidden text-gray-500">Downloads</div>
-              <div class="text-xl lg:text-lg lg:text-center">{{ file.downloads }}</div>
-            </div>
-          </td>
-          <td>
-            <button type="button" data-efdhash="{{ file.efd_sha256sum }}"
-              class="admin-delete-button no-underline w-full lg:w-auto lg:mx-auto flex items-center justify-center gap-4 p-4 rounded-full bg-zinc-300 font-bold cursor-pointer shadow-none hover:shadow-md active:shadow-none disabled:shadow-none disabled:text-zinc-400 disabled:bg-zinc-300 disabled:cursor-not-allowed">
-              <span class="matsym no-underline">delete</span>
-              <span class="lg:hidden">Delete from Server</span>
-            </button>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <p class="text-center text-xl">No files are currently stored on the server. <a class="classic-link" href="/">Upload
-        one!</a></p>
-    {% endif %}
+    <form method="post" action="/admin_logout" class="flex justify-center items-center">
+      <button type="submit" class="btn-secondary">
+        <span>Logout</span>
+        <span class="matsym" aria-hidden="true">logout</span>
+      </button>
+    </form>
   </div>
+  <ul class="flex flex-col gap-6">
+    <li class="flex items-center gap-4">
+      <span class="matsym big text-zinc-500" aria-hidden="true">bar_chart</span>
+      <div class="flex flex-col">
+        <span class="text-zinc-500">Files Currently Live</span>
+        <span class="text-2xl font-bold">{{ full_file_count }}</span>
+      </div>
+    </li>
+    <li class="flex items-center gap-4">
+      <span class="matsym big text-zinc-500" aria-hidden="true">data_usage</span>
+      <div class="flex flex-col">
+        <span class="text-zinc-500">Storage Use</span>
+        <span class="flex items-baseline gap-2">
+          <span class="text-2xl font-bold">{{ used_quota }}</span>
+          <span>/ {{ maximum_quota }}</span>
+        </span>
+      </div>
+    </li>
+  </ul>
 </div>
+<div class="max-w-lg lg:max-w-6xl lg:shadow-lg lg:bg-zinc-100 lg:rounded-xl flex flex-col lg:p-8 gap-8 mx-auto">
+  <h2 class="flex gap-4 text-2xl items-center justify-center lg:justify-start sm:mr-4 mt-8 sm:mt-0">
+    <span class="matsym big" aria-hidden="true">home_storage</span>
+    <span class="text-balance">All Uploaded Files</span>
+  </h2>
+  {% if files %}
+  <table>
+    <thead>
+      <tr class="hidden lg:table-row text-left *:font-bold *:p-4 text-zinc-500">
+        <th> File Hash </th>
+        <th> Size </th>
+        <th> Uploaded </th>
+        <th> Expires in </th>
+        <th>
+          <div class="flex justify-center">
+            <span class="matsym" aria-label="Downloads">download</span>
+          </div>
+        </th>
+        <th>
+          <div class="flex justify-center">
+            <span class="matsym" aria-label="Delete Button">delete</span>
+          </div>
+        </th>
+      </tr>
+    </thead>
+    <tbody class="lg:table-row-group flex flex-col gap-8">
+      {% for file in files %}
+      <tr
+        class="flex lg:table-row flex-col lg:*:p-4 gap-4 sm:gap-6 lg:border-t-2 lg:border-gray-200 rounded-xl bg-zinc-200 sm:bg-zinc-100 lg:bg-inherit shadow-lg lg:shadow-none p-4 sm:p-8 lg:p-0">
+        <td class="flex lg:table-cell flex-row items-center gap-4">
+          <div class="lg:hidden matsym text-gray-500" aria-hidden="true">code</div>
+          <div class="flex flex-col">
+            <div class="lg:hidden text-gray-500">File Hash</div>
+            <div class="text-base lg:text-sm font-mono break-all max-w-[22ch]">{{ file.efd_sha256sum }}</div>
+          </div>
+        </td>
+        <td class="flex lg:table-cell flex-row items-center gap-4">
+          <div class="lg:hidden matsym text-gray-500" aria-hidden="true">clock_loader_90</div>
+          <div class="flex flex-col">
+            <div class="lg:hidden text-gray-500">Size</div>
+            <div class="text-xl lg:text-lg">{{ file.formatted_filesize }}</div>
+          </div>
+        </td>
+        <td class="flex lg:table-cell flex-row items-center gap-4">
+          <div class="lg:hidden matsym text-gray-500" aria-hidden="true">note_add</div>
+          <div class="flex flex-col">
+            <div class="lg:hidden text-gray-500">Uploaded</div>
+            <div class="flex flex-col gap-0 items-baseline text-xl lg:text-lg">
+              <div class="text-xl lg:text-lg">
+                {{ file.upload_ts_pretty }}
+              </div>
+              <div class="text-gray-500 text-sm">
+                {{ file.upload_ts }}
+              </div>
+            </div>
+          </div>
+        </td>
+        <td class="flex lg:table-cell flex-row items-center gap-4">
+          <div class="lg:hidden matsym text-gray-500" aria-hidden="true">auto_delete</div>
+          <div class="flex flex-col">
+            <div class="lg:hidden text-gray-500">Expires in</div>
+            <div class="flex flex-col gap-0 items-baseline text-xl lg:text-lg">
+              <div class="text-xl lg:text-lg">
+                {{ file.expiry_ts_pretty }}
+              </div>
+              <div class="text-gray-500 text-sm">
+                {{ file.expiry_ts }}
+              </div>
+            </div>
+          </div>
+        </td>
+        <td class="flex lg:table-cell flex-row items-center gap-4">
+          <div class="lg:hidden matsym text-gray-500" aria-hidden="true">download</div>
+          <div class="flex flex-col">
+            <div class="lg:hidden text-gray-500">Downloads</div>
+            <div class="text-xl lg:text-lg lg:text-center">{{ file.downloads }}</div>
+          </div>
+        </td>
+        <td>
+          <button type="button" aria-label="Delete from Server" data-efdhash="{{ file.efd_sha256sum }}"
+            class="admin-delete-button no-underline w-full lg:w-auto lg:mx-auto flex items-center justify-center gap-4 p-4 rounded-full bg-zinc-300 font-bold cursor-pointer shadow-none hover:shadow-md active:shadow-none disabled:shadow-none disabled:text-zinc-400 disabled:bg-zinc-300 disabled:cursor-not-allowed">
+            <span class="matsym no-underline" aria-hidden="true">delete</span>
+            <span class="lg:hidden">Delete from Server</span>
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-center text-xl">No files are currently stored on the server. <a class="classic-link" href="/">Upload
+    one!</a></p>
+  {% endif %}
+</div>
+
 <script>
   async function delete_handler(btn, event) {
     // Disable the button while the request is being processed.

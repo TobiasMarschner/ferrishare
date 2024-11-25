@@ -5,115 +5,114 @@ Download a File - E2EE Fileshare
 {%- endblock %}
 
 {% block content %}
-<div class="m-4 mt-8 sm:m-8">
-  <div id="error-box"
-    class="hidden max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 mb-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 shadow-lg">
-    <div class="flex items-center gap-4">
-      <span id="error-box-icon" class="matsym bigger">warning</span>
-      <span id="error-box-head" class="text-lg font-bold"></span>
-    </div>
-    <p id="error-box-text"></p>
+<div id="error-box"
+  class="hidden max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 mb-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 shadow-lg">
+  <div class="flex items-center gap-4">
+    <span id="error-box-icon" class="matsym bigger" aria-hidden="true">warning</span>
+    <span id="error-box-head" class="text-lg font-bold"></span>
   </div>
-  <div id="success-box"
-    class="hidden max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 mb-8 rounded-xl bg-emerald-50 text-emerald-700 border-2 border-emerald-500 shadow-lg">
-    <div class="flex items-center gap-4">
-      <span id="success-box-icon" class="matsym bigger">warning</span>
-      <span id="success-box-head" class="text-lg font-bold"></span>
-    </div>
-    <p id="success-box-text"></p>
+  <p id="error-box-text"></p>
+</div>
+<div id="success-box"
+  class="hidden max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 mb-8 rounded-xl bg-emerald-50 text-emerald-700 border-2 border-emerald-500 shadow-lg">
+  <div class="flex items-center gap-4">
+    <span id="success-box-icon" class="matsym bigger" aria-hidden="true">warning</span>
+    <span id="success-box-head" class="text-lg font-bold"></span>
   </div>
-  <div id="dl-box" class="hidden max-w-lg sm:shadow-lg bg-zinc-100 sm:rounded-xl flex-col sm:p-8 gap-8 mx-auto">
-    <h2 class="admin-only hidden gap-4 text-2xl self-center">
-      <span class="matsym big">security</span>
-      Admin Page
-    </h2>
-    <ul class="flex flex-col gap-4">
-      <li class="flex items-center gap-4">
-        <span class="matsym text-zinc-500">draft</span>
-        <div class="flex flex-col">
-          <span class="text-zinc-500">Filename</span>
-          <span id="dl-filename" class="text-xl [word-break:break-word]"></span>
+  <p id="success-box-text"></p>
+</div>
+<div id="dl-box" class="hidden max-w-lg sm:shadow-lg bg-zinc-100 sm:rounded-xl flex-col sm:p-8 gap-8 mx-auto">
+  <h2 class="admin-only hidden gap-4 text-2xl self-center">
+    <span class="matsym big" aria-hidden="true">security</span>
+    Admin Page
+  </h2>
+  <ul class="flex flex-col gap-4">
+    <li class="flex items-center gap-4">
+      <span class="matsym text-zinc-500" aria-hidden="true">draft</span>
+      <div class="flex flex-col">
+        <span class="text-zinc-500">Filename</span>
+        <span id="dl-filename" class="text-xl [word-break:break-word]"></span>
+      </div>
+    </li>
+    <li class="flex items-center gap-4">
+      <span class="matsym text-zinc-500" aria-hidden="true">clock_loader_90</span>
+      <div class="flex flex-col">
+        <span class="text-zinc-500">Size</span>
+        <span id="dl-filesize" class="text-xl"></span>
+      </div>
+    </li>
+    <li class="admin-only items-center hidden gap-4">
+      <span class="matsym text-zinc-500" aria-hidden="true">note_add</span>
+      <div class="flex flex-col">
+        <span class="text-zinc-500">Created</span>
+        <div class="flex flex-col sm:flex-row items-baseline sm:gap-2">
+          <span id="dl-upload-pretty" class="text-xl"></span>
+          <span id="dl-upload-ts" class="text-zinc-500"></span>
         </div>
-      </li>
-      <li class="flex items-center gap-4">
-        <span class="matsym text-zinc-500">clock_loader_90</span>
-        <div class="flex flex-col">
-          <span class="text-zinc-500">Size</span>
-          <span id="dl-filesize" class="text-xl"></span>
+      </div>
+    </li>
+    <li class="admin-only items-center hidden gap-4">
+      <span class="matsym text-zinc-500" aria-hidden="true">auto_delete</span>
+      <div class="flex flex-col">
+        <span class="text-zinc-500">Expires in</span>
+        <div class="flex flex-col sm:flex-row items-baseline sm:gap-2">
+          <span id="dl-expiry-pretty" class="text-xl"></span>
+          <span id="dl-expiry-ts" class="text-zinc-500"></span>
         </div>
-      </li>
-      <li class="admin-only items-center hidden gap-4">
-        <span class="matsym text-zinc-500">note_add</span>
-        <div class="flex flex-col">
-          <span class="text-zinc-500">Created</span>
-          <div class="flex flex-col sm:flex-row items-baseline sm:gap-2">
-            <span id="dl-upload-pretty" class="text-xl"></span>
-            <span id="dl-upload-ts" class="text-zinc-500"></span>
-          </div>
-        </div>
-      </li>
-      <li class="admin-only items-center hidden gap-4">
-        <span class="matsym text-zinc-500">auto_delete</span>
-        <div class="flex flex-col">
-          <span class="text-zinc-500">Expires in</span>
-          <div class="flex flex-col sm:flex-row items-baseline sm:gap-2">
-            <span id="dl-expiry-pretty" class="text-xl"></span>
-            <span id="dl-expiry-ts" class="text-zinc-500"></span>
-          </div>
-        </div>
-      </li>
-      <li class="admin-only items-center hidden gap-4">
-        <span class="matsym text-zinc-500">download</span>
-        <div class="flex flex-col">
-          <span class="text-zinc-500">Downloads</span>
-          <span id="dl-downloads" class="text-xl"></span>
-        </div>
-      </li>
-    </ul>
-    <div class="flex flex-col gap-6">
-      <button type="button" id="download-button" class="btn-primary">
-        <span class="matsym">download</span>
-        Download and Decrypt
-      </button>
-      <div id="infobox" class="hidden flex-col rounded-lg shadow-md border-2 overflow-hidden p-4 gap-4">
-        <div class="flex flex-row gap-4">
-          <span class="matsym bigger" id="infobox-icon"></span>
-          <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
-            <div id="infobox-text" class="text-lg font-bold"></div>
-            <div id="infobox-pbar-outer" class="hidden min-h-2 bg-sky-200 rounded-full">
-              <div id="infobox-pbar-inner"
-                class="mr-auto bg-sky-500 rounded-full transition-width duration-500 ease-out" style="width: 0%;"></div>
-            </div>
+      </div>
+    </li>
+    <li class="admin-only items-center hidden gap-4">
+      <span class="matsym text-zinc-500" aria-hidden="true">download</span>
+      <div class="flex flex-col">
+        <span class="text-zinc-500">Downloads</span>
+        <span id="dl-downloads" class="text-xl"></span>
+      </div>
+    </li>
+  </ul>
+  <div class="flex flex-col gap-6">
+    <button type="button" id="download-button" class="btn-primary">
+      <span class="matsym" aria-hidden="true">download</span>
+      Download and Decrypt
+    </button>
+    <div id="infobox" class="hidden flex-col rounded-lg shadow-md border-2 overflow-hidden p-4 gap-4">
+      <div class="flex flex-row gap-4">
+        <span class="matsym bigger" id="infobox-icon" aria-hidden="true"></span>
+        <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
+          <div id="infobox-text" class="text-lg font-bold"></div>
+          <div id="infobox-pbar-outer" class="hidden min-h-2 bg-sky-200 rounded-full">
+            <div id="infobox-pbar-inner"
+              class="mr-auto bg-sky-500 rounded-full transition-width duration-500 ease-out" style="width: 0%;"></div>
           </div>
         </div>
       </div>
-      <button type="button" id="delete-button" class="admin-only hidden btn-primary">
-        <span class="matsym">delete</span>
-        Delete from Server
-      </button>
-      <div id="admin-download-box"
-        class="admin-only hidden flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
-        <span class="center font-bold sm:text-xl py-2 flex items-center justify-center gap-2 sm:gap-4">
-          <span class="matsym">public</span>
-          <span>
-            Public Download Link
-          </span>
+    </div>
+    <button type="button" id="delete-button" class="admin-only hidden btn-primary">
+      <span class="matsym" aria-hidden="true">delete</span>
+      Delete from Server
+    </button>
+    <div id="admin-download-box"
+      class="admin-only hidden flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
+      <h4 class="center font-bold sm:text-xl py-2 flex items-center justify-center gap-2 sm:gap-4">
+        <span class="matsym" aria-hidden="true">public</span>
+        <span>
+          Public Download Link
         </span>
-        <input id="admin-download-input" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
-        <div class="flex flex-col sm:flex-row justify-center gap-4 py-2">
-          <a id="admin-download-link" target="_blank" class="btn-secondary">
-            <span class="matsym">open_in_new</span>
-            <span>Open</span>
-          </a>
-          <button id="admin-download-copy" type="button" class="btn-secondary">
-            <span class="matsym">content_paste</span>
-            <span>Copy to Clipboard</span>
-          </button>
-        </div>
+      </h4>
+      <input id="admin-download-input" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
+      <div class="flex flex-col sm:flex-row justify-center gap-4 py-2">
+        <a id="admin-download-link" target="_blank" class="btn-secondary">
+          <span class="matsym" aria-hidden="true">open_in_new</span>
+          <span>Open</span>
+        </a>
+        <button id="admin-download-copy" type="button" class="btn-secondary">
+          <span class="matsym" aria-hidden="true">content_paste</span>
+          <span>Copy to Clipboard</span>
+        </button>
       </div>
     </div>
   </div>
 </div>
+
 <script>
   {% include "common.js" %}
 
