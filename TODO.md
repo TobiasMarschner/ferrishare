@@ -15,21 +15,22 @@ Still to do:
 - [x] Correct error handling
   - [x] Obiously we need super robus endpoints, but I also want to ensure the client gets expressive error messages that will actually help them
 - [ ] Proper theming
-  - [ ] The whole app is B/W currently - that needs to improve
-  - [ ] subset the icon font, maybe remove the ligatures, and definitely remove them from the accessibility tree
+  - [x] The whole app is B/W currently - that needs to improve
+    - I decied to leave it as is, looks quite clean.
+  - [x] subset the icon font, maybe remove the ligatures, and definitely remove them from the accessibility tree
   - [ ] run lighthouse on the final app to iron out any kinks
 - [ ] More client-side validation and integration
-  - [ ] Show the correct filesize limit
+  - [x] Show the correct filesize limit
   - [ ] Prevent uploads that are too large in the client, too
   - [ ] Perhaps show the quota-error already when requesting the upload-page. (it would be better UX)
-  - [ ] Also add the storage-quota to the admin page.
+  - [x] Also add the storage-quota to the admin page.
   - [ ] noscript / nojs users
 - [ ] Set up WAL mode on sqlite and other possible settings
 - [x] Proper app configuration
   - [x] IP and PORT that we're binding on
     - [ ] Special considerations for IPv6 support?
   - [x] Rate Limit Settings
-    - [ ] No. of requests per IP, No. of uploads per IP
+    - [x] No. of requests per IP, No. of uploads per IP
   - [ ] REVERSE PROXY SETTINGS
     - [ ] The WebCrypto-API *requires* a secure context, meaning this site has to be served over HTTPS
     - [ ] Maybe we'll add TLS support in the server, but really, we should reverse proxy this thing
@@ -37,7 +38,7 @@ Still to do:
   - [x] Maximum allowed filesize
     - [x] Remember, we need to adjust the maximum allowed request length in axum, too.
   - [x] File quota
-    - [ ] This still needs to be implemented, btw
+    - [x] This still needs to be implemented, btw
   - [x] Some kind of setup routine where the admin can set the ADMIN PASSWORD.
 - [x] Rate Limiting
 - [ ] Documentation
@@ -54,4 +55,4 @@ Still to do:
 - [ ] Demo Mode and Host
   - [ ] We need a running demo of this.
   - [ ] Maybe with restrictions on retention and who's allowed to download files, to prevent abuse.
-- [ ] Cut off uploads (and other broken requests) produce 500s, that needs to change.
+- [x] Cut off uploads (and other broken requests) produce 500s, that needs to change.
