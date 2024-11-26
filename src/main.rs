@@ -11,6 +11,7 @@ use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
 use std::{
     collections::{HashMap, HashSet},
     net::SocketAddr,
+    process::ExitCode,
     sync::Arc,
     time::Duration,
 };
@@ -153,7 +154,7 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> ExitCode {
     // First things first, create the DATA_PATH and its subdirectories.
     std::fs::create_dir_all(format!("{DATA_PATH}/uploaded_files")).unwrap_or_else(|_| {
         panic!(
@@ -167,7 +168,7 @@ These are required for the applications to store all of its data"
         // Set up config and exit immediately.
         match config::setup_config() {
             Ok(_) => {
-                return;
+                return ExitCode::SUCCESS;
             }
             Err(e) => {
                 panic!("failed to create config: {e}");
@@ -188,7 +189,7 @@ These are required for the applications to store all of its data"
             eprintln!("  cargo run -- --init                          (for cargo)");
 
             eprintln!("\nExiting!");
-            return;
+            return ExitCode::FAILURE;
         }
     };
 
@@ -202,7 +203,7 @@ These are required for the applications to store all of its data"
             eprintln!("  cargo run -- --init                          (for cargo)");
 
             eprintln!("\nExiting!");
-            return;
+            return ExitCode::FAILURE;
         }
     };
 
@@ -225,7 +226,7 @@ These are required for the applications to store all of its data"
             }
             Err(e) => {
                 tracing::error!("failed to create database: {e}");
-                return;
+                return ExitCode::FAILURE;
             }
         }
     }
@@ -238,7 +239,7 @@ These are required for the applications to store all of its data"
         }
         Err(e) => {
             tracing::error!("failed to open database: {e}");
-            return;
+            return ExitCode::FAILURE;
         }
     };
 
@@ -250,7 +251,7 @@ These are required for the applications to store all of its data"
         }
         Err(e) => {
             tracing::error!("failed to load and compile HTML and JS templates: {e}");
-            return;
+            return ExitCode::FAILURE;
         }
     };
     // Wrap it in an Arc<Mutex<_>>, as required by AppState.
@@ -264,7 +265,7 @@ These are required for the applications to store all of its data"
         }
         Err(e) => {
             tracing::error!("failed to perform databse migrations: {e}");
-            return;
+            return ExitCode::FAILURE;
         }
     };
 
@@ -344,7 +345,7 @@ These are required for the applications to store all of its data"
         }
         Err(e) => {
             tracing::error!("failed to open TcpListener on {}: {}", &interface, e);
-            return;
+            return ExitCode::FAILURE;
         }
     };
 
@@ -352,10 +353,10 @@ These are required for the applications to store all of its data"
         .with_graceful_shutdown(shutdown_handler())
         .await
     {
-        Ok(_) => (),
+        Ok(_) => ExitCode::SUCCESS,
         Err(e) => {
             tracing::error!("failed to serve application with axum: {e}");
-            return;
+            ExitCode::FAILURE
         }
     }
 }
