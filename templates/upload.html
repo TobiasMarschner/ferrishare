@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title -%}
-Upload a File - E2EE Fileshare
+Upload a File
 {%- endblock %}
 
 {% block content %}
@@ -39,7 +39,7 @@ Upload a File - E2EE Fileshare
       </div>
     </li>
   </ul>
-  <form id="filesubmit" class="flex flex-col gap-8">
+  <form id="filesubmit" class="hidden flex-col gap-8">
     <input class="hidden" type="file" id="fs-file">
     <button type="button" id="fs-filebutton" class="btn-primary">
       <span class="matsym" aria-hidden="true">folder_open</span>
@@ -87,7 +87,7 @@ Upload a File - E2EE Fileshare
     </div>
   </form>
   <div id="infobox" class="hidden flex-col rounded-lg shadow-md border-2 overflow-hidden p-4 gap-4">
-    <div class="flex flex-row gap-4">
+    <div class="flex flex-row items-center gap-4">
       <span class="matsym big" id="infobox-icon" aria-hidden="true"></span>
       <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
         <h3 id="infobox-text" class="text-lg font-bold"></h3>
@@ -138,9 +138,26 @@ Upload a File - E2EE Fileshare
       </div>
     </div>
   </div>
+  <noscript>
+    <div class="flex max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 shadow-lg">
+      <div class="flex items-center gap-4">
+        <span class="matsym bigger" aria-hidden="true">code</span>
+        <h3 class="text-lg font-bold">JavaScript Required</h3>
+      </div>
+      <p>
+        JavaScript is required in order for the application to encrypt files before upload and decrypt files after download.
+      </p>
+      <p>
+        Please enable JavaScript in your browser or use a JavaScript-capable browser. Thank you!
+      </p>
+    </div>
+  </noscript>
 </div>
 <script>
   {% include "common.js" %}
+
+  let max_filesize = {{raw_max_filesize | safe }};
+
   {% include "upload.js" %}
 </script>
 {% endblock %}

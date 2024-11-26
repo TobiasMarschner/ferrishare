@@ -140,8 +140,10 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
             "
   How much storage all uploaded files are at most allowed to consume.
 
-  Once this limit has been reached users will not be able to upload
-  more files until old ones have expired and are cleared from disk.
+  Once the remaining quota is less than the maximum allowed filesize,
+  uploads will be disabled until old files have expired / were deleted.
+  For example, if max_quota = 5 GiB and max_filesize = 500 MiB,
+  then uploads would be disabled once on-disk storage exceeds 4.5 GiB.
 
   The prompt uses suffixes 'K', 'M' and 'G' which are read as binary suffixes:
      '25M' ->  25 MiB ->    26_214_400 Bytes

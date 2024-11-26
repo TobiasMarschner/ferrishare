@@ -37,9 +37,6 @@ function updateInfoBox(type, message) {
   let ibText = document.getElementById("infobox-text");
   let ibPbarOuter = document.getElementById("infobox-pbar-outer");
 
-  // Ensure we are visible.
-  ib.style.display = 'flex';
-
   // Clear previous coloring of the status element.
   ib.classList.remove('bg-emerald-50', 'bg-rose-50', 'bg-sky-50', 'border-emerald-500', 'border-rose-500', 'border-sky-500');
   ibIcon.classList.remove('text-emerald-700', 'text-rose-700', 'text-sky-700', 'animate-spin');
@@ -48,6 +45,7 @@ function updateInfoBox(type, message) {
   // Set up colors and icon accordingly.
   switch (type) {
     case 'success':
+      ib.style.display = 'flex';
       ibIcon.textContent = 'check_circle';
       ib.classList.add('bg-emerald-50');
       ib.classList.add('border-emerald-500');
@@ -56,6 +54,7 @@ function updateInfoBox(type, message) {
       ibPbarOuter.style.display = "none";
       break;
     case 'error':
+      ib.style.display = 'flex';
       ibIcon.textContent = 'error';
       ib.classList.add('bg-rose-50');
       ib.classList.add('border-rose-500');
@@ -64,6 +63,7 @@ function updateInfoBox(type, message) {
       ibPbarOuter.style.display = "none";
       break;
     case 'inprogress':
+      ib.style.display = 'flex';
       ibIcon.textContent = 'progress_activity';
       ib.classList.add('bg-sky-50');
       ib.classList.add('border-sky-500');
@@ -71,6 +71,8 @@ function updateInfoBox(type, message) {
       ibText.classList.add('text-sky-700');
       ibPbarOuter.style.display = "flex";
       break;
+    case 'invisible':
+      ib.style.display = 'none';
   }
 
   // And copy over the message.

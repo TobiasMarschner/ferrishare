@@ -140,6 +140,15 @@ document.getElementById("fs-file").addEventListener("change", (e) => {
     document.getElementById("filesubmit-details").style.display = "flex";
     document.getElementById("fs-filename").textContent = e.target.files[0].name;
     document.getElementById("fs-filesize").textContent = (e.target.files[0].size / 1000000).toFixed(2) + " MB";
+    if (e.target.files[0].size > max_filesize) {
+      document.getElementById('fs-expiry-fieldset').style.display = 'none';
+      document.getElementById('fs-submit').style.display = 'none';
+      updateInfoBox('error', "File too large! The maximum supported filesize is {{ max_filesize }}. Please choose a smaller file.");
+    } else {
+      document.getElementById('fs-expiry-fieldset').style.display = 'block';
+      document.getElementById('fs-submit').style.display = 'block';
+      updateInfoBox('invisible');
+    }
   }
 });
 
@@ -156,3 +165,6 @@ document.getElementById("fs-success-admin-copy").addEventListener("click", (_) =
   textbox.select();
   navigator.clipboard.writeText(textbox.value);
 });
+
+// noscript handling
+document.getElementById("filesubmit").style.display = 'flex';

@@ -18,12 +18,19 @@ use crate::*;
 pub async fn upload_page(State(aps): State<AppState>) -> Result<Html<String>, AppError> {
     aps.tera.lock().await.full_reload()?;
     let mut context = Context::new();
-    context.insert(
-        "max_filesize",
-        &pretty_print_bytes(aps.conf.maximum_filesize),
-    );
-    let h = aps.tera.lock().await.render("upload.html", &context)?;
-    let response_body = String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?;
+    let html;
+    // Check if the server has hit the quota limit.
+    if maximum_quota_reached(&aps).await? {
+        html = aps.tera.lock().await.render("full_quota.html", &context)?;
+    } else {
+        context.insert(
+            "max_filesize",
+            &pretty_print_bytes(aps.conf.maximum_filesize),
+        );
+        context.insert("raw_max_filesize", &aps.conf.maximum_filesize);
+        html = aps.tera.lock().await.render("upload.html", &context)?;
+    }
+    let response_body = String::from_utf8(minify(html.as_bytes(), &MINIFY_CFG))?;
     Ok(Html(response_body))
 }
 
@@ -82,13 +89,8 @@ pub async fn upload_endpoint(
         return AppError::err(StatusCode::TOO_MANY_REQUESTS, "your computer has reached the file upload limit; delete old files or wait for them to expire");
     }
 
-    // Also determine the total size of files uploaded so far.
-    let total_quota: i64 = sqlx::query_scalar("SELECT SUM(filesize) FROM uploaded_files;")
-        .fetch_one(&aps.db)
-        .await?;
-
-    // Check if we've hit the global limit.
-    if total_quota as usize > aps.conf.maximum_quota {
+    // Check if the server has hit its quota limits.
+    if maximum_quota_reached(&aps).await? {
         return AppError::err(
             StatusCode::INSUFFICIENT_STORAGE,
             "server has reached maximum storage capacity; please try again later",
@@ -104,7 +106,12 @@ pub async fn upload_endpoint(
     while let Some(field) = multipart.next_field().await? {
         let field_name = field.name().map_or(String::new(), |e| e.to_string());
         let field_data = field.bytes().await.map_err(|_| {
-            AppError::new(StatusCode::BAD_REQUEST, format!("failed to extract form data for field {field_name}; is your file too large?"))
+            AppError::new(
+                StatusCode::BAD_REQUEST,
+                format!(
+                    "failed to extract form data for field {field_name}; is your file too large?"
+                ),
+            )
         })?;
 
         match field_name.as_str() {
@@ -259,4 +266,21 @@ pub async fn upload_endpoint(
 pub struct UploadFileResponse {
     efd_sha256sum: String,
     admin_key: String,
+}
+
+async fn maximum_quota_reached(aps: &AppState) -> Result<bool, AppError> {
+    // Also determine the total size of files uploaded so far.
+    let total_quota: i64 = sqlx::query_scalar("SELECT SUM(filesize) FROM uploaded_files;")
+        .fetch_one(&aps.db)
+        .await?;
+
+    // Check if we've hit the global limit.
+    // In order to stay *strictly* underneath the limit, this function returns true
+    // if the remaining space on disk is less than the biggest possible file.
+    Ok(total_quota as usize
+        >= aps
+            .conf
+            .maximum_quota
+            .checked_sub(aps.conf.maximum_filesize)
+            .unwrap_or_default())
 }

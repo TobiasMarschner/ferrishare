@@ -1,15 +1,31 @@
 {% extends "base.html" %}
 
 {% block title -%}
-Download a File - E2EE Fileshare
+Download a File
 {%- endblock %}
 
 {% block content %}
+<noscript>
+  <div
+    class="flex max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 shadow-lg">
+    <div class="flex items-center gap-4">
+      <span class="matsym bigger" aria-hidden="true">code</span>
+      <h2 class="text-lg font-bold">JavaScript Required</h2>
+    </div>
+    <p>
+      JavaScript is required in order for the application to encrypt files before upload and decrypt files after
+      download.
+    </p>
+    <p>
+      Please enable JavaScript in your browser or use a JavaScript-capable browser. Thank you!
+    </p>
+  </div>
+</noscript>
 <div id="error-box"
   class="hidden max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 mb-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 shadow-lg">
   <div class="flex items-center gap-4">
     <span id="error-box-icon" class="matsym bigger" aria-hidden="true">warning</span>
-    <span id="error-box-head" class="text-lg font-bold"></span>
+    <h2 id="error-box-head" class="text-lg font-bold"></h2>
   </div>
   <p id="error-box-text"></p>
 </div>
@@ -17,7 +33,7 @@ Download a File - E2EE Fileshare
   class="hidden max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 mb-8 rounded-xl bg-emerald-50 text-emerald-700 border-2 border-emerald-500 shadow-lg">
   <div class="flex items-center gap-4">
     <span id="success-box-icon" class="matsym bigger" aria-hidden="true">warning</span>
-    <span id="success-box-head" class="text-lg font-bold"></span>
+    <h2 id="success-box-head" class="text-lg font-bold"></h2>
   </div>
   <p id="success-box-text"></p>
 </div>
@@ -75,13 +91,13 @@ Download a File - E2EE Fileshare
       Download and Decrypt
     </button>
     <div id="infobox" class="hidden flex-col rounded-lg shadow-md border-2 overflow-hidden p-4 gap-4">
-      <div class="flex flex-row gap-4">
+      <div class="flex flex-row items-center gap-4">
         <span class="matsym bigger" id="infobox-icon" aria-hidden="true"></span>
         <div class="flex-1 flex flex-col items-stretch justify-center gap-2">
           <div id="infobox-text" class="text-lg font-bold"></div>
           <div id="infobox-pbar-outer" class="hidden min-h-2 bg-sky-200 rounded-full">
-            <div id="infobox-pbar-inner"
-              class="mr-auto bg-sky-500 rounded-full transition-width duration-500 ease-out" style="width: 0%;"></div>
+            <div id="infobox-pbar-inner" class="mr-auto bg-sky-500 rounded-full transition-width duration-500 ease-out"
+              style="width: 0%;"></div>
           </div>
         </div>
       </div>

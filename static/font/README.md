@@ -34,6 +34,7 @@ Here is the list of all icon names used in the project:
 - progress_activity
 - public
 - query_stats
+- running_with_errors
 - security
 - upload_file
 - visibility_off
@@ -46,7 +47,7 @@ For production, a subsetted version of the font should be used.
 Google themselves offer an API where a subsetted version of the font can be requested and downloaded:
 
 ```
-https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&icon_names=auto_delete,bar_chart,check,check_circle,clock_loader_90,code,content_paste,data_usage,delete,download,draft,error,folder_open,home_storage,key,lock,logout,manage_accounts,note_add,open_in_new,progress_activity,public,query_stats,security,upload_file,visibility_off,warning
+https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded&icon_names=auto_delete,bar_chart,check,check_circle,clock_loader_90,code,content_paste,data_usage,delete,download,draft,error,folder_open,home_storage,key,lock,logout,manage_accounts,note_add,open_in_new,progress_activity,public,query_stats,running_with_errors,security,upload_file,visibility_off,warning
 ```
 
 Should you want to add new icons to the project, add their identifier to the list and the link above, visit the link which shows you the automatically generated CSS file, visit the .woff2 URL embedded within, download the actual subsetted font, and finally add it here to the repository as `MaterialSymbolsRounded-subset.woff2`.

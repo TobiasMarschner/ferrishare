@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title -%}
+Service at Maximum Capacity
+{%- endblock %}
+
+{% block content %}
+<div class="max-w-lg sm:shadow-md bg-zinc-100 sm:rounded-xl flex flex-col gap-8 sm:p-8 mx-auto">
+  <h2 class="flex gap-4 text-2xl self-center">
+    <span class="matsym big" aria-hidden="true">running_with_errors</span>
+    Service at Maximum Capacity
+  </h2>
+  <p>
+    The server has reached its maximum storage capacity for uploaded files.
+    Old files have to expire before new uploads can be accepted.
+    Please come back at a later time.
+  </p>
+</div>
+{% endblock %}

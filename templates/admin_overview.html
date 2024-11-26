@@ -1,10 +1,22 @@
 {% extends "base.html" %}
 
 {% block title -%}
-Upload a File - E2EE Fileshare
+Upload a File
 {%- endblock %}
 
 {% block content %}
+<noscript>
+  <div
+    class="flex max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 mb-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 shadow-lg">
+    <div class="flex items-center gap-4">
+      <span class="matsym bigger" aria-hidden="true">code</span>
+      <h3 class="text-lg font-bold">JavaScript Recommended</h3>
+    </div>
+    <p>
+      While most of the information on this page is rendered server-side, the file-deletion buttons only work if JavaScript is enabled.
+    </p>
+  </div>
+</noscript>
 <div class="max-w-lg sm:shadow-md bg-zinc-100 sm:rounded-xl flex flex-col gap-8 sm:p-8 mx-auto mb-8">
   <div class="flex flex-col-reverse sm:flex-row sm:justify-between gap-8 items-stretch">
     <h2 class="flex gap-4 text-2xl self-center">
@@ -129,7 +141,7 @@ Upload a File - E2EE Fileshare
   </table>
   {% else %}
   <p class="text-center text-xl">No files are currently stored on the server. <a class="classic-link" href="/">Upload
-    one!</a></p>
+      one!</a></p>
   {% endif %}
 </div>
 
