@@ -13,15 +13,15 @@
   }
 
   a.classic-link {
-    @apply underline text-blue-600;
+    @apply underline;
   }
 
   a.classic-link:hover {
-    @apply text-blue-500;
+    @apply text-black;
   }
 
   a.classic-link:active {
-    @apply text-blue-700;
+    @apply text-zinc-700;
   }
 
   .matsym {
