@@ -50,17 +50,18 @@ Upload a File
     </li>
   </ul>
 </div>
-<div class="max-w-lg lg:max-w-6xl lg:shadow-lg lg:bg-zinc-100 lg:rounded-xl flex flex-col lg:p-8 gap-8 mx-auto">
-  <h2 class="flex gap-4 text-2xl items-center justify-center lg:justify-start sm:mr-4 mt-8 sm:mt-0">
+<div class="max-w-lg xl:max-w-7xl xl:shadow-lg xl:bg-zinc-100 xl:rounded-xl flex flex-col xl:p-8 gap-8 mx-auto">
+  <h2 class="flex gap-4 text-2xl items-center justify-center xl:justify-start sm:mr-4 mt-8 sm:mt-0">
     <span class="matsym big" aria-hidden="true">home_storage</span>
     <span class="text-balance">All Uploaded Files</span>
   </h2>
   {% if files %}
   <table>
     <thead>
-      <tr class="hidden lg:table-row text-left *:font-bold *:p-4 text-zinc-500">
+      <tr class="hidden xl:table-row text-left *:font-bold *:p-4 text-zinc-500">
         <th> File Hash </th>
         <th> Size </th>
+        <th> Upload IP </th>
         <th> Uploaded </th>
         <th> Expires in </th>
         <th>
@@ -75,30 +76,37 @@ Upload a File
         </th>
       </tr>
     </thead>
-    <tbody class="lg:table-row-group flex flex-col gap-8">
+    <tbody class="xl:table-row-group flex flex-col gap-8">
       {% for file in files %}
       <tr
-        class="flex lg:table-row flex-col lg:*:p-4 gap-4 sm:gap-6 lg:border-t-2 lg:border-gray-200 rounded-xl bg-zinc-200 sm:bg-zinc-100 lg:bg-inherit shadow-lg lg:shadow-none p-4 sm:p-8 lg:p-0">
-        <td class="flex lg:table-cell flex-row items-center gap-4">
-          <div class="lg:hidden matsym text-gray-500" aria-hidden="true">code</div>
+        class="flex xl:table-row flex-col xl:*:p-4 gap-4 sm:gap-6 xl:border-t-2 xl:border-gray-200 rounded-xl bg-zinc-200 sm:bg-zinc-100 xl:bg-inherit shadow-lg xl:shadow-none p-4 sm:p-8 xl:p-0">
+        <td class="flex xl:table-cell flex-row items-center gap-4">
+          <div class="xl:hidden matsym text-gray-500" aria-hidden="true">code</div>
           <div class="flex flex-col">
-            <div class="lg:hidden text-gray-500">File Hash</div>
-            <div class="text-base lg:text-sm font-mono break-all max-w-[22ch]">{{ file.efd_sha256sum }}</div>
+            <div class="xl:hidden text-gray-500">File Hash</div>
+            <div class="text-base xl:text-sm font-mono break-all max-w-[22ch]">{{ file.efd_sha256sum }}</div>
           </div>
         </td>
-        <td class="flex lg:table-cell flex-row items-center gap-4">
-          <div class="lg:hidden matsym text-gray-500" aria-hidden="true">clock_loader_90</div>
+        <td class="flex xl:table-cell flex-row items-center gap-4">
+          <div class="xl:hidden matsym text-gray-500" aria-hidden="true">clock_loader_90</div>
           <div class="flex flex-col">
-            <div class="lg:hidden text-gray-500">Size</div>
-            <div class="text-xl lg:text-lg">{{ file.formatted_filesize }}</div>
+            <div class="xl:hidden text-gray-500">Size</div>
+            <div class="text-xl xl:text-lg">{{ file.formatted_filesize }}</div>
           </div>
         </td>
-        <td class="flex lg:table-cell flex-row items-center gap-4">
-          <div class="lg:hidden matsym text-gray-500" aria-hidden="true">note_add</div>
+        <td class="flex xl:table-cell flex-row items-center gap-4">
+          <div class="xl:hidden matsym text-gray-500" aria-hidden="true">public</div>
           <div class="flex flex-col">
-            <div class="lg:hidden text-gray-500">Uploaded</div>
-            <div class="flex flex-col gap-0 items-baseline text-xl lg:text-lg">
-              <div class="text-xl lg:text-lg">
+            <div class="xl:hidden text-gray-500">Upload IP</div>
+            <div class="text-xl xl:text-lg">{{ file.upload_ip_pretty }}</div>
+          </div>
+        </td>
+        <td class="flex xl:table-cell flex-row items-center gap-4">
+          <div class="xl:hidden matsym text-gray-500" aria-hidden="true">note_add</div>
+          <div class="flex flex-col">
+            <div class="xl:hidden text-gray-500">Uploaded</div>
+            <div class="flex flex-col gap-0 items-baseline text-xl xl:text-lg">
+              <div class="text-xl xl:text-lg">
                 {{ file.upload_ts_pretty }}
               </div>
               <div class="text-gray-500 text-sm">
@@ -107,12 +115,12 @@ Upload a File
             </div>
           </div>
         </td>
-        <td class="flex lg:table-cell flex-row items-center gap-4">
-          <div class="lg:hidden matsym text-gray-500" aria-hidden="true">auto_delete</div>
+        <td class="flex xl:table-cell flex-row items-center gap-4">
+          <div class="xl:hidden matsym text-gray-500" aria-hidden="true">auto_delete</div>
           <div class="flex flex-col">
-            <div class="lg:hidden text-gray-500">Expires in</div>
-            <div class="flex flex-col gap-0 items-baseline text-xl lg:text-lg">
-              <div class="text-xl lg:text-lg">
+            <div class="xl:hidden text-gray-500">Expires in</div>
+            <div class="flex flex-col gap-0 items-baseline text-xl xl:text-lg">
+              <div class="text-xl xl:text-lg">
                 {{ file.expiry_ts_pretty }}
               </div>
               <div class="text-gray-500 text-sm">
@@ -121,18 +129,18 @@ Upload a File
             </div>
           </div>
         </td>
-        <td class="flex lg:table-cell flex-row items-center gap-4">
-          <div class="lg:hidden matsym text-gray-500" aria-hidden="true">download</div>
+        <td class="flex xl:table-cell flex-row items-center gap-4">
+          <div class="xl:hidden matsym text-gray-500" aria-hidden="true">download</div>
           <div class="flex flex-col">
-            <div class="lg:hidden text-gray-500">Downloads</div>
-            <div class="text-xl lg:text-lg lg:text-center">{{ file.downloads }}</div>
+            <div class="xl:hidden text-gray-500">Downloads</div>
+            <div class="text-xl xl:text-lg xl:text-center">{{ file.downloads }}</div>
           </div>
         </td>
         <td>
           <button type="button" aria-label="Delete from Server" data-efdhash="{{ file.efd_sha256sum }}"
-            class="admin-delete-button no-underline w-full lg:w-auto lg:mx-auto flex items-center justify-center gap-4 p-4 rounded-full bg-zinc-300 font-bold cursor-pointer shadow-none hover:shadow-md active:shadow-none disabled:shadow-none disabled:text-zinc-400 disabled:bg-zinc-300 disabled:cursor-not-allowed">
+            class="admin-delete-button no-underline w-full xl:w-auto xl:mx-auto flex items-center justify-center gap-4 p-4 rounded-full bg-zinc-300 font-bold cursor-pointer shadow-none hover:shadow-md active:shadow-none disabled:shadow-none disabled:text-zinc-400 disabled:bg-zinc-300 disabled:cursor-not-allowed">
             <span class="matsym no-underline" aria-hidden="true">delete</span>
-            <span class="lg:hidden">Delete from Server</span>
+            <span class="xl:hidden">Delete from Server</span>
           </button>
         </td>
       </tr>

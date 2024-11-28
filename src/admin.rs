@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use argon2::{password_hash::PasswordVerifier, Argon2, PasswordHash};
 use axum::{
@@ -45,13 +45,14 @@ pub async fn admin_page(
         struct FileRow {
             efd_sha256sum: String,
             filesize: i64,
+            upload_ip: String,
             upload_ts: String,
             expiry_ts: String,
             downloads: i64,
         }
         // Request info about all currently live files.
         let all_files: Vec<FileRow> = sqlx::query_as(
-            "SELECT efd_sha256sum, filesize, upload_ts, expiry_ts, downloads FROM uploaded_files;",
+            "SELECT efd_sha256sum, filesize, upload_ip, upload_ts, expiry_ts, downloads FROM uploaded_files;",
         )
         .fetch_all(&aps.db)
         .await?;
@@ -62,6 +63,7 @@ pub async fn admin_page(
         struct UploadedFile {
             efd_sha256sum: String,
             formatted_filesize: String,
+            upload_ip_pretty: String,
             upload_ts_pretty: String,
             upload_ts: String,
             expiry_ts_pretty: String,
@@ -79,6 +81,11 @@ pub async fn admin_page(
                 UploadedFile {
                     efd_sha256sum: e.efd_sha256sum,
                     formatted_filesize: format!("{:.2} MB", e.filesize as f64 / 1_000_000.0),
+                    upload_ip_pretty: {
+                        IpPrefix::from_str(&e.upload_ip)
+                            .map(|v| v.pretty_print())
+                            .unwrap_or_else(|_| "(invalid IP)".into())
+                    },
                     upload_ts_pretty: if let Some(uts) = uts {
                         format!("{} ago", pretty_print_delta(now, uts))
                     } else {
