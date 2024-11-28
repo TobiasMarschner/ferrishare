@@ -166,7 +166,7 @@ Upload a File
     xhr.onload = () => {
       if (xhr.status === 200) {
         // Successful? Strike through all values in the row. (first five <td>s in it)
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 6; i++) {
           let item = btn.parentElement.parentElement.childNodes[i];
           item.classList.add("line-through");
           item.classList.add("text-gray-400");
