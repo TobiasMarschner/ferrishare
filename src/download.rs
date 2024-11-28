@@ -132,6 +132,14 @@ impl Default for DownloadPageContext<'_> {
     }
 }
 
+impl DownloadPageContext<'_> {
+    fn to_context(&self, aps: &AppState) -> Result<Context, anyhow::Error> {
+        let mut context = tera::Context::from_serialize(self)?;
+        context.extend(aps.default_context());
+        Ok(context)
+    }
+}
+
 pub fn pretty_print_delta<Tz1: TimeZone, Tz2: TimeZone>(
     a: DateTime<Tz1>,
     b: DateTime<Tz2>,
@@ -183,7 +191,7 @@ pub async fn download_page(
                 .tera
                 .lock()
                 .await
-                .render("download.html", &Context::from_serialize(&dpc)?)?;
+                .render("download.html", &dpc.to_context(&aps)?)?;
 
             return Ok((
                 StatusCode::BAD_REQUEST,
@@ -208,7 +216,7 @@ pub async fn download_page(
             .tera
             .lock()
             .await
-            .render("download.html", &Context::from_serialize(&dpc)?)?;
+            .render("download.html", &dpc.to_context(&aps)?)?;
 
         return Ok((
             StatusCode::BAD_REQUEST,
@@ -250,7 +258,7 @@ pub async fn download_page(
             .tera
             .lock()
             .await
-            .render("download.html", &Context::from_serialize(&dpc)?)?;
+            .render("download.html", &dpc.to_context(&aps)?)?;
 
         return Ok((
             StatusCode::NOT_FOUND,
@@ -345,7 +353,7 @@ pub async fn download_page(
         .tera
         .lock()
         .await
-        .render("download.html", &Context::from_serialize(&dpc)?)?;
+        .render("download.html", &dpc.to_context(&aps)?)?;
 
     // Minify and return.
     Ok((

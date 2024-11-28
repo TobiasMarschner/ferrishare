@@ -5,8 +5,9 @@
     - [ ] Also ensure the actual filename-display falls back to system-ui / sans-serif for optimal compatibility.
   - [ ] Lighthouse checks on all pages
 - [ ] Backend
-  - [ ] Reverse Proxy integration
-    - [ ] X-Forwarded-For integration, to be precise
+  - [x] Reverse Proxy integration
+    - [x] X-Forwarded-For integration, to be precise
+  - [x] Adjustable app name
   - [ ] Demo-Mode
     - [ ] All uploads expire after 15 minutes
     - [ ] Downloads only possible by uploader

@@ -62,6 +62,15 @@ pub struct AppState {
     uploading: Arc<RwLock<HashSet<IpPrefix>>>,
 }
 
+impl AppState {
+    /// Create a default templating context with variables needed on every page.
+    pub fn default_context(&self) -> tera::Context {
+        let mut context = tera::Context::new();
+        context.insert("global_app_name", &self.conf.app_name);
+        context
+    }
+}
+
 /// Global definition of the HTML-minifier configuration.
 ///
 /// CSS- and JS-minification are enabled, while some more aggressive

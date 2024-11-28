@@ -12,6 +12,7 @@ use crate::*;
 /// Configuration for the entire application read from 'config.toml'.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AppConfiguration {
+    pub app_name: String,
     pub interface: String,
     pub proxy_depth: u64,
     pub admin_password_hash: String,
@@ -79,6 +80,17 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
 
     eprintln!("Setting up new configuration at {DATA_PATH}/config.toml");
     eprintln!("Interactively prompting for all settings ...\n");
+
+    let app_name = Text::new("App name:")
+        .with_initial_value("EonuShare")
+        .with_help_message(
+            "
+  The name of the application.
+  Will be displayed in the top-left corner of the interface.
+",
+        )
+        .with_validator(inquire::validator::MinLengthValidator::new(1))
+        .prompt()?;
 
     let interface = Text::new("Interface:")
         .with_initial_value("0.0.0.0:3000")
@@ -261,6 +273,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
 
     // Bring it all together.
     let app_config = AppConfiguration {
+        app_name,
         interface,
         proxy_depth,
         admin_password_hash,

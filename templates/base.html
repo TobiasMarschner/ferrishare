@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="/static/main.css">
-  <title>{% block title %}{% endblock %} - E2EE Fileshare</title>
+  <title>{% block title %}{% endblock %} - {{ global_app_name }}</title>
   {% block head %}{% endblock %}
 </head>
 
@@ -13,7 +13,7 @@
   <div class="shadow-md z-10 bg-zinc-300 sm:bg-zinc-100">
     <div class="flex items-center px-4 p-2 gap-2 sm:px-8 sm:py-4 max-w-5xl mx-auto">
       <h1 class="text-xl sm:text-3xl leading-none text-zinc-700 font-light tracking-tight">
-        <a href="/">Cool Servicename</a>
+        <a href="/">{{ global_app_name }}</a>
       </h1>
       <nav class="flex items-center gap-4 ml-auto">
         <a class="font-bold p-2 sm:p-4 rounded-lg hover:bg-zinc-200 flex gap-2 hover:shadow-md active:shadow-none" href="/">

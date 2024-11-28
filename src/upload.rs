@@ -10,14 +10,13 @@ use minify_html::minify;
 use rand::prelude::*;
 use serde::Serialize;
 use sha2::{Digest, Sha256};
-use tera::Context;
 use tokio::io::AsyncWriteExt;
 
 use crate::*;
 
 pub async fn upload_page(State(aps): State<AppState>) -> Result<Html<String>, AppError> {
     aps.tera.lock().await.full_reload()?;
-    let mut context = Context::new();
+    let mut context = aps.default_context();
     let html;
     // Check if the server has hit the quota limit.
     if maximum_quota_reached(&aps).await? {
