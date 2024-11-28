@@ -13,6 +13,7 @@ use crate::*;
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AppConfiguration {
     pub interface: String,
+    pub proxy_depth: u64,
     pub admin_password_hash: String,
     pub maximum_filesize: usize,
     pub maximum_quota: usize,
@@ -93,6 +94,30 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
 ",
         )
         .prompt()?;
+
+    let proxy_depth = Text::new("Proxy Depth:")
+        .with_initial_value("1")
+        .with_validator(|v: &str| {
+            v.parse::<u64>()
+                .map_or(Ok(Validation::Invalid("not a valid number".into())), |_| {
+                    Ok(Validation::Valid)
+                })
+        })
+        .with_help_message(
+            "
+  How many trusted reverse-proxies do requests pass through?
+
+  The app performs IP-based rate-limiting. To do that correctly it needs to
+  know which value to read from the request's 'X-Forwarded-For'-header.
+  Can be set to 0 to directly use the client address for rate-limiting.
+
+  Using the example Docker setup with Traefik? Set to '1'.
+",
+        )
+        .prompt()?
+        // Due to the validator this parse should never fail.
+        .parse::<u64>()
+        .unwrap();
 
     let admin_password = Password::new("Admin password:")
         .with_display_mode(inquire::PasswordDisplayMode::Masked)
@@ -237,6 +262,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
     // Bring it all together.
     let app_config = AppConfiguration {
         interface,
+        proxy_depth,
         admin_password_hash,
         maximum_filesize,
         maximum_quota,

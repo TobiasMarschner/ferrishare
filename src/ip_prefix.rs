@@ -1,11 +1,15 @@
 use crate::*;
 use axum::{
-    extract::{ConnectInfo, FromRequestParts, Request, State},
+    extract::{ConnectInfo, FromRef, FromRequestParts, Request, State},
     http::{request::Parts, StatusCode},
     middleware::Next,
     response::Response,
 };
-use std::{fmt::Display, net::SocketAddr, str::FromStr};
+use std::{
+    fmt::Display,
+    net::{IpAddr, SocketAddr},
+    str::FromStr,
+};
 
 /// Stores either a full IPv4 address or a /64 IPv6 subnet.
 ///
@@ -16,10 +20,10 @@ pub enum IpPrefix {
     V6([u8; 8]),
 }
 
-impl From<SocketAddr> for IpPrefix {
+impl From<IpAddr> for IpPrefix {
     /// Convert a SocketAddr's IPv4 or IPv6 address to an IpPrefix. Infallible.
-    fn from(addr: SocketAddr) -> Self {
-        match addr.ip() {
+    fn from(addr: IpAddr) -> Self {
+        match addr {
             std::net::IpAddr::V4(ipv4_addr) => IpPrefix::V4(ipv4_addr.octets()),
             std::net::IpAddr::V6(ipv6_addr) => {
                 // I originally used "ipv6_addr.octets()[..8].try_into().unwrap()" for this,
@@ -74,6 +78,18 @@ impl FromStr for IpPrefix {
     }
 }
 
+impl IpPrefix {
+    /// Prints the contained IP-Prefix in pretty / human-readable notation for logging.
+    pub fn pretty_print(&self) -> String {
+        match self {
+            IpPrefix::V4([b0, b1, b2, b3]) => format!("{b0}.{b1}.{b2}.{b3}"),
+            IpPrefix::V6([b0, b1, b2, b3, b4, b5, b6, b7]) => {
+                format!("{b0:02x}{b1:02x}:{b2:02x}{b3:02x}:{b4:02x}{b5:02x}:{b6:02x}{b7:02x}::/64")
+            }
+        }
+    }
+}
+
 /// This extractor conveniently allows us to extract a client's IP as an IpPrefix.
 ///
 /// It's likely that in the future the source of the IpPrefix will not be the SocketAddr
@@ -86,16 +102,49 @@ pub struct ExtractIpPrefix(pub IpPrefix);
 #[axum::async_trait]
 impl<S> FromRequestParts<S> for ExtractIpPrefix
 where
+    AppState: FromRef<S>,
     S: Send + Sync,
 {
-    type Rejection = ();
+    type Rejection = AppError;
 
-    async fn from_request_parts(parts: &mut Parts, _: &S) -> Result<Self, Self::Rejection> {
-        let ip = parts
-            .extensions
-            .get::<ConnectInfo<SocketAddr>>()
-            .expect("cannot extract client's IP")
-            .0;
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        // There are two possible sources for the client's "real" IP address:
+        // 1) The SocketAddr of the machine directly communicating with us.
+        // 2) One of the IP addresses listed in the X-Forwarded-For header.
+        //
+        // Which one it is depends on the reverse-proxy settings.
+        // If proxy_depth is 0 there is no reverse-proxy, and we work directly with
+        // the SocketAddr. Otherwise we extract the IP address from the X-Forwarded-For header,
+        // taking care to select the right one in the chain.
+        let ip: IpAddr = match AppState::from_ref(state).conf.proxy_depth {
+            0 => {
+                parts
+                    .extensions
+                    .get::<ConnectInfo<SocketAddr>>()
+                    .map_or_else( || { AppError::err( StatusCode::INTERNAL_SERVER_ERROR,
+                        "failed to extract SocketAddr from request; your reverse-proxy configuration might be incorrect") },
+                        |v| Ok(v.0.ip()),
+                    )?
+            }
+            s => {
+                let forwarded_ips = parts
+                    .headers
+                    .get("X-Forwarded-For")
+                    .map_or("", |v| v.to_str().unwrap_or_default())
+                    .split(' ')
+                    .collect_vec();
+
+                forwarded_ips
+                    .get(forwarded_ips.len() - (s as usize))
+                    .map(|v| IpAddr::from_str(v).ok())
+                    .flatten()
+                    .map_or_else( || { AppError::err(StatusCode::INTERNAL_SERVER_ERROR,
+                        "failed to extract IP from X-Forwarded-For header; your reverse-proxy configuration might be incorrect") },
+                        |v| Ok(v)
+                    )?
+            }
+        };
+
         Ok(Self(IpPrefix::from(ip)))
     }
 }

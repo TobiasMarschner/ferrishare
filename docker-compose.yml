@@ -3,7 +3,17 @@ services:
     build: .
     container_name: fileshare_c
     restart: unless-stopped
-    ports:
-      - 3000:3000
     volumes:
       - "./data:/app/data"
+    labels:
+      - "traefik.http.routers.fileshare.rule=Host(`fileshare.localhost`)"
+  reverse-proxy:
+    image: traefik
+    container_name: traefik_c
+    restart: unless-stopped
+    command:
+      - "--providers.docker"
+    ports:
+      - 3000:80
+    volumes:
+      - "/run/user/1000/docker.sock:/var/run/docker.sock:ro"

@@ -1,5 +1,5 @@
 use axum::{
-    extract::{ConnectInfo, DefaultBodyLimit},
+    extract::{ConnectInfo, DefaultBodyLimit, State},
     middleware::{self, Next},
     response::Response,
     routing::{get, post},
@@ -102,7 +102,10 @@ const DB_URL: &str = "sqlite://data/sqlite.db";
 ///
 /// The middleware creates an "http_request" span wrapping the entire request and
 /// fires off an event at the beginning which is then logged by the fmt Subscriber.
+#[axum::debug_middleware]
 async fn custom_tracing(
+    State(_): State<AppState>,
+    ExtractIpPrefix(eip): ExtractIpPrefix,
     ConnectInfo(client): ConnectInfo<SocketAddr>,
     request: axum::extract::Request,
     next: Next,
@@ -126,7 +129,7 @@ async fn custom_tracing(
     let method = request.method();
 
     // Create the http_request span out of this info.
-    let span = tracing::info_span!("http_request", %client, path, query, ?method);
+    let span = tracing::info_span!("http_request", socket_ip = %client, real_ip = eip.pretty_print(), path, query, ?method);
 
     // Instrument the rest of the stack with this span.
     async move {
@@ -331,7 +334,7 @@ These are required for the applications to store all of its data"
             ip_prefix::ip_prefix_ratelimiter,
         ))
         // Use our custom middleware for tracing
-        .layer(middleware::from_fn(custom_tracing))
+        .layer(middleware::from_fn_with_state(aps.clone(), custom_tracing))
         // Attach DB-pool and TERA-object as State
         .with_state(aps)
         // Ensure client IPs and ports can be extracted

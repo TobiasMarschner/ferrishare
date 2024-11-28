@@ -52,4 +52,5 @@ COPY --from=node-builder /app/static/main.css ./static/main.css
 COPY ./static/font/MaterialSymbolsRounded-subset.woff2 ./static/font/
 # Copy in the compiled release binary.
 COPY --from=builder /app/target/release/e2ee-fileshare-rust .
+EXPOSE 3000
 ENTRYPOINT ["./e2ee-fileshare-rust"]
