@@ -1,58 +1,39 @@
-Building a full-stack web-app has more moving parts than one might think.
-Still to do:
-
-- [x] Complete core functionality
-  - [x] Download FE and BE
-  - [x] Delete FE (modal) and BE
-  - [x] Admin overview page
-    - [ ] Pagination on the admin overview?
-  - [x] Actually deleting expired files
-- [ ] Packaging the whole thing in a configurable Docker container
-  - [x] Ensure the actual db, config and uploaded files live in their own directory.
-- [ ] Check that uploads are indeed encrypted (entropy and magic number(?) checks).
-- [ ] Ensure that uploaded files are immediately streamed to disk instead of memory.
-- [x] Correct tracing / logging
-- [x] Correct error handling
-  - [x] Obiously we need super robus endpoints, but I also want to ensure the client gets expressive error messages that will actually help them
-- [ ] Proper theming
-  - [x] The whole app is B/W currently - that needs to improve
-    - I decied to leave it as is, looks quite clean.
-  - [x] subset the icon font, maybe remove the ligatures, and definitely remove them from the accessibility tree
-  - [ ] run lighthouse on the final app to iron out any kinks
-- [ ] More client-side validation and integration
-  - [x] Show the correct filesize limit
-  - [ ] Prevent uploads that are too large in the client, too
-  - [ ] Perhaps show the quota-error already when requesting the upload-page. (it would be better UX)
-  - [x] Also add the storage-quota to the admin page.
-  - [ ] noscript / nojs users
-- [ ] Set up WAL mode on sqlite and other possible settings
-- [x] Proper app configuration
-  - [x] IP and PORT that we're binding on
-    - [ ] Special considerations for IPv6 support?
-  - [x] Rate Limit Settings
-    - [x] No. of requests per IP, No. of uploads per IP
-  - [ ] REVERSE PROXY SETTINGS
-    - [ ] The WebCrypto-API *requires* a secure context, meaning this site has to be served over HTTPS
-    - [ ] Maybe we'll add TLS support in the server, but really, we should reverse proxy this thing
-    - [ ] Trusted IPs for X-Forwarded-For, and also properly integrating that header, ofc
-  - [x] Maximum allowed filesize
-    - [x] Remember, we need to adjust the maximum allowed request length in axum, too.
-  - [x] File quota
-    - [x] This still needs to be implemented, btw
-  - [x] Some kind of setup routine where the admin can set the ADMIN PASSWORD.
-- [x] Rate Limiting
-- [ ] Documentation
-  - [ ] Code-level documentation, both within and outside of code
-  - [ ] General development documentation
-  - [ ] Usage documentation
-    - [ ] How to install, how to configure
-- [ ] Marketing page / README
-  - [ ] What this is, what it does
-  - [ ] feature list
-  - [ ] screenshots / screen recordings showcasing how the app looks and what it does
-  - [ ] Might be a good idea to make GitHub the proper home for this since we'll probably want to accept contributions and issues.
-  - [ ] Add it to awesome selfhosted, announce it on reddit / lemmy once finished.
-- [ ] Demo Mode and Host
-  - [ ] We need a running demo of this.
-  - [ ] Maybe with restrictions on retention and who's allowed to download files, to prevent abuse.
-- [x] Cut off uploads (and other broken requests) produce 500s, that needs to change.
+- [ ] Name the app
+  - [ ] Replace the old name wherever you spot it
+- [ ] Frontend
+  - [ ] Subset the main sans font (Inter)
+    - [ ] Also ensure the actual filename-display falls back to system-ui / sans-serif for optimal compatibility.
+  - [ ] Lighthouse checks on all pages
+- [ ] Backend
+  - [ ] Reverse Proxy integration
+    - [ ] X-Forwarded-For integration, to be precise
+  - [ ] Demo-Mode
+    - [ ] All uploads expire after 15 minutes
+    - [ ] Downloads only possible by uploader
+    - [ ] Appropriate info-message on all servers
+- [ ] Forge
+  - Currently all developement takes place internally, but this has to move to GitHub to be easily found and contributed to.
+  - [ ] Figure out how to do releases and container distribution on there.
+  - [ ] Set up a mirror to `git.tobiasm.dev`.
+- [ ] Code Documentation
+  - [ ] All modules and high-level functions must be documented
+  - [ ] Obviously `cargo docs` does the trick, but where and how do we host these?
+- [ ] Usage Documentation
+  - Maybe we'll just put all this in the repository's README?
+  - [ ] Name and Featurelist
+    - [ ] Cryptographic Notes
+  - [ ] Screenshots / GIFs demonstrating use (show Desktop and Mobile)
+  - [ ] Installation instructions
+    - [ ] with Docker and without Docker
+    - [ ] interactive configuration wizard
+    - [ ] Note about the Reverse-Proxy requirement
+    - [ ] Big fat note about cryptosystem security
+  - [ ] Build instructions
+    - [ ] With and without Docker
+  - [ ] Structure of this Repository + Architectural Notes
+    - [ ] Rust Backend with on-the-fly templating (tera)
+    - [ ] sqlite-database (sqlx)
+    - [ ] Tailwind compiled separately
+    - [ ] Outline the different components, where they reside, and what they're for.
+  - [ ] License Information
+  - [ ] Contributing Information
