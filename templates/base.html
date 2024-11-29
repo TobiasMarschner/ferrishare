@@ -4,6 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preload" href="/font/InterVariable-subset-eff74dc0.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/font/MaterialSymbolsRounded-subset-fe4f124c.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/main.css">
   <title>{% block title %}{% endblock %} - {{ global_app_name }}</title>
   {% block head %}{% endblock %}
@@ -52,15 +54,9 @@
           </span>
         </li>
         <li class="flex gap-4 items-center">
-          <span class="matsym" aria-hidden="true">auto_delete</span>
-          <span>
-            Files can only be downloaded by the <strong>IP address that originally uploaded them</strong>.
-          </span>
-        </li>
-        <li class="flex gap-4 items-center">
           <span class="matsym" aria-hidden="true">password</span>
           <span>
-            Use the password "<strong>admin</strong>" to login to the admin dashboard and test it out.
+            Anyone can access and test the <a class="classic-link" href="/admin">admin interface</a> using the password "<strong>admin</strong>".
           </span>
         </li>
       </ul>

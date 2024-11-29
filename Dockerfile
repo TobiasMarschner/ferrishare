@@ -36,7 +36,7 @@ COPY ./package*.json .
 RUN npm install
 # Copy over the templates used to actually generate the styles.
 COPY ./templates/ ./templates/
-COPY ./main.css .
+COPY ./main.tw.css .
 COPY ./tailwind.config.js .
 # Actually generate the stylesheet.
 RUN npm run build:tw
@@ -48,8 +48,14 @@ WORKDIR /app
 COPY ./templates/ ./templates/
 # Copy in the generated stylesheet
 COPY --from=node-builder /app/static/main.css ./static/main.css
+# Compute the hash of the generated main.css and add it to its filename.
+# This way the resource can benefit from permanent browser caching.
+RUN HASH_SUFFIX="$(sha256sum ./static/main.css | cut -d ' ' -f 1 | tail -c 9)" \
+    && mv ./static/main.css ./static/main-${HASH_SUFFIX}.css \
+    && sed -i -e "s/main.css/main-${HASH_SUFFIX}.css/g" ./templates/base.html
 # Copy in those font-files that we actually use in production.
-COPY ./static/font/MaterialSymbolsRounded-subset.woff2 ./static/font/
+COPY ./font/MaterialSymbolsRounded-subset-*.woff2 ./font/
+COPY ./font/InterVariable-subset-*.woff2 ./font/
 # Copy in the compiled release binary.
 COPY --from=builder /app/target/release/e2ee-fileshare-rust .
 EXPOSE 3000

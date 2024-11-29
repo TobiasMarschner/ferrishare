@@ -1,11 +1,11 @@
 {
   "name": "e2ee-fileshare-rust",
   "version": "0.1.0",
-  "description": "This project uses both `cargo` and `npm` to manage packages.",
+  "description": "",
   "main": "index.js",
   "scripts": {
-    "dev:tw": "npx tailwindcss -i ./main.css -o ./static/main.css --minify --watch",
-    "build:tw": "npx tailwindcss -i ./main.css -o ./static/main.css --minify"
+    "dev:tw": "npx tailwindcss -i ./main.tw.css -o ./static/main.css --minify --watch",
+    "build:tw": "npx tailwindcss -i ./main.tw.css -o ./static/main.css --minify"
   },
   "author": "",
   "license": "ISC",

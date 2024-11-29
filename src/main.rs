@@ -17,9 +17,9 @@ use std::{
 };
 use tera::Tera;
 use tokio::sync::{Mutex, RwLock};
-use tower::ServiceBuilder;
 use tower_http::{compression::CompressionLayer, services::ServeDir, timeout::TimeoutLayer};
 use tracing::Instrument;
+use sha2::{Sha256, Digest};
 
 // Use 'pub use' here so that all the normal modules only have
 // to import 'crate::*' instead of also having to import 'crate::error_handling::AppError'.
@@ -111,7 +111,6 @@ const DB_URL: &str = "sqlite://data/sqlite.db";
 ///
 /// The middleware creates an "http_request" span wrapping the entire request and
 /// fires off an event at the beginning which is then logged by the fmt Subscriber.
-#[axum::debug_middleware]
 async fn custom_tracing(
     State(_): State<AppState>,
     ExtractIpPrefix(eip): ExtractIpPrefix,
@@ -150,6 +149,14 @@ async fn custom_tracing(
     }
     .instrument(span)
     .await
+}
+
+async fn add_maximum_caching<B>(mut response: Response<B>) -> Response<B> {
+    response.headers_mut().insert(
+        "Cache-Control",
+        "max-age=31536000, immutable".parse().unwrap(),
+    );
+    response
 }
 
 /// TODO app description
@@ -255,6 +262,18 @@ These are required for the applications to store all of its data"
         }
     };
 
+    // Perform database migrations (create all required tables).
+    // Note that the migrate!-macro includes these in the binary at compile time.
+    match sqlx::migrate!("./migrations").run(&db).await {
+        Ok(_) => {
+            tracing::info!("database migrations successful");
+        }
+        Err(e) => {
+            tracing::error!("failed to perform databse migrations: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+
     // Initialize the templating engine.
     let tera = match Tera::new("templates/**/*.{html,js}") {
         Ok(t) => {
@@ -268,18 +287,6 @@ These are required for the applications to store all of its data"
     };
     // Wrap it in an Arc<Mutex<_>>, as required by AppState.
     let tera = Arc::new(Mutex::new(tera));
-
-    // Perform database migrations (create all required tables).
-    // Note that the migrate!-macro includes these in the binary at compile time.
-    match sqlx::migrate!("./migrations").run(&db).await {
-        Ok(_) => {
-            tracing::info!("database migrations successful");
-        }
-        Err(e) => {
-            tracing::error!("failed to perform databse migrations: {e}");
-            return ExitCode::FAILURE;
-        }
-    };
 
     // Create the AppState out of database and template-engine.
     let aps = AppState {
@@ -295,20 +302,58 @@ These are required for the applications to store all of its data"
     // Start the background-task that regularly cleans up expired files and sessions.
     tokio::spawn(auto_cleanup::cleanup_cronjob(aps.clone()));
 
+    // Create all of the middlewares the app uses.
+
+    // Small timeouts for all the "normal" routes that don't deal with files.
+    let timeout_small = TimeoutLayer::new(Duration::from_secs(30));
+
+    // Big timeout for file uploads and downloads.
     // The up- and download uses a longer timeout than the default 30s on the usual routes.
     // To accomodate very slow clients we assume each MB can take up to a full minute for up- or download.
     // However, the minimum timeout is always set to 120s.
     let file_endpoint_timeout_duration =
         std::cmp::max(120, aps.conf.maximum_filesize as u64 / 17476);
+    let timeout_big = TimeoutLayer::new(Duration::from_secs(file_endpoint_timeout_duration));
     tracing::info!(
         "setting file endpoint timeout to {} seconds",
         file_endpoint_timeout_duration
     );
 
-    // Define the actual application (routes, middlewares, services).
-    let app = Router::new()
-        // Serve static assets from the 'static'-folder
-        .nest_service("/static", ServeDir::new("static"))
+    // Compression for HTTP responses.
+    // Will not be used on static font assets (since they're already compressed)
+    // and file up- and downloads (since they're encrypted and thereby not practically compressible).
+    // We're disabling zstd b/c brotli and gzip have proven to provide better results thus far.
+    let compression = CompressionLayer::new().no_zstd();
+
+    // Our custom middleware for tracing HTTP requests.
+    let custom_tracing = middleware::from_fn_with_state(aps.clone(), custom_tracing);
+
+    // Our custom middleware for rate-limiting with the IpPrefix.
+    let rate_limiter =
+        middleware::from_fn_with_state(aps.clone(), ip_prefix::ip_prefix_ratelimiter);
+
+    // Adds a cache header for infinite caching of resources.
+    // Make sure all resources served here have hashes included in their request path.
+    let permanent_caching = middleware::map_response(add_maximum_caching);
+
+    let file_routers = Router::new()
+        .route(
+            "/upload_endpoint",
+            post(upload::upload_endpoint)
+                // Set the upload size limit for the upload_endpoint to the accepted filesize
+                // plus a generous 256 KiB for the other metadata.
+                // The default limit is 2MB, not enough for most configurations.
+                .layer(DefaultBodyLimit::max(aps.conf.maximum_filesize + 262144))
+                // This ensures any IpPrefix can only upload one file at a time.
+                .layer(axum::middleware::from_fn_with_state(
+                    aps.clone(),
+                    upload::upload_endpoint_wrapper,
+                )),
+        )
+        .route("/download_endpoint", get(download::download_endpoint))
+        .layer(timeout_big);
+
+    let normal_routers = Router::new()
         // HTML routes
         .route("/", get(upload::upload_page))
         .route("/file", get(download::download_page))
@@ -317,36 +362,30 @@ These are required for the applications to store all of its data"
         .route("/admin_login", post(admin::admin_login))
         .route("/admin_logout", post(admin::admin_logout))
         .route("/delete_endpoint", post(delete::delete_endpoint))
-        // Normal requests that don't download or upload files should finish in 30s.
-        .layer(TimeoutLayer::new(Duration::from_secs(30)))
-        // Set the upload size limit for the upload_endpoint to the accepted filesize
-        // plus a generous 256 KiB for the other metadata.
-        // The default limit is 2MB, not enough for most configurations.
-        .route(
-            "/upload_endpoint",
-            post(upload::upload_endpoint)
-                .layer(DefaultBodyLimit::max(aps.conf.maximum_filesize + 262144))
-                .layer(axum::middleware::from_fn_with_state(
-                    aps.clone(),
-                    upload::upload_endpoint_wrapper,
-                )),
-        )
-        .route("/download_endpoint", get(download::download_endpoint))
-        .layer(TimeoutLayer::new(Duration::from_secs(
-            file_endpoint_timeout_duration,
-        )))
-        // Enable response compression of all responses
-        .layer(ServiceBuilder::new().layer(CompressionLayer::new()))
-        // Use our custom middleware for rate limiting.
-        .layer(middleware::from_fn_with_state(
-            aps.clone(),
-            ip_prefix::ip_prefix_ratelimiter,
-        ))
-        // Use our custom middleware for tracing
-        .layer(middleware::from_fn_with_state(aps.clone(), custom_tracing))
-        // Attach DB-pool and TERA-object as State
+        // Middlewares
+        .layer(timeout_small)
+        .layer(compression.clone());
+
+    let static_routers = Router::new()
+        .nest_service("/static", ServeDir::new("static"))
+        .layer(timeout_small)
+        .layer(compression)
+        .layer(permanent_caching.clone());
+
+    let font_routers = Router::new()
+        .nest_service("/font", ServeDir::new("font"))
+        .layer(timeout_small)
+        .layer(permanent_caching);
+
+    // Combine all Routers into one big router and add the global middlewares and state here.
+    let app = Router::new()
+        .nest("/", normal_routers)
+        .nest("/", file_routers)
+        .nest("/", font_routers)
+        .nest("/", static_routers)
+        .layer(custom_tracing)
+        .layer(rate_limiter)
         .with_state(aps)
-        // Ensure client IPs and ports can be extracted
         .into_make_service_with_connect_info::<SocketAddr>();
 
     // Bind to localhost for now.

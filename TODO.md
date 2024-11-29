@@ -1,8 +1,9 @@
 - [ ] Name the app
   - [ ] Replace the old name wherever you spot it
 - [ ] Frontend
-  - [ ] Subset the main sans font (Inter)
+  - [x] Subset the main sans font (Inter)
     - [ ] Also ensure the actual filename-display falls back to system-ui / sans-serif for optimal compatibility.
+  - [x] Permanent caching of stylesheet and fonts
   - [ ] Lighthouse checks on all pages
 - [ ] Backend
   - [x] Reverse Proxy integration
@@ -10,8 +11,7 @@
   - [x] Adjustable app name
   - [ ] Demo-Mode
     - [ ] All uploads expire after 15 minutes
-    - [ ] Downloads only possible by uploader
-    - [ ] Appropriate info-message on all servers
+    - [x] Appropriate info-message on all pages
 - [ ] Forge
   - Currently all developement takes place internally, but this has to move to GitHub to be easily found and contributed to.
   - [ ] Figure out how to do releases and container distribution on there.

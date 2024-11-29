@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = { version = "0.7", features = ["multipart", "query", "macros", "tracing"] }
+axum = { version = "0.7", features = ["http2", "multipart", "query", "macros", "tracing"] }
 axum-extra = { version = "0", features = ["cookie"]}
 itertools = "0"
 serde = { version = "1", features = ["derive"] }
