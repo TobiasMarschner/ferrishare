@@ -136,11 +136,10 @@ where
 
                 forwarded_ips
                     .get(forwarded_ips.len() - (s as usize))
-                    .map(|v| IpAddr::from_str(v).ok())
-                    .flatten()
+                    .and_then(|v| IpAddr::from_str(v).ok())
                     .map_or_else( || { AppError::err(StatusCode::INTERNAL_SERVER_ERROR,
                         "failed to extract IP from X-Forwarded-For header; your reverse-proxy configuration might be incorrect") },
-                        |v| Ok(v)
+                        Ok
                     )?
             }
         };
@@ -159,11 +158,10 @@ pub async fn ip_prefix_ratelimiter(
     // Acquire a writing reference to the rate-limiter.
     let mut rl = aps.rate_limiter.write().await;
     // Insert the key if it wasn't already here and update its counter.
-    let counter = rl
+    let counter = *rl
         .entry(eip)
-        .and_modify(|v| *v = *v + 1)
-        .or_insert(1)
-        .clone();
+        .and_modify(|v| *v += 1)
+        .or_insert(1);
     // Drop our borrow, or we can only process one request at a time, lol.
     drop(rl);
     // Rate limit, if need be.

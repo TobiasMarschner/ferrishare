@@ -19,7 +19,6 @@ use tera::Tera;
 use tokio::sync::{Mutex, RwLock};
 use tower_http::{compression::CompressionLayer, services::ServeDir, timeout::TimeoutLayer};
 use tracing::Instrument;
-use sha2::{Sha256, Digest};
 
 // Use 'pub use' here so that all the normal modules only have
 // to import 'crate::*' instead of also having to import 'crate::error_handling::AppError'.

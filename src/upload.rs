@@ -17,18 +17,17 @@ use crate::*;
 pub async fn upload_page(State(aps): State<AppState>) -> Result<Html<String>, AppError> {
     aps.tera.lock().await.full_reload()?;
     let mut context = aps.default_context();
-    let html;
     // Check if the server has hit the quota limit.
-    if maximum_quota_reached(&aps).await? {
-        html = aps.tera.lock().await.render("full_quota.html", &context)?;
+    let html = if maximum_quota_reached(&aps).await? {
+        aps.tera.lock().await.render("full_quota.html", &context)?
     } else {
         context.insert(
             "max_filesize",
             &pretty_print_bytes(aps.conf.maximum_filesize),
         );
         context.insert("raw_max_filesize", &aps.conf.maximum_filesize);
-        html = aps.tera.lock().await.render("upload.html", &context)?;
-    }
+        aps.tera.lock().await.render("upload.html", &context)?
+    };
     let response_body = String::from_utf8(minify(html.as_bytes(), &MINIFY_CFG))?;
     Ok(Html(response_body))
 }
@@ -47,10 +46,10 @@ pub async fn upload_endpoint_wrapper(
     next: Next,
 ) -> Result<Response, AppError> {
     if !aps.uploading.write().await.insert(eip) {
-        return AppError::err(
+        AppError::err(
             StatusCode::TOO_MANY_REQUESTS,
             "you are already uploading a file, please wait",
-        );
+        )
     } else {
         // Handle the request.
         let response = next.run(request).await;
@@ -211,7 +210,12 @@ pub async fn upload_endpoint(
     // Generate the rfc3339 timestamps from this.
     let upload_ts = now.to_rfc3339();
     let expiry_ts = now
-        .checked_add_signed(TimeDelta::hours(hour_duration))
+        .checked_add_signed(if aps.conf.demo_mode {
+            // If demo mode is enabled, all expiry timestamps are set to 15 minutes.
+            TimeDelta::minutes(15)
+        } else {
+            TimeDelta::hours(hour_duration)
+        })
         .ok_or_else(|| AppError::new500("failed to apply duration to current timestamp"))?
         .to_rfc3339();
 
