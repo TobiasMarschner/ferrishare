@@ -106,6 +106,7 @@ struct DownloadPageContext<'a> {
     iv_fd: &'a str,
     iv_fn: &'a str,
     filesize: &'a str,
+    filesize_pretty: &'a str,
     upload_ts: &'a str,
     upload_ts_pretty: &'a str,
     expiry_ts: &'a str,
@@ -123,6 +124,7 @@ impl Default for DownloadPageContext<'_> {
             iv_fd: "",
             iv_fn: "",
             filesize: "0",
+            filesize_pretty: "0 Bytes",
             upload_ts: "",
             upload_ts_pretty: "",
             expiry_ts: "",
@@ -133,9 +135,43 @@ impl Default for DownloadPageContext<'_> {
 }
 
 impl DownloadPageContext<'_> {
+    /// Convert the DownloadPageContext to a Tera context.
+    ///
+    /// This means
+    /// 1) serializing all the values in the DownloadPageContext
+    /// 2) merging it with the global state's default context
+    /// 3) *and* setting up variables that set elements' visibility-classes
     fn to_context(&self, aps: &AppState) -> Result<Context, anyhow::Error> {
         let mut context = tera::Context::from_serialize(self)?;
         context.extend(aps.default_context());
+        // Make the error-box visible if we have any error text.
+        context.insert(
+            "error_vis",
+            if self.error_head.is_empty() && self.error_text.is_empty() {
+                "hidden"
+            } else {
+                "flex"
+            },
+        );
+        // The file-box and the basic fields in it (filename and size)
+        // have to be visible in both file and admin mode.
+        context.insert(
+            "file_vis",
+            if self.response_type == "file" || self.response_type == "admin" {
+                "flex"
+            } else {
+                "hidden"
+            },
+        );
+        // For admin mode in particular there's a few more elements that need to be visible.
+        context.insert(
+            "admin_vis",
+            if self.response_type == "admin" {
+                "flex"
+            } else {
+                "hidden"
+            },
+        );
         Ok(context)
     }
 }
@@ -271,6 +307,7 @@ pub async fn download_page(
 
     // Extract several variables that we'll need in all cases.
     let filesize = row.filesize.to_string();
+    let filesize_pretty = pretty_print_bytes(row.filesize as usize);
     let efn = format!("[{}]", row.e_filename.iter().join(", "));
     let iv_fd = format!("[{}]", row.iv_fd.iter().join(", "));
     let iv_fn = format!("[{}]", row.iv_fn.iter().join(", "));
@@ -318,6 +355,7 @@ pub async fn download_page(
                 iv_fd: &iv_fd,
                 iv_fn: &iv_fn,
                 filesize: &filesize,
+                filesize_pretty: &filesize_pretty,
                 upload_ts: &upload_ts,
                 upload_ts_pretty: &upload_ts_pretty,
                 expiry_ts: &expiry_ts,
@@ -334,6 +372,7 @@ pub async fn download_page(
                 iv_fd: &iv_fd,
                 iv_fn: &iv_fn,
                 filesize: &filesize,
+                filesize_pretty: &filesize_pretty,
                 ..Default::default()
             };
         };
@@ -344,6 +383,7 @@ pub async fn download_page(
             iv_fd: &iv_fd,
             iv_fn: &iv_fn,
             filesize: &filesize,
+            filesize_pretty: &filesize_pretty,
             ..Default::default()
         };
     }

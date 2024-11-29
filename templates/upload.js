@@ -139,7 +139,7 @@ document.getElementById("fs-file").addEventListener("change", (e) => {
   if (e.target.files[0]) {
     document.getElementById("filesubmit-details").style.display = "flex";
     document.getElementById("fs-filename").textContent = e.target.files[0].name;
-    document.getElementById("fs-filesize").textContent = (e.target.files[0].size / 1000000).toFixed(2) + " MB";
+    document.getElementById("fs-filesize").textContent = (e.target.files[0].size / 1048576).toFixed(2) + " MiB";
     if (e.target.files[0].size > max_filesize) {
       document.getElementById('fs-expiry-fieldset').style.display = 'none';
       document.getElementById('fs-submit').style.display = 'none';

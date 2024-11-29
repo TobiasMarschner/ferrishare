@@ -4,7 +4,8 @@
   - [x] Subset the main sans font (Inter)
     - [x] Also ensure the actual filename-display falls back to system-ui / sans-serif for optimal compatibility.
   - [x] Permanent caching of stylesheet and fonts
-  - [ ] Lighthouse checks on all pages
+  - [x] Lighthouse checks on all pages
+  - [ ] Add meta-description and og: tags for good SEO and embedding.
 - [ ] Backend
   - [x] Reverse Proxy integration
     - [x] X-Forwarded-For integration, to be precise

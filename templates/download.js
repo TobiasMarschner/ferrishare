@@ -1,13 +1,15 @@
 document.addEventListener('DOMContentLoaded', async (event) => {
-  if (error_head || error_text) {
-    document.getElementById('error-box-head').textContent = error_head;
-    document.getElementById('error-box-text').textContent = error_text;
-    document.getElementById('error-box').style.display = 'flex';
+  if (response_type === 'admin') {
+    // Compute the "normal" download-link-box and set it up.
+    const dl_link = `${location.protocol}//${location.host}/file?hash=${efd_sha256sum}#key=${key_string}`;
+    document.getElementById("admin-download-input").value = dl_link;
+    document.getElementById("admin-download-link").href = dl_link;
+
+    // Enable the delete button since the hash and admin-key are known to be correct.
+    document.getElementById("delete-button").disabled = false;
   }
 
   if (response_type === 'file' || response_type === 'admin') {
-    document.getElementById('dl-filesize').textContent = (filesize / 1000000).toFixed(2) + " MB";
-
     // Attempt to decrypt the filename with the given key.
     // Grab the key and convert it back to binary.
     let key_bytes;
@@ -55,25 +57,15 @@ document.addEventListener('DOMContentLoaded', async (event) => {
       return;
     }
 
-    document.getElementById('dl-box').style.display = "flex";
-  }
+    // Looks like the key is correct. Enable the download button and show the filename.
+    document.getElementById("filename-li").style.visibility = "visible";
+    document.getElementById("download-button").disabled = false;
 
-  if (response_type === 'admin') {
-    // Set all admin-only fields.
-    document.getElementById('dl-upload-pretty').textContent = upload_ts_pretty;
-    document.getElementById('dl-upload-ts').textContent = upload_ts;
-    document.getElementById('dl-expiry-pretty').textContent = expiry_ts_pretty;
-    document.getElementById('dl-expiry-ts').textContent = expiry_ts;
-    document.getElementById('dl-downloads').textContent = downloads;
-
-    // Compute the "normal" download-link-box and set it up.
-    const dl_link = `${location.protocol}//${location.host}/file?hash=${efd_sha256sum}#key=${key_string}`;
-    document.getElementById("admin-download-input").value = dl_link;
-    document.getElementById("admin-download-link").href = dl_link;
-
-    // Make all admin-only elements visible. (they all use flex)
-    for (e of document.querySelectorAll('.admin-only')) {
-      e.style.display = 'flex';
+    // If decryption worked *and* this is an admin page, display the public download link.
+    // We're hiding it if the key is incorrect since a download link with an incorrect
+    // key serves no purpose.
+    if (response_type === 'admin') {
+      document.getElementById("admin-download-box").style.visibility = "visible";
     }
   }
 });

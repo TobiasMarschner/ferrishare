@@ -50,20 +50,20 @@ Upload a File
         <li class="flex items-center gap-4">
           <span class="matsym text-zinc-500" aria-hidden="true">draft</span>
           <div class="flex flex-col">
-            <span class="text-zinc-500">Filename</span>
+            <span class="text-zinc-600">Filename</span>
             <span id="fs-filename" class="text-xl font-system [word-break:break-word]"></span>
           </div>
         </li>
         <li class="flex items-center gap-4">
           <span class="matsym text-zinc-500" aria-hidden="true">clock_loader_90</span>
           <div class="flex flex-col">
-            <span class="text-zinc-500">Size</span>
+            <span class="text-zinc-600">Size</span>
             <span id="fs-filesize" class="text-xl"></span>
           </div>
         </li>
       </ul>
       <fieldset id="fs-expiry-fieldset">
-        <legend class="text-zinc-500 mb-1">Expires in</legend>
+        <legend class="text-zinc-600 mb-1">Expires in</legend>
         <div class="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch">
           <label class="radio-fieldset-option">
             <input type="radio" name="expires" value="hour" class="">
@@ -105,7 +105,7 @@ Upload a File
           Public Download Link
         </span>
       </h4>
-      <input id="fs-success-download-input" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
+      <input id="fs-success-download-input" aria-label="public download link" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
       <div class="flex flex-col sm:flex-row justify-center gap-4 py-2">
         <a id="fs-success-download-link" target="_blank" class="btn-secondary">
           <span class="matsym" aria-hidden="true">open_in_new</span>
@@ -125,7 +125,7 @@ Upload a File
           Administration Link
         </span>
       </h4>
-      <input id="fs-success-admin-input" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
+      <input id="fs-success-admin-input" aria-label="administration link" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
       <div class="flex flex-col sm:flex-row justify-center gap-4 py-2">
         <a id="fs-success-admin-link" target="_blank" class="btn-secondary">
           <span class="matsym" aria-hidden="true">open_in_new</span>
@@ -145,7 +145,7 @@ Upload a File
         <h3 class="text-lg font-bold">JavaScript Required</h3>
       </div>
       <p>
-        JavaScript is required in order for the application to encrypt files before upload and decrypt files after download.
+        Encrypting your file before it is sent to the server is only possible when JavaScript is enabled.
       </p>
       <p>
         Please enable JavaScript in your browser or use a JavaScript-capable browser. Thank you!

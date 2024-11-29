@@ -11,6 +11,8 @@ services:
     image: traefik
     container_name: traefik_c
     restart: unless-stopped
+    depends_on:
+      - fileshare
     command:
       - "--providers.docker"
     ports:

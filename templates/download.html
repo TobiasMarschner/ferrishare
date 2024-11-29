@@ -7,14 +7,13 @@ Download a File
 {% block content %}
 <noscript>
   <div
-    class="flex max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 shadow-lg">
+    class="flex max-w-lg mx-auto mb-8 flex-col gap-4 p-4 sm:p-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 shadow-lg">
     <div class="flex items-center gap-4">
       <span class="matsym bigger" aria-hidden="true">code</span>
       <h2 class="text-lg font-bold">JavaScript Required</h2>
     </div>
     <p>
-      JavaScript is required in order for the application to encrypt files before upload and decrypt files after
-      download.
+      Decrypting the file (both filename and data) in your browser is only possible if JavaScript is enabled.
     </p>
     <p>
       Please enable JavaScript in your browser or use a JavaScript-capable browser. Thank you!
@@ -22,12 +21,12 @@ Download a File
   </div>
 </noscript>
 <div id="error-box"
-  class="hidden max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 mb-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 shadow-lg">
+     class="{{ error_vis }} max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 mb-8 rounded-xl bg-amber-50 text-amber-700 border-2 border-amber-500 shadow-lg">
   <div class="flex items-center gap-4">
     <span id="error-box-icon" class="matsym bigger" aria-hidden="true">warning</span>
-    <h2 id="error-box-head" class="text-lg font-bold"></h2>
+    <h2 id="error-box-head" class="text-lg font-bold">{{ error_head }}</h2>
   </div>
-  <p id="error-box-text"></p>
+  <p id="error-box-text">{{ error_text }}</p>
 </div>
 <div id="success-box"
   class="hidden max-w-lg mx-auto flex-col gap-4 p-4 sm:p-8 mb-8 rounded-xl bg-emerald-50 text-emerald-700 border-2 border-emerald-500 shadow-lg">
@@ -37,56 +36,56 @@ Download a File
   </div>
   <p id="success-box-text"></p>
 </div>
-<div id="dl-box" class="hidden max-w-lg sm:shadow-lg bg-zinc-100 sm:rounded-xl flex-col sm:p-8 gap-8 mx-auto">
-  <h2 class="admin-only hidden gap-4 text-2xl self-center">
+<div id="dl-box" class="{{ file_vis }} max-w-lg sm:shadow-lg bg-zinc-100 sm:rounded-xl flex-col sm:p-8 gap-8 mx-auto">
+  <h2 class="{{ admin_vis }} gap-4 text-2xl self-center">
     <span class="matsym big" aria-hidden="true">security</span>
     Admin Page
   </h2>
   <ul class="flex flex-col gap-4">
-    <li class="flex items-center gap-4">
+    <li id="filename-li" class="invisible flex items-center gap-4">
       <span class="matsym text-zinc-500" aria-hidden="true">draft</span>
       <div class="flex flex-col">
-        <span class="text-zinc-500">Filename</span>
-        <span id="dl-filename" class="text-xl font-system [word-break:break-word]"></span>
+        <span class="text-zinc-600">Filename</span>
+        <span id="dl-filename" class="text-xl min-h-7 font-system [word-break:break-word]"></span>
       </div>
     </li>
     <li class="flex items-center gap-4">
       <span class="matsym text-zinc-500" aria-hidden="true">clock_loader_90</span>
       <div class="flex flex-col">
-        <span class="text-zinc-500">Size</span>
-        <span id="dl-filesize" class="text-xl"></span>
+        <span class="text-zinc-600">Size</span>
+        <span id="dl-filesize" class="text-xl">{{ filesize_pretty }}</span>
       </div>
     </li>
-    <li class="admin-only items-center hidden gap-4">
+    <li class="{{ admin_vis }} items-center gap-4">
       <span class="matsym text-zinc-500" aria-hidden="true">note_add</span>
       <div class="flex flex-col">
-        <span class="text-zinc-500">Created</span>
-        <div class="flex flex-col sm:flex-row items-baseline sm:gap-2">
-          <span id="dl-upload-pretty" class="text-xl"></span>
-          <span id="dl-upload-ts" class="text-zinc-500"></span>
+        <span class="text-zinc-600">Created</span>
+        <div class="flex flex-col items-baseline">
+          <span id="dl-upload-pretty" class="text-xl">{{ upload_ts_pretty }}</span>
+          <span id="dl-upload-ts" class="text-sm text-zinc-600">{{ upload_ts }}</span>
         </div>
       </div>
     </li>
-    <li class="admin-only items-center hidden gap-4">
+    <li class="{{ admin_vis }} items-center gap-4">
       <span class="matsym text-zinc-500" aria-hidden="true">auto_delete</span>
       <div class="flex flex-col">
-        <span class="text-zinc-500">Expires in</span>
-        <div class="flex flex-col sm:flex-row items-baseline sm:gap-2">
-          <span id="dl-expiry-pretty" class="text-xl"></span>
-          <span id="dl-expiry-ts" class="text-zinc-500"></span>
+        <span class="text-zinc-600">Expires in</span>
+        <div class="flex flex-col items-baseline">
+          <span id="dl-expiry-pretty" class="text-xl">{{ expiry_ts_pretty }}</span>
+          <span id="dl-expiry-ts" class="text-sm text-zinc-600">{{ expiry_ts }}</span>
         </div>
       </div>
     </li>
-    <li class="admin-only items-center hidden gap-4">
+    <li class="{{ admin_vis }} items-center gap-4">
       <span class="matsym text-zinc-500" aria-hidden="true">download</span>
       <div class="flex flex-col">
-        <span class="text-zinc-500">Downloads</span>
-        <span id="dl-downloads" class="text-xl"></span>
+        <span class="text-zinc-600">Downloads</span>
+        <span id="dl-downloads" class="text-xl">{{ downloads }}</span>
       </div>
     </li>
   </ul>
   <div class="flex flex-col gap-6">
-    <button type="button" id="download-button" class="btn-primary">
+    <button type="button" id="download-button" class="btn-primary" disabled>
       <span class="matsym" aria-hidden="true">download</span>
       Download and Decrypt
     </button>
@@ -102,19 +101,19 @@ Download a File
         </div>
       </div>
     </div>
-    <button type="button" id="delete-button" class="admin-only hidden btn-primary">
+    <button type="button" id="delete-button" class="{{ admin_vis }} btn-primary" disabled>
       <span class="matsym" aria-hidden="true">delete</span>
       Delete from Server
     </button>
     <div id="admin-download-box"
-      class="admin-only hidden flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
-      <h4 class="center font-bold sm:text-xl py-2 flex items-center justify-center gap-2 sm:gap-4">
+         class="{{ admin_vis }} invisible flex-col items-stretch bg-zinc-100 p-2 gap-2 rounded-lg shadow-md border-2 border-zinc-300">
+      <h3 class="center font-bold sm:text-xl py-2 flex items-center justify-center gap-2 sm:gap-4">
         <span class="matsym" aria-hidden="true">public</span>
         <span>
           Public Download Link
         </span>
-      </h4>
-      <input id="admin-download-input" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
+      </h3>
+      <input id="admin-download-input" aria-label="public download link" class="self-stretch text-sm p-2 rounded-md shadow-inner" readonly>
       <div class="flex flex-col sm:flex-row justify-center gap-4 py-2">
         <a id="admin-download-link" target="_blank" class="btn-secondary">
           <span class="matsym" aria-hidden="true">open_in_new</span>
@@ -134,17 +133,10 @@ Download a File
 
   // TEMPLATE VARIABLES
   let response_type = '{{ response_type | safe }}';
-  let error_head = '{{ error_head | safe }}';
-  let error_text = '{{ error_text | safe }}';
   let e_filename = new Uint8Array({{e_filename | safe }});
   let iv_fd = new Uint8Array({{iv_fd | safe }});
   let iv_fn = new Uint8Array({{iv_fn | safe }});
   let filesize = {{filesize | safe }};
-  let upload_ts = '{{ upload_ts | safe }}';
-  let upload_ts_pretty = '{{ upload_ts_pretty | safe }}';
-  let expiry_ts = '{{ expiry_ts | safe }}';
-  let expiry_ts_pretty = '{{ expiry_ts_pretty | safe }}';
-  let downloads = {{downloads | safe }};
 
   const urlParams = new URLSearchParams(window.location.search);
   const efd_sha256sum = urlParams.get('hash');

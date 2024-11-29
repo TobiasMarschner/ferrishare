@@ -34,14 +34,14 @@ Upload a File
     <li class="flex items-center gap-4">
       <span class="matsym big text-zinc-500" aria-hidden="true">bar_chart</span>
       <div class="flex flex-col">
-        <span class="text-zinc-500">Files Currently Live</span>
+        <span class="text-zinc-600">Files Currently Live</span>
         <span class="text-2xl font-bold">{{ full_file_count }}</span>
       </div>
     </li>
     <li class="flex items-center gap-4">
       <span class="matsym big text-zinc-500" aria-hidden="true">data_usage</span>
       <div class="flex flex-col">
-        <span class="text-zinc-500">Storage Use</span>
+        <span class="text-zinc-600">Storage Use</span>
         <span class="flex items-baseline gap-2">
           <span class="text-2xl font-bold">{{ used_quota }}</span>
           <span>/ {{ maximum_quota }}</span>
@@ -58,7 +58,7 @@ Upload a File
   {% if files %}
   <table>
     <thead>
-      <tr class="hidden xl:table-row text-left *:font-bold *:p-4 text-zinc-500">
+      <tr class="hidden xl:table-row text-left *:font-bold *:p-4 text-zinc-600">
         <th> File Hash </th>
         <th> Size </th>
         <th> Upload IP </th>
@@ -81,58 +81,58 @@ Upload a File
       <tr
         class="flex xl:table-row flex-col xl:*:p-4 gap-4 sm:gap-6 xl:border-t-2 xl:border-gray-200 rounded-xl bg-zinc-200 sm:bg-zinc-100 xl:bg-inherit shadow-lg xl:shadow-none p-4 sm:p-8 xl:p-0">
         <td class="flex xl:table-cell flex-row items-center gap-4">
-          <div class="xl:hidden matsym text-gray-500" aria-hidden="true">code</div>
+          <div class="xl:hidden matsym text-zinc-500" aria-hidden="true">code</div>
           <div class="flex flex-col">
-            <div class="xl:hidden text-gray-500">File Hash</div>
+            <div class="xl:hidden text-zinc-600">File Hash</div>
             <div class="text-base xl:text-sm font-mono break-all max-w-[22ch]">{{ file.efd_sha256sum }}</div>
           </div>
         </td>
         <td class="flex xl:table-cell flex-row items-center gap-4">
-          <div class="xl:hidden matsym text-gray-500" aria-hidden="true">clock_loader_90</div>
+          <div class="xl:hidden matsym text-zinc-500" aria-hidden="true">clock_loader_90</div>
           <div class="flex flex-col">
-            <div class="xl:hidden text-gray-500">Size</div>
+            <div class="xl:hidden text-zinc-600">Size</div>
             <div class="text-xl xl:text-lg">{{ file.formatted_filesize }}</div>
           </div>
         </td>
         <td class="flex xl:table-cell flex-row items-center gap-4">
-          <div class="xl:hidden matsym text-gray-500" aria-hidden="true">public</div>
+          <div class="xl:hidden matsym text-zinc-500" aria-hidden="true">public</div>
           <div class="flex flex-col">
-            <div class="xl:hidden text-gray-500">Upload IP</div>
+            <div class="xl:hidden text-zinc-600">Upload IP</div>
             <div class="text-xl xl:text-lg">{{ file.upload_ip_pretty }}</div>
           </div>
         </td>
         <td class="flex xl:table-cell flex-row items-center gap-4">
-          <div class="xl:hidden matsym text-gray-500" aria-hidden="true">note_add</div>
+          <div class="xl:hidden matsym text-zinc-500" aria-hidden="true">note_add</div>
           <div class="flex flex-col">
-            <div class="xl:hidden text-gray-500">Uploaded</div>
+            <div class="xl:hidden text-zinc-600">Uploaded</div>
             <div class="flex flex-col gap-0 items-baseline text-xl xl:text-lg">
               <div class="text-xl xl:text-lg">
                 {{ file.upload_ts_pretty }}
               </div>
-              <div class="text-gray-500 text-sm">
+              <div class="text-zinc-600 text-sm">
                 {{ file.upload_ts }}
               </div>
             </div>
           </div>
         </td>
         <td class="flex xl:table-cell flex-row items-center gap-4">
-          <div class="xl:hidden matsym text-gray-500" aria-hidden="true">auto_delete</div>
+          <div class="xl:hidden matsym text-zinc-500" aria-hidden="true">auto_delete</div>
           <div class="flex flex-col">
-            <div class="xl:hidden text-gray-500">Expires in</div>
+            <div class="xl:hidden text-zinc-600">Expires in</div>
             <div class="flex flex-col gap-0 items-baseline text-xl xl:text-lg">
               <div class="text-xl xl:text-lg">
                 {{ file.expiry_ts_pretty }}
               </div>
-              <div class="text-gray-500 text-sm">
+              <div class="text-zinc-600 text-sm">
                 {{ file.expiry_ts }}
               </div>
             </div>
           </div>
         </td>
         <td class="flex xl:table-cell flex-row items-center gap-4">
-          <div class="xl:hidden matsym text-gray-500" aria-hidden="true">download</div>
+          <div class="xl:hidden matsym text-zinc-500" aria-hidden="true">download</div>
           <div class="flex flex-col">
-            <div class="xl:hidden text-gray-500">Downloads</div>
+            <div class="xl:hidden text-zinc-600">Downloads</div>
             <div class="text-xl xl:text-lg xl:text-center">{{ file.downloads }}</div>
           </div>
         </td>
@@ -169,7 +169,7 @@ Upload a File
         for (let i = 0; i < 6; i++) {
           let item = btn.parentElement.parentElement.childNodes[i];
           item.classList.add("line-through");
-          item.classList.add("text-gray-400");
+          item.classList.add("text-zinc-400");
         }
       } else {
         // No fancy interface here, just console.

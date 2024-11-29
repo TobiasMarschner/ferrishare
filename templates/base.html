@@ -18,12 +18,12 @@
         <a href="/">{{ global_app_name }}</a>
       </h1>
       <nav class="flex items-center gap-4 ml-auto">
-        <a class="font-bold p-2 sm:p-4 rounded-lg hover:bg-zinc-200 flex gap-2 hover:shadow-md active:shadow-none"
+        <a aria-label="Upload" class="font-bold p-2 sm:p-4 rounded-lg hover:bg-zinc-200 flex gap-2 hover:shadow-md active:shadow-none"
           href="/">
           <span class="matsym" aria-hidden="true">upload_file</span>
           <span class="hidden sm:block">Upload</span>
         </a>
-        <a class="font-bold p-2 sm:p-4 rounded-lg hover:bg-zinc-200 flex gap-2 hover:shadow-md active:shadow-none"
+        <a aria-label="Administration" class="font-bold p-2 sm:p-4 rounded-lg hover:bg-zinc-200 flex gap-2 hover:shadow-md active:shadow-none"
           href="/admin">
           <span class="matsym" aria-hidden="true">manage_accounts</span>
           <span class="hidden sm:block">Administration</span>
@@ -39,10 +39,10 @@
   {% if demo_mode %}
   <div class="m-4">
     <aside class="max-w-lg mx-auto gap-4 p-4 sm:p-8 shadow-lg rounded-xl flex border-2 border-cyan-400 flex-col items-center bg-cyan-100 text-cyan-800">
-      <h3 class="flex gap-4 text-2xl mb-4">
+      <h2 class="flex gap-4 text-2xl mb-4">
         <span class="matsym big" aria-hidden="true">star</span>
         Demo Instance
-      </h3>
+      </h2>
       <p>
         This is a <strong>demo instance</strong> of <a class="classic-link" href="#">EonuFileshare</a>.
         Use it to test the app's features before deciding to deploy it yourself.

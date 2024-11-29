@@ -9,6 +9,7 @@
   @font-face {
     font-family: 'Material Symbols Rounded';
     font-style: normal;
+    font-display: block;
     src: url('/font/MaterialSymbolsRounded-subset-fe4f124c.woff2') format('woff2');
   }
 
@@ -16,6 +17,7 @@
     font-family: 'Inter Variable';
     font-style: normal;
     font-weight: 100 900;
+    font-display: block;
     src: url("/font/InterVariable-subset-eff74dc0.woff2") format("woff2");
   }
 
