@@ -2,7 +2,7 @@
   - [ ] Replace the old name wherever you spot it
 - [ ] Frontend
   - [x] Subset the main sans font (Inter)
-    - [ ] Also ensure the actual filename-display falls back to system-ui / sans-serif for optimal compatibility.
+    - [x] Also ensure the actual filename-display falls back to system-ui / sans-serif for optimal compatibility.
   - [x] Permanent caching of stylesheet and fonts
   - [ ] Lighthouse checks on all pages
 - [ ] Backend
