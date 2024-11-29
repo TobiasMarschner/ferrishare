@@ -9,8 +9,8 @@
   - [x] Reverse Proxy integration
     - [x] X-Forwarded-For integration, to be precise
   - [x] Adjustable app name
-  - [ ] Demo-Mode
-    - [ ] All uploads expire after 15 minutes
+  - [x] Demo-Mode
+    - [x] All uploads expire after 15 minutes
     - [x] Appropriate info-message on all pages
 - [ ] Forge
   - Currently all developement takes place internally, but this has to move to GitHub to be easily found and contributed to.

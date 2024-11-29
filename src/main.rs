@@ -66,6 +66,7 @@ impl AppState {
     pub fn default_context(&self) -> tera::Context {
         let mut context = tera::Context::new();
         context.insert("global_app_name", &self.conf.app_name);
+        context.insert("demo_mode", &self.conf.demo_mode);
         context
     }
 }

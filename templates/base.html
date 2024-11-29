@@ -36,6 +36,7 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+  {% if demo_mode %}
   <div class="m-4">
     <aside class="max-w-lg mx-auto gap-4 p-4 sm:p-8 shadow-lg rounded-xl flex border-2 border-cyan-400 flex-col items-center bg-cyan-100 text-cyan-800">
       <h3 class="flex gap-4 text-2xl mb-4">
@@ -62,6 +63,7 @@
       </ul>
     </aside>
   </div>
+  {% endif %}
   <footer class="flex flex-col items-center mt-8 sm:mt-0 gap-2 p-4 bg-zinc-300 text-zinc-600">
     <p class="text-center text-balance py-2">
       built with <a class="classic-link" href="">Rust</a> and &#x2665; by <a class="classic-link"
