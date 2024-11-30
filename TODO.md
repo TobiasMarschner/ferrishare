@@ -1,5 +1,5 @@
-- [ ] Name the app
-  - [ ] Replace the old name wherever you spot it
+- [x] Name the app
+  - [x] Replace the old name wherever you spot it
 - [ ] Frontend
   - [x] Subset the main sans font (Inter)
     - [x] Also ensure the actual filename-display falls back to system-ui / sans-serif for optimal compatibility.

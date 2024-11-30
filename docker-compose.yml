@@ -6,7 +6,7 @@ services:
     volumes:
       - "./data:/app/data"
     labels:
-      - "traefik.http.routers.fileshare.rule=Host(`fileshare.localhost`)"
+      - "traefik.http.routers.fileshare.rule=Host(`localhost`)"
   reverse-proxy:
     image: traefik
     container_name: traefik_c

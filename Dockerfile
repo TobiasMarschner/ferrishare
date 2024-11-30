@@ -57,6 +57,6 @@ RUN HASH_SUFFIX="$(sha256sum ./static/main.css | cut -d ' ' -f 1 | tail -c 9)" \
 COPY ./font/MaterialSymbolsRounded-subset-*.woff2 ./font/
 COPY ./font/InterVariable-subset-*.woff2 ./font/
 # Copy in the compiled release binary.
-COPY --from=builder /app/target/release/e2ee-fileshare-rust .
+COPY --from=builder /app/target/release/FerriShare .
 EXPOSE 3000
-ENTRYPOINT ["./e2ee-fileshare-rust"]
+ENTRYPOINT ["./FerriShare"]

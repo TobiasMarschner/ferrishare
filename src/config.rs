@@ -82,7 +82,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
     eprintln!("Interactively prompting for all settings ...\n");
 
     let app_name = Text::new("App name:")
-        .with_initial_value("EonuShare")
+        .with_initial_value("FerriShare")
         .with_help_message(
             "
   The name of the application.

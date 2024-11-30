@@ -1,5 +1,5 @@
 [package]
-name = "e2ee-fileshare-rust"
+name = "FerriShare"
 version = "0.1.0"
 edition = "2021"
 
