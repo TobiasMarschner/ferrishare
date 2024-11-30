@@ -16,7 +16,7 @@ use std::{
     time::Duration,
 };
 use tera::Tera;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use tower_http::{compression::CompressionLayer, services::ServeDir, timeout::TimeoutLayer};
 use tracing::Instrument;
 
@@ -44,7 +44,7 @@ mod upload;
 #[derive(Debug, Clone)]
 pub struct AppState {
     /// global HTML/JS templating engine
-    tera: Arc<Mutex<Tera>>,
+    tera: Arc<Tera>,
     /// sqlite database
     ///
     /// Is internally implemented as an Arc, so no need to wrap it here.
@@ -285,8 +285,8 @@ These are required for the applications to store all of its data"
             return ExitCode::FAILURE;
         }
     };
-    // Wrap it in an Arc<Mutex<_>>, as required by AppState.
-    let tera = Arc::new(Mutex::new(tera));
+    // Wrap it in an Arc<_>, as required by AppState.
+    let tera = Arc::new(tera);
 
     // Create the AppState out of database and template-engine.
     let aps = AppState {

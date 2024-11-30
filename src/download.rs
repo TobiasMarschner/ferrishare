@@ -205,8 +205,6 @@ pub async fn download_page(
     Query(params): Query<HashMap<String, String>>,
     State(aps): State<AppState>,
 ) -> Result<(StatusCode, Html<String>), AppError> {
-    aps.tera.lock().await.full_reload()?;
-
     let hash = params.get("hash");
     let admin = params.get("admin");
 
@@ -223,11 +221,7 @@ pub async fn download_page(
                 ..Default::default()
             };
 
-            let h = aps
-                .tera
-                .lock()
-                .await
-                .render("download.html", &dpc.to_context(&aps)?)?;
+            let h = aps.tera.render("download.html", &dpc.to_context(&aps)?)?;
 
             return Ok((
                 StatusCode::BAD_REQUEST,
@@ -248,11 +242,7 @@ pub async fn download_page(
             ..Default::default()
         };
 
-        let h = aps
-            .tera
-            .lock()
-            .await
-            .render("download.html", &dpc.to_context(&aps)?)?;
+        let h = aps.tera.render("download.html", &dpc.to_context(&aps)?)?;
 
         return Ok((
             StatusCode::BAD_REQUEST,
@@ -290,11 +280,7 @@ pub async fn download_page(
             ..Default::default()
         };
 
-        let h = aps
-            .tera
-            .lock()
-            .await
-            .render("download.html", &dpc.to_context(&aps)?)?;
+        let h = aps.tera.render("download.html", &dpc.to_context(&aps)?)?;
 
         return Ok((
             StatusCode::NOT_FOUND,
@@ -389,11 +375,7 @@ pub async fn download_page(
     }
 
     // Use the DownloadPageContext to actually render the template.
-    let h = aps
-        .tera
-        .lock()
-        .await
-        .render("download.html", &dpc.to_context(&aps)?)?;
+    let h = aps.tera.render("download.html", &dpc.to_context(&aps)?)?;
 
     // Minify and return.
     Ok((

@@ -15,18 +15,17 @@ use tokio::io::AsyncWriteExt;
 use crate::*;
 
 pub async fn upload_page(State(aps): State<AppState>) -> Result<Html<String>, AppError> {
-    aps.tera.lock().await.full_reload()?;
     let mut context = aps.default_context();
     // Check if the server has hit the quota limit.
     let html = if maximum_quota_reached(&aps).await? {
-        aps.tera.lock().await.render("full_quota.html", &context)?
+        aps.tera.render("full_quota.html", &context)?
     } else {
         context.insert(
             "max_filesize",
             &pretty_print_bytes(aps.conf.maximum_filesize),
         );
         context.insert("raw_max_filesize", &aps.conf.maximum_filesize);
-        aps.tera.lock().await.render("upload.html", &context)?
+        aps.tera.render("upload.html", &context)?
     };
     let response_body = String::from_utf8(minify(html.as_bytes(), &MINIFY_CFG))?;
     Ok(Html(response_body))

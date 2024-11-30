@@ -6,6 +6,7 @@
   - [x] Permanent caching of stylesheet and fonts
   - [x] Lighthouse checks on all pages
   - [ ] Add meta-description and og: tags for good SEO and embedding.
+  - [ ] Find a solution for the footer, adding customizable legal links
 - [ ] Backend
   - [x] Reverse Proxy integration
     - [x] X-Forwarded-For integration, to be precise
@@ -13,6 +14,7 @@
   - [x] Demo-Mode
     - [x] All uploads expire after 15 minutes
     - [x] Appropriate info-message on all pages
+  - [x] Remove the Mutex and tera-reload on each request
 - [ ] Forge
   - Currently all developement takes place internally, but this has to move to GitHub to be easily found and contributed to.
   - [ ] Figure out how to do releases and container distribution on there.

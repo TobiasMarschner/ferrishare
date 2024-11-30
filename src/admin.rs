@@ -110,26 +110,20 @@ pub async fn admin_page(
             })
             .collect::<Vec<_>>();
 
-        aps.tera.lock().await.full_reload()?;
         let mut context = aps.default_context();
         context.insert("files", &ufs);
         context.insert("full_file_count", &ufs.len());
         context.insert("maximum_quota", &pretty_print_bytes(aps.conf.maximum_quota));
         context.insert("used_quota", &pretty_print_bytes(used_quota));
-        let h = aps
-            .tera
-            .lock()
-            .await
-            .render("admin_overview.html", &context)?;
+        let h = aps.tera.render("admin_overview.html", &context)?;
         Ok(Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?))
     } else {
         // Check if this is a normal visit or a Redirect from a failed login-attempt.
         let failed_login = params.get("status").map_or(false, |e| e == "login_failed");
 
-        aps.tera.lock().await.full_reload()?;
         let mut context = aps.default_context();
         context.insert("failed_login", &failed_login);
-        let h = aps.tera.lock().await.render("admin_login.html", &context)?;
+        let h = aps.tera.render("admin_login.html", &context)?;
         Ok(Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?))
     }
 }
