@@ -1,13 +1,13 @@
 - [x] Name the app
   - [x] Replace the old name wherever you spot it
-- [ ] Frontend
+- [x] Frontend
   - [x] Subset the main sans font (Inter)
     - [x] Also ensure the actual filename-display falls back to system-ui / sans-serif for optimal compatibility.
   - [x] Permanent caching of stylesheet and fonts
   - [x] Lighthouse checks on all pages
-  - [ ] Add meta-description and og: tags for good SEO and embedding.
-  - [ ] Find a solution for the footer, adding customizable legal links
-- [ ] Backend
+  - [x] Add meta-description and og: tags for good SEO and embedding.
+  - [x] Find a solution for the footer, adding customizable legal links
+- [x] Backend
   - [x] Reverse Proxy integration
     - [x] X-Forwarded-For integration, to be precise
   - [x] Adjustable app name
