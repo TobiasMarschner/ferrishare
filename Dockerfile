@@ -24,7 +24,8 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 # Next up, the part that is not cached: Building the app itself.
 COPY . .
-RUN cargo build --release
+# Actually build the app
+RUN VCS_REF="$(git rev-parse --short=10 HEAD)" cargo build --release
 
 # Build the Tailwind CSS using node.
 FROM node AS node-builder

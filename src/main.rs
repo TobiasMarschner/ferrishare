@@ -1,12 +1,13 @@
 use axum::{
     extract::{ConnectInfo, DefaultBodyLimit, State},
     middleware::{self, Next},
-    response::Response,
+    response::{Html, IntoResponse, Response},
     routing::{get, post},
     Router,
 };
 use clap::Parser;
 use itertools::Itertools;
+use minify_html::minify;
 use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
 use std::{
     collections::{HashMap, HashSet},
@@ -66,7 +67,11 @@ impl AppState {
     pub fn default_context(&self) -> tera::Context {
         let mut context = tera::Context::new();
         context.insert("global_app_name", &self.conf.app_name);
+        context.insert("enable_privacy_policy", &self.conf.enable_privacy_policy);
+        context.insert("enable_legal_notice", &self.conf.enable_legal_notice);
         context.insert("demo_mode", &self.conf.demo_mode);
+        context.insert("global_crate_version", env!("CARGO_PKG_VERSION"));
+        context.insert("global_git_hash", option_env!("VCS_REF").unwrap_or("dev"));
         context
     }
 }
@@ -175,12 +180,11 @@ struct Args {
 #[tokio::main]
 async fn main() -> ExitCode {
     // First things first, create the DATA_PATH and its subdirectories.
-    std::fs::create_dir_all(format!("{DATA_PATH}/uploaded_files")).unwrap_or_else(|_| {
-        panic!(
-            "Failed to recursively create directories: {DATA_PATH}/uploaded_files
-These are required for the applications to store all of its data"
-        )
-    });
+    std::fs::create_dir_all(format!("{DATA_PATH}/uploaded_files"))
+        .and_then(|_| std::fs::create_dir_all(format!("{DATA_PATH}/user_templates")))
+        .unwrap_or_else(|e| {
+            panic!("failed to create configuration and application data directories at {DATA_PATH}: {e}")
+        });
 
     // Parse cmd-line arguments and check whether we're (re-)creating the config.toml.
     if Args::parse().init {
@@ -275,7 +279,21 @@ These are required for the applications to store all of its data"
     };
 
     // Initialize the templating engine.
-    let tera = match Tera::new("templates/**/*.{html,js}") {
+    let tera = match Tera::new("templates/**/*.{html,js}").and_then(|mut v| {
+        match v.add_template_files([
+            (
+                format!("{DATA_PATH}/user_templates/privacy_policy.html"),
+                Some("privacy_policy.html"),
+            ),
+            (
+                format!("{DATA_PATH}/user_templates/legal_notice.html"),
+                Some("legal_notice.html"),
+            ),
+        ]) {
+            Ok(_) => Ok(v),
+            Err(e) => Err(e),
+        }
+    }) {
         Ok(t) => {
             tracing::info!("successfully loaded and compiled HTML and JS templates");
             t
@@ -353,7 +371,7 @@ These are required for the applications to store all of its data"
         .route("/download_endpoint", get(download::download_endpoint))
         .layer(timeout_big);
 
-    let normal_routers = Router::new()
+    let mut normal_routers = Router::new()
         // HTML routes
         .route("/", get(upload::upload_page))
         .route("/file", get(download::download_page))
@@ -361,8 +379,18 @@ These are required for the applications to store all of its data"
         // API / non-HTML routes
         .route("/admin_login", post(admin::admin_login))
         .route("/admin_logout", post(admin::admin_logout))
-        .route("/delete_endpoint", post(delete::delete_endpoint))
-        // Middlewares
+        .route("/delete_endpoint", post(delete::delete_endpoint));
+
+    // Add Privacy Policy / Legal Notice, if configured.
+    if aps.conf.enable_privacy_policy {
+        normal_routers = normal_routers.route("/privacy-policy", get(privacy_policy));
+    }
+    if aps.conf.enable_legal_notice {
+        normal_routers = normal_routers.route("/legal-notice", get(legal_notice));
+    }
+
+    // Add middlewares for the normal routes.
+    let normal_routers = normal_routers
         .layer(timeout_small)
         .layer(compression.clone());
 
@@ -434,6 +462,26 @@ async fn shutdown_handler() {
 
     // Received one? Print that, then hyper will shut down the server.
     tracing::info!("received shutdown signal");
+}
+
+/// Simple handler for the Privacy Policy
+///
+/// Should only be inserted into the Router if the config enables the Privacy Policy.
+async fn privacy_policy(State(aps): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let context = aps.default_context();
+    let html = aps.tera.render("privacy_policy.html", &context)?;
+    let response_body = String::from_utf8(minify(html.as_bytes(), &MINIFY_CFG))?;
+    Ok(Html(response_body))
+}
+
+/// Simple handler for the Legal Notice
+///
+/// Should only be inserted into the Router if the config enables the Legal Notice.
+async fn legal_notice(State(aps): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let context = aps.default_context();
+    let html = aps.tera.render("legal_notice.html", &context)?;
+    let response_body = String::from_utf8(minify(html.as_bytes(), &MINIFY_CFG))?;
+    Ok(Html(response_body))
 }
 
 /// Returns true if the expiry_ts lies in the past, i.e. the resource has expired.

@@ -2,7 +2,7 @@ use std::{fs::File, io::Write};
 
 use anyhow::anyhow;
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
-use inquire::{validator::Validation, CustomUserError, Password, Select, Text};
+use inquire::{validator::Validation, Confirm, CustomUserError, Password, Select, Text};
 use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use tracing::Level;
@@ -21,6 +21,8 @@ pub struct AppConfiguration {
     pub maximum_uploads_per_ip: usize,
     pub daily_request_limit_per_ip: u64,
     pub log_level: String,
+    pub enable_privacy_policy: bool,
+    pub enable_legal_notice: bool,
     pub demo_mode: bool,
 }
 
@@ -253,8 +255,52 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         )
         .prompt()?;
 
+    let enable_privacy_policy = Confirm::new("Enable Privacy Policy?")
+        .with_default(true)
+        .with_help_message(
+            "
+  Some jurisdictions require the presence of a Privacy Policy.
+
+  At `./data/user_templates/privacy_policy.html` a default privacy policy
+  will be created that accurately describes what kind of data FerriShare
+  collects during normal operation. You can edit this file freely.
+
+  Choose Yes to serve this template and link to it in the application's footer.
+  Choose No to not serve the template and remove the link from the footer.
+",
+        )
+        .prompt()?;
+
+    let enable_legal_notice = Confirm::new("Enable Legal Notice?")
+        .with_default(false)
+        .with_help_message(
+            "
+  Some jurisdictions require the presence of a Legal Notice.
+
+  At `./data/user_templates/legal_notice.html` a Legal Notice stub will be
+  created that you can edit and adjust to suit your needs.
+
+  Choose Yes to serve this template and link to it in the application's footer.
+  Choose No to not serve the template and remove the link from the footer.
+",
+        )
+        .prompt()?;
+
     // Perform postprocessing on the given answers.
     eprint!("\nHashing password and generating config ...");
+
+    // Copy over the Privacy Policy / Legal Notice stubs.
+    std::fs::copy(
+        "./templates/privacy_policy_default.html",
+        "./data/user_templates/privacy_policy.html",
+    )
+    .map_err(|e| anyhow!("failed to copy privacy policy template: {e}"))?;
+
+    std::fs::copy(
+        "./templates/legal_notice_stub.html",
+        "./data/user_templates/legal_notice.html",
+    )
+    .map_err(|e| anyhow!("failed to copy legal notice template: {e}"))?;
 
     // Turn the filesize strings into the actual byte counts.
     let maximum_filesize = transform_filesize_input(&maximum_filesize).unwrap();
@@ -282,6 +328,8 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         maximum_uploads_per_ip,
         daily_request_limit_per_ip,
         log_level: log_level.to_string(),
+        enable_privacy_policy,
+        enable_legal_notice,
         demo_mode: false,
     };
 

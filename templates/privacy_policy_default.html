@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title -%}
+Privacy Policy
+{%- endblock %}
+
+{% block content %}
+<div class="max-w-lg sm:p-8 mx-auto flex flex-col gap-4">
+  <h2 class="text-2xl text-center font-bold">
+    Privacy Policy
+  </h2>
+  <h3 class="text-xl font-bold mt-4">
+    Third parties
+  </h3>
+  <p>
+    {{ global_app_name }} does not establish any connections to third-party servers.
+    All assets are served locally.
+  </p>
+  <h3 class="text-xl font-bold mt-4">
+    Cookies and client data
+  </h3>
+  <p>
+    If you are a normal user, {{ global_app_name }} does not store any cookies or data in your browser.
+  </p>
+  <p>
+    If you are the administrator of the site, logging into the <a href="/admin">site-wide administration panel</a> will set a purely functional session-cookie.
+  </p>
+  <h3 class="text-xl font-bold mt-2">
+    Data collected during general use
+  </h3>
+  <p>
+    In order to protect against <a class="classic-link" href="https://en.wikipedia.org/wiki/Denial-of-service_attack">Denial-of-service attacks</a> your IP address is temporarily stored on the server and automatically deleted 24 hours after your last request.
+  </p>
+  <h3 class="text-xl font-bold mt-2">
+    Data collected during file upload
+  </h3>
+  <p>
+    If you upload a file to {{ global_app_name }} the following information is recorded and stored in the server's database:
+  </p>
+  <ul class="list-disc list-outside ml-6">
+    <li>encrypted contents of the file</li>
+    <li>encrypted filename</li>
+    <li>time of upload</li>
+    <li>time of file expiry</li>
+    <li>your IP address</li>
+  </ul>
+  <p>
+    Your IP address is stored to ensure a fair and secure operation of the service.
+    It is used to rate-limit malicious clients attempting to upload too many files at once.
+  </p>
+  <p>
+    The above data is deleted from the server once the file expires or is manually deleted.
+  </p>
+</div>
+{% endblock %}
