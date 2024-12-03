@@ -4,11 +4,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% block head %}{% endblock %}
   <link rel="preload" href="/font/InterVariable-subset-eff74dc0.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/font/MaterialSymbolsRounded-subset-fe4f124c.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/static/main.css">
-  <title>{% block title %}{% endblock %} - {{ global_app_name }}</title>
-  {% block head %}{% endblock %}
+  <meta name="description" content="{{ page_description }}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ global_app_name }}">
+  <meta property="og:title" content="{{ page_title }}">
+  <title>{{ page_title }} - {{ global_app_name }}</title>
 </head>
 
 <body class="flex flex-col min-h-[100svh] bg-zinc-100 sm:bg-zinc-300 text-zinc-800">
