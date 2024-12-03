@@ -58,6 +58,6 @@ RUN HASH_SUFFIX="$(sha256sum ./static/main.css | cut -d ' ' -f 1 | tail -c 9)" \
 COPY ./font/MaterialSymbolsRounded-subset-*.woff2 ./font/
 COPY ./font/InterVariable-subset-*.woff2 ./font/
 # Copy in the compiled release binary.
-COPY --from=builder /app/target/release/FerriShare .
+COPY --from=builder /app/target/release/ferrishare .
 EXPOSE 3000
-ENTRYPOINT ["./FerriShare"]
+ENTRYPOINT ["./ferrishare"]

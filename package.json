@@ -1,8 +1,8 @@
 {
-  "name": "FerriShare",
+  "name": "ferrishare",
   "version": "0.1.0",
   "description": "",
-  "main": "index.js",
+  "main": "",
   "scripts": {
     "dev:tw": "npx tailwindcss -i ./main.tw.css -o ./static/main.css --minify --watch",
     "build:tw": "npx tailwindcss -i ./main.tw.css -o ./static/main.css --minify"
