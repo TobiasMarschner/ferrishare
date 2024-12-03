@@ -82,7 +82,7 @@ pub async fn upload_endpoint(
             .await?;
 
     // Check if the user has hit their upload limit.
-    if uploads_by_eip as usize > aps.conf.maximum_uploads_per_ip {
+    if uploads_by_eip as usize >= aps.conf.maximum_uploads_per_ip {
         return AppError::err(StatusCode::TOO_MANY_REQUESTS, "your computer has reached the file upload limit; delete old files or wait for them to expire");
     }
 
