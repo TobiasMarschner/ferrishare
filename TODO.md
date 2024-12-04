@@ -15,6 +15,7 @@
     - [x] All uploads expire after 15 minutes
     - [x] Appropriate info-message on all pages
   - [x] Remove the Mutex and tera-reload on each request
+  - [ ] Look at all remaining TODOs in the sources.
 - [ ] Forge
   - Currently all developement takes place internally, but this has to move to GitHub to be easily found and contributed to.
   - [ ] Figure out how to do releases and container distribution on there.

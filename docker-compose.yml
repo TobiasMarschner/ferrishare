@@ -1,7 +1,7 @@
 services:
-  fileshare:
+  ferrishare:
     build: .
-    container_name: fileshare_c
+    container_name: ferrishare_c
     restart: unless-stopped
     volumes:
       - "./data:/app/data"
@@ -12,7 +12,7 @@ services:
     container_name: traefik_c
     restart: unless-stopped
     depends_on:
-      - fileshare
+      - ferrishare
     command:
       - "--providers.docker"
     ports:
