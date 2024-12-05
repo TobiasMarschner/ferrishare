@@ -1,8 +1,25 @@
 # FerriShare
 
-**FerriShare** is a simple and self-hostable filesharing application that end-to-end-encrypts your files and filenames.
+**FerriShare** --- a simple, self-hostable filesharing application with builtin end-to-end-encryption
 
-- TODO featurelist
+- 🔒 Files and filenames are encrypted in your browser before being sent over the network
+    - 🕶️ The server cannot decrypt or view the file
+    - 🔑 The decryption key is stored in the download link's [fragment]() (the part after the `#`), which is never sent to the server
+    - 🗑️ Files automatically expire after a chosen duration
+- 🌐 On upload two links are created:
+    - A public download link showing filename and filesize
+    - A private administration link with download statistics, allowing early file deletion
+- 📊 Site-wide administration panel with total usage statistics and the ability to delete files early
+- 🛡️ Builtin and configurable IP-based rate limiting
+    - Dual-stack support: Limits either by IPv4 address or by /64 IPv6 subnet
+    - Limit the maximum number of uploads per IP
+    - Limit the maximum number of HTTP requests per IP
+- 📃 Configurable Privacy Policy (with default template) and Legal Notice, if you need those
+- 🚀 Fast, efficient and memory-safe
+    - 🦀 Backend entirely written in Rust, powered by tokio, axum, tera and sqlx
+    - 
+    - small bundles, subsetting
+    - Rust backend, efficient, sqlite db, portable, single container TODO
 
 ## ✨ Demo and Screenshots
 
@@ -10,12 +27,13 @@ Test out the demo for yourself at [ferrishare-demo.tobiasm.dev](https://ferrisha
 
 ## 📥 Installation and Configuration
 
-> [!WARNING]
-> While I have taken great care to correctly deploy the cryptographic primitives used in this project,
+> [!WARNING]  
+> While I have taken great care to correctly deploy the cryptographic primitives used in this project,  
 > I am not an expert in cryptography and this project has not been independently audited.
 >
 > **I cannot guarantee that the implementation or design of the system is secure.**  
-> You can review the choices and use of cryptographic primitives in the [architectural notes]() below, or simply take a direct look at the code responsible for [encrypting the files](templates/upload.js) and [decrypting the files](templates/download.js).
+> You can review [cryptographic architectural notes](#🗝%EF%B8%8F-cryptography) provided further below,  
+> or directly examine the code responsible for [encrypting files](templates/upload.js) or [decrypting files](templates/download.js).
 >
 > If you spot any issue, please let me know in the project's issue tracker.
 
@@ -54,12 +72,18 @@ Refer to the [building locally from source](#📝-from-source-2) instructions pr
 
 ### 🗝️ Cryptography
 
-- FerriShare only uses battle-tested implementations of well-known cryptographic primitives.
-- The filedata and filename are encrypted using AES-GCM provided through the browser's [WebCrypto-API]()
-    - Keys and IVs are randomly generated using the CSPRNG provided by the WebCrypto-API
-        - IVs are never reused
-        - Each key is used to encrypt exactly two messages: the filedata and the filename
-- 
+#### File encryption
+
+- Files are encyrpted with AES-GCM providing both confidentiality and integrity thanks to its AEAD nature.
+- The [WebCrypto-API]() provided by the browser is used to actually perform the en- and decryption.
+    - The key is generated with ``, which uses a strong CSPRNG.
+    - IVs / nonces are randomly generated using strong CSPRNGS. IVs are never reused.
+- Each key is used to encrypt two messages: The filedata and the filename.
+    - This generates two random IVs, putting the chance of an IV collision at 1 in 2^96. (negligible)
+- The maximum safe message length with AES-GCM is 2^39 - 256 bits ≈ 64 GB.
+    - This limit for the maximum filesize is enforced during configuration setup.
+
+#### Backend
 
 ### 📁 Repository Structure
 
