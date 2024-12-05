@@ -1,4 +1,4 @@
-use std::{fs::File, io::Write};
+use std::{fs::File, io::Write, path::PathBuf};
 
 use anyhow::anyhow;
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
@@ -62,6 +62,21 @@ fn transform_filesize_input(input: &str) -> Option<usize> {
 fn validate_filesize_input(input: &str) -> Result<Validation, CustomUserError> {
     match transform_filesize_input(input) {
         Some(_) => Ok(Validation::Valid),
+        None => Ok(Validation::Invalid(
+            "Failed to parse filesize. Use values like '100K', '25M' or '5G'.".into(),
+        )),
+    }
+}
+
+/// Validator for 'inquire' to check that the maximum filesize input is valid.
+fn validate_max_filesize_input(input: &str) -> Result<Validation, CustomUserError> {
+    match transform_filesize_input(input) {
+        Some(v) => match v {
+            0..=68719476704 => Ok(Validation::Valid),
+            _ => Ok(Validation::Invalid(
+                "Filesize too large to use safely with AES-GCM. Must be smaller than 64GiB.".into(),
+            )),
+        },
         None => Ok(Validation::Invalid(
             "Failed to parse filesize. Use values like '100K', '25M' or '5G'.".into(),
         )),
@@ -153,7 +168,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
 
     let maximum_filesize = Text::new("Maximum filesize:")
         .with_initial_value("25M")
-        .with_validator(validate_filesize_input)
+        .with_validator(validate_max_filesize_input)
         .with_formatter(&format_filesize_input)
         .with_help_message(
             "
@@ -162,6 +177,9 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
   Please bear in mind that uploaded files are first streamed to memory,
   hashed, and then stored on disk. This can cause problems if you
   accept files that are larger than your RAM.
+
+  The used encryption cipher (AES-GCM) mandates that this value must not be
+  larger than 2^39 - 256 bits = 68719476704 Bytes ~= 64 GiB.
 
   The prompt uses suffixes 'K', 'M' and 'G' which are read as binary suffixes:
      '25M' ->  25 MiB ->    26_214_400 Bytes
@@ -286,21 +304,33 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         )
         .prompt()?;
 
+    eprintln!("\nFinalizing configuration...");
+
+    // Copy over the Privacy Policy if it doesn't already exist.
+    let privacy_policy_path = format!("{DATA_PATH}/user_templates/privacy_policy.html");
+    if PathBuf::from(privacy_policy_path.clone()).exists() {
+        eprintln!("Found Privacy Policy at '{privacy_policy_path}', leaving untouched.");
+    } else {
+        std::fs::copy(
+            "./templates/privacy_policy_default.html",
+            &privacy_policy_path,
+        )
+        .map_err(|e| anyhow!("failed to copy privacy policy template: {e}"))?;
+        eprintln!("Copied Privacy Policy template to '{privacy_policy_path}'.",);
+    }
+
+    // Copy over the Legal Notice if it doesn't already exist.
+    let legal_notice_path = format!("{DATA_PATH}/user_templates/legal_notice.html");
+    if PathBuf::from(legal_notice_path.clone()).exists() {
+        eprintln!("Found Legal Notice at '{legal_notice_path}', leaving untouched.");
+    } else {
+        std::fs::copy("./templates/legal_notice_stub.html", &legal_notice_path)
+            .map_err(|e| anyhow!("failed to copy legal notice template: {e}"))?;
+        eprintln!("Copied Legal Notice template to '{legal_notice_path}'.");
+    }
+
     // Perform postprocessing on the given answers.
-    eprint!("\nHashing password and generating config ...");
-
-    // Copy over the Privacy Policy / Legal Notice stubs.
-    std::fs::copy(
-        "./templates/privacy_policy_default.html",
-        "./data/user_templates/privacy_policy.html",
-    )
-    .map_err(|e| anyhow!("failed to copy privacy policy template: {e}"))?;
-
-    std::fs::copy(
-        "./templates/legal_notice_stub.html",
-        "./data/user_templates/legal_notice.html",
-    )
-    .map_err(|e| anyhow!("failed to copy legal notice template: {e}"))?;
+    eprint!("Hashing password ...");
 
     // Turn the filesize strings into the actual byte counts.
     let maximum_filesize = transform_filesize_input(&maximum_filesize).unwrap();
@@ -316,6 +346,8 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
     .hash_password(admin_password.as_bytes(), &SaltString::generate(&mut OsRng))
     .map_err(|e| anyhow!(e.to_string()))?
     .to_string();
+
+    eprintln!(" done!");
 
     // Bring it all together.
     let app_config = AppConfiguration {
@@ -337,8 +369,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
     File::create(format!("{DATA_PATH}/config.toml"))?
         .write_all(toml::to_string(&app_config)?.as_bytes())?;
 
-    eprintln!(" done!");
-    eprintln!("Successfully wrote config to {DATA_PATH}/config.toml");
+    eprintln!("Successfully wrote config to '{DATA_PATH}/config.toml'.");
     eprintln!("You can now launch the app.");
 
     Ok(())
