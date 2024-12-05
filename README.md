@@ -4,7 +4,7 @@
 
 - 🔒 Files and filenames are encrypted in your browser before being sent over the network
     - 🕶️ The server cannot decrypt or view the file
-    - 🔑 The decryption key is stored in the download link's [fragment]() (the part after the `#`), which is never sent to the server
+    - 🔑 The decryption key is stored in the download link's [fragment](https://en.wikipedia.org/wiki/URI_fragment) (the part after the `#`), which is never sent to the server
     - 🗑️ Files automatically expire after a chosen duration
 - 🌐 On upload two links are created:
     - A public download link showing filename and filesize
@@ -16,10 +16,11 @@
     - Limit the maximum number of HTTP requests per IP
 - 📃 Configurable Privacy Policy (with default template) and Legal Notice, if you need those
 - 🚀 Fast, efficient and memory-safe
-    - 🦀 Backend entirely written in Rust, powered by tokio, axum, tera and sqlx
-    - 
-    - small bundles, subsetting
-    - Rust backend, efficient, sqlite db, portable, single container TODO
+    - 🦀 Backend written entirely in [Rust](https://www.rust-lang.org/), powered by [tokio](https://tokio.rs/), [axum](https://github.com/tokio-rs/axum), [tera](https://keats.github.io/tera/) and [sqlx](https://github.com/launchbadge/sqlx)
+    - 🗄️ SQLite-database for metadata storage because Postgres would be overkill
+        - Allows you to deploy the entire application in a single container
+    - 🏅 Frontend with a **400 Lighthouse Score** thanks to font subsetting, a permanent cache policy for static assets, response compression and accessible design
+        - The frontend only uses as much JS as is stricly necessary (progressive enhancement)
 
 ## ✨ Demo and Screenshots
 
@@ -32,8 +33,8 @@ Test out the demo for yourself at [ferrishare-demo.tobiasm.dev](https://ferrisha
 > I am not an expert in cryptography and this project has not been independently audited.
 >
 > **I cannot guarantee that the implementation or design of the system is secure.**  
-> You can review [cryptographic architectural notes](#🗝%EF%B8%8F-cryptography) provided further below,  
-> or directly examine the code responsible for [encrypting files](templates/upload.js) or [decrypting files](templates/download.js).
+> You can review the [cryptographic architectural notes](#🗝%EF%B8%8F-cryptography) provided further below,  
+> or directly examine the code responsible for [encrypting](templates/upload.js) and [decrypting files](templates/download.js).
 >
 > If you spot any issue, please let me know in the project's issue tracker.
 
@@ -53,7 +54,7 @@ In the instructions presented below we will be using a very simple Traefik setup
     - Both rootful and [rootless](https://docs.docker.com/engine/security/rootless/) variants are supported
 2. Create a folder for the application on your machine and `cd` into it.
     - For example: `mkdir ferrishare; cd ferrishare`
-3. Download a copy of the repository's [`docker-compose.yml`](/docker-compose.yml) into said folder
+3. Download a copy of the repository's [`docker-compose.yml`](docker-compose.yml) into said folder
 4. Download all of the images by invoking `docker compose pull`
 5. **Configuration**: Invoke `docker compose run --rm -it ferrishare --init`
     - This will start FerriShare's interactive configuration wizard that will guide you through all options and create all necessary files in the `./data`-subdirectory.
@@ -70,9 +71,21 @@ Refer to the [building locally from source](#📝-from-source-2) instructions pr
 
 ## 📐 Architectural Notes
 
-### 🗝️ Cryptography
+### 📁 Repository Structure
 
-#### File encryption
+| Path | Purpose |
+| ---  | ---     |
+| **src/** | Rust sources for the backend |
+| **templates/** | HTML and JS template sources for the frontend |
+| **migrations/** | Schema files for the application's SQLite database |
+| **font/** | The project's latin and icon fonts -- check the folder's [README](font/README.md) for details |
+| Cargo.toml, Cargo.lock | Rust project files defining dependencies and build behavior for the backend |
+| package.json, package-lock.json | npm project files used to setup the [Tailwind CLI](https://tailwindcss.com/docs/installation)
+| main.tw.css, tailwind.config.js | Main stylesheet and Tailwind config used to generate the CSS bundle |
+| Dockerfile | Protable build and packaging instructions (using [multi-stage builds](https://docs.docker.com/build/building/multi-stage/))
+| docker-compose.yml | Example application setup with [Traefik](https://doc.traefik.io/traefik/), useful for developement or as a quick start |
+
+### 🗝️ Cryptography
 
 - Files are encyrpted with AES-GCM providing both confidentiality and integrity thanks to its AEAD nature.
 - The [WebCrypto-API]() provided by the browser is used to actually perform the en- and decryption.
@@ -82,10 +95,6 @@ Refer to the [building locally from source](#📝-from-source-2) instructions pr
     - This generates two random IVs, putting the chance of an IV collision at 1 in 2^96. (negligible)
 - The maximum safe message length with AES-GCM is 2^39 - 256 bits ≈ 64 GB.
     - This limit for the maximum filesize is enforced during configuration setup.
-
-#### Backend
-
-### 📁 Repository Structure
 
 ## 🛠️ Building Locally
 
@@ -101,7 +110,7 @@ The instructions for building FerriShare with Docker are almost the same as the 
 The provided Dockerfile uses [multi-stage builds](https://docs.docker.com/build/building/multi-stage/) to both cache stages of the build-process and ensure the final image is as slim as possible.
 It uses [cargo-chef](https://github.com/LukeMathWalker/cargo-chef) to cache downloads and builds of all Rust dependencies,
 significantly speeding up subsequent builds of the application.
-The [actual Dockerfile](/Dockerfile) is properly commented, check it out to understand the full build process.
+The [actual Dockerfile](Dockerfile) is properly commented, check it out to understand the full build process.
 
 ### 📝 From Source
 
@@ -123,7 +132,7 @@ MacOS and Windows have not been tested, although the former *might* work.
       It does not touch the database or uploaded files.
       The templates in `./data/user_templates` will only be created if they do not already exist.
 6. **Launch**: Invoke `cargo run --release` to launch the app in the foreground
-    - **Important**: You're running and accessing the app directly without a reverse-proxy, which only works for local developement.
+    - **Important**: You're running and accessing the app directly without a reverse-proxy, which only works for local development.
       For this to work you must configure a `proxy-depth` of **0**, otherwise FerriShare will refuse your HTTP requests.
 
 Note that resources served on the `/static/`-endpoint are served with an infinite cache policy.
