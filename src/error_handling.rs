@@ -1,9 +1,11 @@
+//! Custom error type for more convenient error handling in axum
+
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
 
-/// Use a custom error type that can be returned by handlers.
+/// Use a custom error type that can be returned by handlers
 ///
 /// This follows recommendations from the axum documentation:
 /// <https://github.com/tokio-rs/axum/blob/main/examples/anyhow-error-response/src/main.rs>
@@ -13,7 +15,7 @@ pub struct AppError {
 }
 
 impl AppError {
-    /// Create a new Result<T, AppError>::Err with the corresponding StatusCode and message.
+    /// Create a new [Result<T, AppError>::Err] with the given StatusCode and message.
     ///
     /// Useful for quickly returning a custom error in any of the request handlers.
     pub fn err<T>(status_code: StatusCode, message: impl Into<String>) -> Result<T, Self> {
@@ -23,7 +25,7 @@ impl AppError {
         })
     }
 
-    /// Create a new AppError with the corresponding StatusCode and message.
+    /// Create a new AppError with the given StatusCode and message.
     pub fn new(status_code: StatusCode, message: impl Into<String>) -> Self {
         Self {
             status_code,
@@ -31,14 +33,14 @@ impl AppError {
         }
     }
 
-    /// Create a new AppError with the corresponding message and StatusCode 500.
+    /// Create a new AppError with the given message and StatusCode 500 (INTERNAL_SERVER_ERROR).
     pub fn new500(message: impl Into<String>) -> Self {
         Self::new(StatusCode::INTERNAL_SERVER_ERROR, message)
     }
 }
 
-/// Allows axum to automatically convert our custom AppError into a Response.
 impl IntoResponse for AppError {
+    /// Allow axum to automatically convert our custom [AppError] into a [Response]
     fn into_response(self) -> Response {
         // Report client-side errors that are not 404s as warnings.
         // This might help identify implementation problems in the frontent.
@@ -56,12 +58,12 @@ impl IntoResponse for AppError {
     }
 }
 
-/// Ensure that our custom error type can be built automatically from anyhow::Error.
-/// This allows us to use the ?-operator in request-handlers to easily handle errors.
 impl<E> From<E> for AppError
 where
     E: Into<anyhow::Error>,
 {
+    /// Ensure that our custom error type can be built automatically from [anyhow::Error].
+    /// This allows us to use the ?-operator in request-handlers to easily handle errors.
     fn from(err: E) -> Self {
         Self {
             status_code: StatusCode::INTERNAL_SERVER_ERROR,

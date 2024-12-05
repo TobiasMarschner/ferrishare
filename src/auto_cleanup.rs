@@ -1,6 +1,15 @@
+//! Background async task cleans up expired files and admin sessions
+
 use crate::*;
 
-/// Regularly clean up expired files and sessions.
+/// Async task that cleans up expired files and admin sessions every 15 minutes
+///
+/// Is started by [main] and then runs indefinitely.
+/// Has three responsibilites:
+/// 1) Deleting expired files, both from the database and from disk.
+/// 2) Clearing expired admin sessions from the session-db.
+/// 3) Decreasing the accumulated request count from the rate-limiter, thereby
+///    implementing the leaky-bucket algorithm.
 #[tracing::instrument(level = "info", skip(aps))]
 pub async fn cleanup_cronjob(aps: AppState) {
     // Run indefinitely.

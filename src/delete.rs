@@ -1,3 +1,5 @@
+//! Endpoint and utilities for automatic and manual file deletion
+
 use axum::{extract::State, http::StatusCode, Json};
 use axum_extra::extract::CookieJar;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
@@ -12,6 +14,7 @@ pub struct DeleteRequest {
     admin: Option<String>,
 }
 
+/// Endpoint where clients can POST to delete files from the service before they expire.
 pub async fn delete_endpoint(
     State(aps): State<AppState>,
     jar: CookieJar,
@@ -21,7 +24,7 @@ pub async fn delete_endpoint(
     let efd_sha256sum = req.hash;
     let admin_key = req.admin;
 
-    // Do not even entertain the notion of hashes with invalid length.
+    // Do not entertain hashes with invalid length.
     if efd_sha256sum.len() != 43 {
         return AppError::err(StatusCode::BAD_REQUEST, "invalid hash length");
     }
@@ -61,6 +64,8 @@ pub async fn delete_endpoint(
     }
 
     // No matching admin_key? Check for session_id, then.
+    // This is for the case where the deletion request is not made by the user who uploaded the
+    // file, but by the site-wide administrator who is currently logged into the admin panel.
     if !authorized {
         // Calculate the base64url-encoded sha256sum of the session cookie, if any.
         let user_session_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(

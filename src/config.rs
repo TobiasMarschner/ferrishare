@@ -1,3 +1,5 @@
+//! Guided setup and configuration wizard to make deployment as easy as possible
+
 use std::{fs::File, io::Write, path::PathBuf};
 
 use anyhow::anyhow;
@@ -9,7 +11,10 @@ use tracing::Level;
 
 use crate::*;
 
-/// Configuration for the entire application read from 'config.toml'.
+/// Global configuration for the entire application read from '{DATA_PATH}/config.toml'.
+///
+/// Curious what all the options do? Simply go through the interactive setup wizard by invoking the
+/// application with the '--init' flag and the displayed help text should answer your questions.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AppConfiguration {
     pub app_name: String,
@@ -69,6 +74,11 @@ fn validate_filesize_input(input: &str) -> Result<Validation, CustomUserError> {
 }
 
 /// Validator for 'inquire' to check that the maximum filesize input is valid.
+///
+/// This is similar to [validate_filesize_input] but also checks that the given filesize
+/// stays at or below 2^39 - 256 bits = 68719476704 Bytes =~= 64GiB.
+/// This is required by AES-GCM. If the message length exceeds that length the cypher
+/// breaks down and loses its secure properties.
 fn validate_max_filesize_input(input: &str) -> Result<Validation, CustomUserError> {
     match transform_filesize_input(input) {
         Some(v) => match v {
@@ -92,10 +102,11 @@ fn format_filesize_input(input: &str) -> String {
     )
 }
 
+/// The application's interactive configuration wizard started with the '--init' flag.
 pub fn setup_config() -> Result<(), anyhow::Error> {
-    // TODO Check if a cfg already exists.
-
-    eprintln!("Setting up new configuration at {DATA_PATH}/config.toml");
+    eprintln!("Setting up new configuration at '{DATA_PATH}/config.toml'");
+    eprintln!("On setup completion, any previously present config file will be overwritten");
+    eprintln!("Templates in '{DATA_PATH}/user_templates/' will remain untouched.");
     eprintln!("Interactively prompting for all settings ...\n");
 
     let app_name = Text::new("App name:")
@@ -116,7 +127,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
   The interface the server will listen on.
 
   Examples:
-    127.0.0.1:8000 -> Serve only for localhost (port 8000)
+    127.0.0.1:8000 -> Serve only on localhost (port 8000)
       0.0.0.0:3000 -> Serve all incoming IPv4 connections (port 3000)
 
   Using Docker with a reverse-proxy? Just leave this untouched.
@@ -155,11 +166,11 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
   Site-wide administration password used at the '/admin'-URL.
 
   There is only one admin password for the entire application.
-  To keep things simple there are no usernames, e-mail addresses, etc.
+  To keep things simple there is no associated username or password.
 
   The admin panel allows you to view statistics on all uploaded files.
-  It also allows you to delete those files before they have expired.
-  Since the files are end-to-end-encrypted, you cannot download them.
+  It also allows you to delete files before they have expired.
+  However, since the files are end-to-end-encrypted, you cannot download them.
 
   This config-utility will create and store an argon2id-hash of your password.
 ",
@@ -245,12 +256,13 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         })
         .with_help_message(
             "
-  How many requests of any kind (GET + POST) can a single IP make per day?
+  How many requests (GET and POST) can a single IP address make per day?
 
-  Essentially a rate-limiter to ensure the server doesn't get DDoS'd.
-  Uses a leaky bucket algorithm where the app keeps track of the number of
-  recieved requests and decreases that count by 1/96th of the specified value
+  Essentially a rate-limiter to ensure the server does not get DDoS'd.
+  Uses a leaky bucket algorithm internally that decreases users' request counts
   every 15 minutes.
+
+  'IP address' here refers to either an IPv4 address or an IPv6 /64-subnet.
 ",
         )
         .prompt()?
@@ -267,8 +279,8 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
 
   ERROR logs all internal server errors and failures.
   WARN logs suspicious client-side errors.
-  INFO logs all HTTP responses and application events, such as
-  file creation/deletion/expiry or admin login/logout/session-expiry.
+  INFO logs all HTTP responses and application events, including
+  file creation/deletion/expiry and admin login/logout/session-expiry.
 ",
         )
         .prompt()?;

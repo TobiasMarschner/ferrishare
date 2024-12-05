@@ -1,3 +1,5 @@
+//! Page and endpoint for downloading files from the service
+
 use axum::{
     body::Body,
     extract::{Query, State},
@@ -17,6 +19,7 @@ use tokio_util::io::ReaderStream;
 
 use crate::*;
 
+/// Endpoint for downloading files from the service
 pub async fn download_endpoint(
     Query(params): Query<HashMap<String, String>>,
     State(aps): State<AppState>,
@@ -35,12 +38,10 @@ pub async fn download_endpoint(
     // Guaranteed to work.
     let hash = hash.ok_or_else(|| AppError::new500("illegal unwrap"))?;
 
-    // Do not even entertain the notion of hashes with invalid length.
+    // Do not entertain hashes with invalid length.
     if hash.len() != 43 {
         return AppError::err(StatusCode::BAD_REQUEST, "invalid hash length");
     }
-
-    // TODO: Think about what happens if the file is deleted / expires as it's being downloaded.
 
     #[derive(Debug, FromRow)]
     struct FileRow {
@@ -95,8 +96,8 @@ pub async fn download_endpoint(
     Ok((StatusCode::OK, body))
 }
 
-// Use a struct for the download page template parameters.
-// This helps us not forget any required parameters.
+/// Use a struct for the download page template parameters.
+/// This ensures we don't forget any required variables.
 #[derive(Debug, Serialize)]
 struct DownloadPageContext<'a> {
     response_type: &'a str,
@@ -176,6 +177,7 @@ impl DownloadPageContext<'_> {
     }
 }
 
+/// Pretty prints the time between two timestamps as in "3h 42m".
 pub fn pretty_print_delta<Tz1: TimeZone, Tz2: TimeZone>(
     a: DateTime<Tz1>,
     b: DateTime<Tz2>,
@@ -201,6 +203,10 @@ pub fn pretty_print_delta<Tz1: TimeZone, Tz2: TimeZone>(
         .join(" ")
 }
 
+/// Handler for the download page
+///
+/// This handler serves both the "public" download link that only displays filename and filesize
+/// as well as the "admin" download link that contains more data and the file deletion link.
 pub async fn download_page(
     Query(params): Query<HashMap<String, String>>,
     State(aps): State<AppState>,
@@ -233,7 +239,7 @@ pub async fn download_page(
     // Guaranteed to work thanks to the previous match.
     let hash = hash.ok_or_else(|| AppError::new500("illegal unwrap"))?;
 
-    // Do not even entertain the notion of hashes with invalid length.
+    // Do not entertain hashes with invalid length.
     if hash.len() != 43 {
         let dpc = DownloadPageContext {
             response_type: "error",
@@ -308,6 +314,7 @@ pub async fn download_page(
     let ets = DateTime::parse_from_rfc3339(&row.expiry_ts)?;
     let now = Utc::now();
 
+    // Format those timestamps into pretty, human-readable strings.
     let upload_ts = uts.format("(%c)").to_string();
     let upload_ts_pretty = format!("{} ago", pretty_print_delta(now, uts));
     let expiry_ts = ets.format("(%c)").to_string();

@@ -1,3 +1,5 @@
+//! Page and endpoint for uploading new files to the service
+
 use axum::{
     extract::{multipart::MultipartRejection, Multipart, Request, State},
     http::StatusCode,
@@ -14,9 +16,10 @@ use tokio::io::AsyncWriteExt;
 
 use crate::*;
 
+/// Handler that serves the page where users can upload new files.
 pub async fn upload_page(State(aps): State<AppState>) -> Result<Html<String>, AppError> {
     let mut context = aps.default_context();
-    // Check if the server has hit the quota limit.
+    // Check if the server has hit its quota limit and serve the appropriate template.
     let html = if maximum_quota_reached(&aps).await? {
         aps.tera.render("full_quota.html", &context)?
     } else {
@@ -31,13 +34,10 @@ pub async fn upload_page(State(aps): State<AppState>) -> Result<Html<String>, Ap
     Ok(Html(response_body))
 }
 
-/// Middleware that keeps track which IpPrefixes are currently uploading in aps.uploading.
+/// Middleware that keeps track of which IpPrefixes are currently uploading in aps.uploading
 ///
 /// Implemented as a middleware to ensure the IpPrefix is guaranteed to be removed from
 /// aps.uploading regardless of whether the handler returns 2XX, 4XX or even 5XX.
-///
-/// Moreover, when implemented as a middleware the request is never accepted to begin with.
-/// This makes for immediate and much cleaner error messages on the frontend.
 pub async fn upload_endpoint_wrapper(
     State(aps): State<AppState>,
     ExtractIpPrefix(eip): ExtractIpPrefix,
@@ -60,6 +60,7 @@ pub async fn upload_endpoint_wrapper(
     }
 }
 
+/// Endpoint where clients can POST (i.e. upload) new files.
 pub async fn upload_endpoint(
     State(aps): State<AppState>,
     ExtractIpPrefix(eip): ExtractIpPrefix,
@@ -201,8 +202,6 @@ pub async fn upload_endpoint(
     // as a single sha256-digest can be computed very quickly.
     let admin_key_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(admin_key_bytes));
 
-    // TODO Proxied IPs. You'll likely run this behind a reverse-proxy.
-    // You need to be able to set up trusted proxy IPs and extract X-Forwarded-For instead.
     // Grab the current time.
     let now = Utc::now().round_subsecs(0);
 
@@ -227,11 +226,6 @@ pub async fn upload_endpoint(
         .map_err(|e| {
             AppError::new500(format!("failed to write encrypted filedata to disk: {e}"))
         })?;
-
-    // TODO Calculate entropy of the file.
-    // TODO Also check for magic number.
-    // We need to guard against someone uploading unencrypted data directly to the server.
-    // While not perfect, those techniques can help us catch the worst offenders.
 
     // Then, add the row to the database.
     sqlx::query("INSERT INTO uploaded_files (efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);")
@@ -270,15 +264,16 @@ pub struct UploadFileResponse {
     admin_key: String,
 }
 
+/// Helper function that checks whether the application has hit its global storage limit.
 async fn maximum_quota_reached(aps: &AppState) -> Result<bool, AppError> {
-    // Also determine the total size of files uploaded so far.
+    // Determine the total size of files uploaded so far.
     let total_quota: i64 = sqlx::query_scalar("SELECT SUM(filesize) FROM uploaded_files;")
         .fetch_one(&aps.db)
         .await?;
 
     // Check if we've hit the global limit.
     // In order to stay *strictly* underneath the limit, this function returns true
-    // if the remaining space on disk is less than the biggest possible file.
+    // if the remaining space on disk is smaller than the biggest possible file.
     Ok(total_quota as usize
         >= aps
             .conf

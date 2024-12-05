@@ -1,3 +1,5 @@
+//! Identify and rate-limit users through their IPv4 address or /64 IPv6 subnet
+
 use crate::*;
 use axum::{
     extract::{ConnectInfo, FromRef, FromRequestParts, Request, State},
@@ -11,7 +13,7 @@ use std::{
     str::FromStr,
 };
 
-/// Stores either a full IPv4 address or a /64 IPv6 subnet.
+/// Stores either a full IPv4 address or a /64 IPv6 subnet
 ///
 /// Used for rate limiting and identifying uploading clients.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -39,8 +41,8 @@ impl Display for IpPrefix {
     /// Use a custom string-serialization that is constant-size by using
     /// hexadeximal encoding. This also makes for canonical encodings.
     ///
-    /// This makes storing and comparing values in a database easier.
-    /// Moreover, it enabled parsing the canonical representation
+    /// This makes storing and comparing values in the database easier.
+    /// Moreover, it enables parsing the canonical representation
     /// back into an UploadIpPrefix.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -63,7 +65,7 @@ pub struct UploadIpPrefixParseError;
 impl FromStr for IpPrefix {
     type Err = UploadIpPrefixParseError;
 
-    /// Parse the canonical string represantation back into the struct.
+    /// Parse the canonical string represantation back into an IpPrefix.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (prefix, octet_str) = s.split_at_checked(3).ok_or(UploadIpPrefixParseError)?;
         let octets = hex::decode(octet_str).map_err(|_| UploadIpPrefixParseError)?;
@@ -92,10 +94,9 @@ impl IpPrefix {
 
 /// This extractor conveniently allows us to extract a client's IP as an IpPrefix.
 ///
-/// It's likely that in the future the source of the IpPrefix will not be the SocketAddr
-/// at all but instead the X-Forwarded-For header received by the reverse proxy.
-/// This extractor marks a convenient and centralized place where the source of the extracted
-/// IpPrefix can be adjusted. Parts contains the HTTP headers, so switching should be easy.
+/// This extractor respects the global configuration's proxy_depth.
+/// If set to 0 the SocketAddr will be used to construct the IpPrefix.
+/// If set to 1 or higher the X-Forwarded-For header will be dissected to construct the IpPrefix.
 #[derive(Debug, PartialEq, Eq)]
 pub struct ExtractIpPrefix(pub IpPrefix);
 
@@ -114,7 +115,7 @@ where
         //
         // Which one it is depends on the reverse-proxy settings.
         // If proxy_depth is 0 there is no reverse-proxy, and we work directly with
-        // the SocketAddr. Otherwise we extract the IP address from the X-Forwarded-For header,
+        // the SocketAddr. Otherwise, we extract the IP address from the X-Forwarded-For header,
         // taking care to select the right one in the chain.
         let ip: IpAddr = match AppState::from_ref(state).conf.proxy_depth {
             0 => {
@@ -148,7 +149,7 @@ where
     }
 }
 
-/// Custom rate-limiting solution built on top of IpPrefix.
+/// Custom rate-limiting middleware that uses the IpPrefix extractor
 pub async fn ip_prefix_ratelimiter(
     State(aps): State<AppState>,
     ExtractIpPrefix(eip): ExtractIpPrefix,
@@ -157,7 +158,7 @@ pub async fn ip_prefix_ratelimiter(
 ) -> Result<Response, AppError> {
     // Acquire a writing reference to the rate-limiter.
     let mut rl = aps.rate_limiter.write().await;
-    // Insert the key if it wasn't already here and update its counter.
+    // Insert the key if it wasn't already there and update its counter.
     let counter = *rl
         .entry(eip)
         .and_modify(|v| *v += 1)

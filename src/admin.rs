@@ -1,3 +1,5 @@
+//! Handlers and endpoints for site-wide adminstration, including login, logout and dashboard
+
 use std::{collections::HashMap, str::FromStr};
 
 use argon2::{password_hash::PasswordVerifier, Argon2, PasswordHash};
@@ -19,6 +21,7 @@ use sqlx::FromRow;
 use crate::download::pretty_print_delta;
 use crate::*;
 
+/// Handler for the site-wide administration page, serving the login form or admin dashboard.
 pub async fn admin_page(
     Query(params): Query<HashMap<String, String>>,
     State(aps): State<AppState>,
@@ -56,6 +59,7 @@ pub async fn admin_page(
         .fetch_all(&aps.db)
         .await?;
 
+        // Determine how much storage space all uploaded files currently use.
         let used_quota: usize = all_files.iter().map(|e| e.filesize as usize).sum();
 
         #[derive(Debug, Serialize)]
@@ -72,6 +76,8 @@ pub async fn admin_page(
 
         let now = Utc::now();
 
+        // Transform the database rows into pretty strings
+        // that can be templated into the dashboard.
         let ufs = all_files
             .into_iter()
             .map(|e| {
@@ -79,7 +85,7 @@ pub async fn admin_page(
                 let ets = DateTime::parse_from_rfc3339(&e.expiry_ts).ok();
                 UploadedFile {
                     efd_sha256sum: e.efd_sha256sum,
-                    formatted_filesize: format!("{:.2} MB", e.filesize as f64 / 1_000_000.0),
+                    formatted_filesize: pretty_print_bytes(e.filesize as usize),
                     upload_ip_pretty: {
                         IpPrefix::from_str(&e.upload_ip)
                             .map(|v| v.pretty_print())
@@ -110,17 +116,20 @@ pub async fn admin_page(
             })
             .collect::<Vec<_>>();
 
+        // Add the global statistics to the rendering context.
         let mut context = aps.default_context();
         context.insert("files", &ufs);
         context.insert("full_file_count", &ufs.len());
         context.insert("maximum_quota", &pretty_print_bytes(aps.conf.maximum_quota));
         context.insert("used_quota", &pretty_print_bytes(used_quota));
+        // And actually render.
         let h = aps.tera.render("admin_overview.html", &context)?;
         Ok(Html(String::from_utf8(minify(h.as_bytes(), &MINIFY_CFG))?))
     } else {
         // Check if this is a normal visit or a Redirect from a failed login-attempt.
         let failed_login = params.get("status").map_or(false, |e| e == "login_failed");
 
+        // If the client is not logged in, serve the login form.
         let mut context = aps.default_context();
         context.insert("failed_login", &failed_login);
         let h = aps.tera.render("admin_login.html", &context)?;
@@ -134,6 +143,7 @@ pub struct AdminLogin {
     long_login: Option<String>,
 }
 
+/// Endpoint allowing a site-wide administrator to login with a POST request
 pub async fn admin_login(
     State(aps): State<AppState>,
     jar: CookieJar,
@@ -194,6 +204,7 @@ pub async fn admin_login(
     Ok((jar.add(session_cookie), Redirect::to("/admin")))
 }
 
+/// Endpoint allowing a site-wide administrator to manually logout
 pub async fn admin_logout(
     State(aps): State<AppState>,
     jar: CookieJar,

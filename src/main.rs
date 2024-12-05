@@ -1,3 +1,9 @@
+//! Simple, self-hostable filesharing application with builtin end-to-end-encryption
+//!
+//! This crate is not usable as-is, but is instead part of a larger application package.
+//! Check the project repository's README for details on how to install and use FerriShare:
+//! TODO
+
 use axum::{
     extract::{ConnectInfo, DefaultBodyLimit, State},
     middleware::{self, Next},
@@ -36,34 +42,29 @@ mod error_handling;
 mod ip_prefix;
 mod upload;
 
-/// Global variables provided to every single request handler.
-/// Contains pointers to the database-pool and HTML-templating-engine.
-///
-/// Implemented as a Cloneable struct containing two Arcs instead as copying around two pointers
-/// should be cheaper than wrapping the whole struct in an Arc and suffering from two layers of
-/// indirection on the database pool (as SqlitePool is itself essentially an Arc).
+/// The application's global state that is passed to every request handler
 #[derive(Debug, Clone)]
 pub struct AppState {
-    /// global HTML/JS templating engine
+    /// The global TERA instance responsible for HTML and JS templating
     tera: Arc<Tera>,
-    /// sqlite database
+    /// The global SqlitePool responsible for making queries to the SQLite-database
     ///
-    /// Is internally implemented as an Arc, so no need to wrap it here.
+    /// [SqlitePool] is internally wrapped in an [Arc], so no need to wrap it here
     db: SqlitePool,
-    /// immutable global configuration for the application
+    /// Immutable global configuration for FerriShare, read during startup from {DATA_PATH}/config.toml
     conf: Arc<AppConfiguration>,
-    /// table of request counts for rate limiting
+    /// Table keeping track of the number of requests made by each IpPrefix for rate limiting
     rate_limiter: Arc<RwLock<HashMap<IpPrefix, u64>>>,
-    /// list of IpPrefixes who are currently uploading a file
+    /// Set of IpPrefixes that are uploading a file at this moment
     ///
-    /// Any given IP is only allowed to stream one file at a time.
+    /// Any given IpPrefix is only allowed to stream one file at a time.
     /// Otherwise, a malicious client could start hundreds of uploads
     /// simultaneously and bypass quota restrictions.
     uploading: Arc<RwLock<HashSet<IpPrefix>>>,
 }
 
 impl AppState {
-    /// Create a default templating context with variables needed on every page.
+    /// Create the default TERA templating context containing variables needed on every page
     pub fn default_context(&self) -> tera::Context {
         let mut context = tera::Context::new();
         context.insert("global_app_name", &self.conf.app_name);
@@ -76,10 +77,10 @@ impl AppState {
     }
 }
 
-/// Global definition of the HTML-minifier configuration.
+/// Global definition of the HTML-minifier configuration
 ///
 /// CSS- and JS-minification are enabled, while some more aggressive
-/// and non-compliant settings for HTML have been disabled.
+/// and non-compliant settings for HTML minifacation have been disabled.
 pub const MINIFY_CFG: minify_html::Cfg = minify_html::Cfg {
     do_not_minify_doctype: true,
     ensure_spec_compliant_unquoted_attribute_values: true,
@@ -103,16 +104,18 @@ pub const MINIFY_CFG: minify_html::Cfg = minify_html::Cfg {
 /// - The configuration at 'config.toml'
 /// - The database at 'sqlite.db'
 /// - All uploaded files in 'uploaded_files/'
+/// - User templates in 'user_templates/'
 const DATA_PATH: &str = "./data";
 
+/// Path to the application's SQLite-database
 const DB_URL: &str = "sqlite://data/sqlite.db";
 
 /// Custom middleware for tracing HTTP requests.
 ///
-/// I am aware of tower_http::trace::TraceLayer but have opted not to use it.
-/// Ultimately, this boils down to the client request IP + port.
-/// http:Request does not contain information about the client IP+port making the request.
-/// Instead, it has to be extracted using the ConnectInfo extractor provided by axum.
+/// I have intentionally chosen not to use tower_http::trace::TraceLayer.
+/// Ultimately, this boils down to the fact that http::Request does not contain the
+/// connect client's IP address and port (the SocketAddr).
+/// Instead, this info has to be extracted using the ConnectInfo extractor provided by axum.
 ///
 /// The middleware creates an "http_request" span wrapping the entire request and
 /// fires off an event at the beginning which is then logged by the fmt Subscriber.
@@ -138,7 +141,6 @@ async fn custom_tracing(
             })
             .join("&")
     });
-    // let version = request.version();
     let method = request.method();
 
     // Create the http_request span out of this info.
@@ -156,6 +158,7 @@ async fn custom_tracing(
     .await
 }
 
+/// Add a 'Cache-Control' header to a response that causes it to be cached permanently.
 async fn add_maximum_caching<B>(mut response: Response<B>) -> Response<B> {
     response.headers_mut().insert(
         "Cache-Control",
@@ -164,7 +167,7 @@ async fn add_maximum_caching<B>(mut response: Response<B>) -> Response<B> {
     response
 }
 
-/// TODO app description
+/// Simple, self-hostable filesharing application with builtin end-to-end-encryption
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -177,6 +180,7 @@ struct Args {
     init: bool,
 }
 
+/// The application's main starting point
 #[tokio::main]
 async fn main() -> ExitCode {
     // First things first, create the DATA_PATH and its subdirectories.
@@ -235,14 +239,13 @@ async fn main() -> ExitCode {
     // The log level is provided by the configuration.
     tracing_subscriber::fmt()
         .with_max_level(app_config.translate_log_level())
-        // .with_span_events(tracing_subscriber::fmt::format::FmtSpan::FULL)
         .init();
 
     tracing::info!("read config from {DATA_PATH}/config.toml");
 
     // Create the database if it doesn't already exist.
     if !Sqlite::database_exists(DB_URL).await.unwrap_or(false) {
-        tracing::warn!("could not locate sqlite-db! creating a new one ...");
+        tracing::info!("could not locate sqlite-db! creating a new one ...");
         match Sqlite::create_database(DB_URL).await {
             Ok(_) => {
                 tracing::info!("successfully created new database");
@@ -340,7 +343,7 @@ async fn main() -> ExitCode {
     // Compression for HTTP responses.
     // Will not be used on static font assets (since they're already compressed)
     // and file up- and downloads (since they're encrypted and thereby not practically compressible).
-    // We're disabling zstd b/c brotli and gzip have proven to provide better results thus far.
+    // We're disabling zstd because brotli and gzip have proven to provide better results thus far.
     let compression = CompressionLayer::new().no_zstd();
 
     // Our custom middleware for tracing HTTP requests.
@@ -354,6 +357,7 @@ async fn main() -> ExitCode {
     // Make sure all resources served here have hashes included in their request path.
     let permanent_caching = middleware::map_response(add_maximum_caching);
 
+    // Routers for up- and downloading the actual file payloads
     let file_routers = Router::new()
         .route(
             "/upload_endpoint",
@@ -371,6 +375,7 @@ async fn main() -> ExitCode {
         .route("/download_endpoint", get(download::download_endpoint))
         .layer(timeout_big);
 
+    // The usual frontend routes
     let mut normal_routers = Router::new()
         // HTML routes
         .route("/", get(upload::upload_page))
@@ -394,18 +399,21 @@ async fn main() -> ExitCode {
         .layer(timeout_small)
         .layer(compression.clone());
 
+    // Static assets are compressed and permanently cached. (like the main.css bundle)
     let static_routers = Router::new()
         .nest_service("/static", ServeDir::new("static"))
         .layer(timeout_small)
         .layer(compression)
         .layer(permanent_caching.clone());
 
+    // Fonts are permanently cached, but not compressed.
     let font_routers = Router::new()
         .nest_service("/font", ServeDir::new("font"))
         .layer(timeout_small)
         .layer(permanent_caching);
 
     // Combine all Routers into one big router and add the global middlewares and state here.
+    // Logging and rate-limiting apply to all routes indiscriminately.
     let app = Router::new()
         .nest("/", normal_routers)
         .nest("/", file_routers)
@@ -416,7 +424,7 @@ async fn main() -> ExitCode {
         .with_state(aps)
         .into_make_service_with_connect_info::<SocketAddr>();
 
-    // Bind to localhost for now.
+    // Bind a TcpListener to the interface specified in the config.
     let listener = match tokio::net::TcpListener::bind(&interface).await {
         Ok(v) => {
             tracing::info!("listening on {}", &interface);
@@ -428,6 +436,7 @@ async fn main() -> ExitCode {
         }
     };
 
+    // And, finally, start serving requests
     match axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_handler())
         .await
@@ -440,8 +449,8 @@ async fn main() -> ExitCode {
     }
 }
 
+/// Ensure CTRL+C and SIGTERM cause the application to gracefully shut down.
 async fn shutdown_handler() {
-    // async handler for CTRL+C signal
     let ctrl_c = async {
         tokio::signal::ctrl_c()
             .await
@@ -460,7 +469,6 @@ async fn shutdown_handler() {
         _ = terminate => {},
     }
 
-    // Received one? Print that, then hyper will shut down the server.
     tracing::info!("received shutdown signal");
 }
 
@@ -485,6 +493,12 @@ async fn legal_notice(State(aps): State<AppState>) -> Result<impl IntoResponse, 
 }
 
 /// Returns true if the expiry_ts lies in the past, i.e. the resource has expired.
+///
+/// Remember that uploaded files are not cleaned up immediately, but are instead deleted
+/// every 15 minutes when the cleanup task wakes up. Sometimes files may have officially
+/// expired but are still present on disk and in the database.
+///
+/// This function checks whether a file should be served or treated as "already deleted".
 pub fn has_expired(expiry_ts: &str) -> Result<bool, AppError> {
     Ok(chrono::DateTime::parse_from_rfc3339(expiry_ts)?
         .signed_duration_since(chrono::Utc::now())
