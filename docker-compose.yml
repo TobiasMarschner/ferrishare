@@ -1,7 +1,7 @@
 services:
   ferrishare:
     build: .
-    container_name: ferrishare_c
+    container_name: ferrishare
     restart: unless-stopped
     volumes:
       - "./data:/app/data"
@@ -9,7 +9,7 @@ services:
       - "traefik.http.routers.fileshare.rule=Host(`localhost`)"
   reverse-proxy:
     image: traefik
-    container_name: traefik_c
+    container_name: traefik
     restart: unless-stopped
     depends_on:
       - ferrishare
