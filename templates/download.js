@@ -1,4 +1,13 @@
-document.addEventListener('DOMContentLoaded', async (event) => {
+// Convenience function for showing an error message to the user.
+// Unhides the 'error-box' and hides the 'dl-box'.
+function displayError(heading, message) {
+  document.getElementById('error-box-head').textContent = heading;
+  document.getElementById('error-box-text').textContent = message;
+  document.getElementById('error-box').style.display = 'flex';
+  document.getElementById('dl-box').style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', async (_) => {
   if (response_type === 'admin') {
     // Compute the "normal" download-link-box and set it up.
     const dl_link = `${location.protocol}//${location.host}/file?hash=${efd_sha256sum}#key=${key_string}`;
@@ -15,10 +24,8 @@ document.addEventListener('DOMContentLoaded', async (event) => {
     let key_bytes;
     try {
       key_bytes = b64u_decBytes(key_string);
-    } catch(e) {
-      document.getElementById('error-box-head').textContent = 'Invalid key';
-      document.getElementById('error-box-text').textContent = 'Your decryption key is not base64url-encoded and therefore invalid. This makes decrypting the file and filename impossible.';
-      document.getElementById('error-box').style.display = 'flex';
+    } catch (e) {
+      displayError('Invalid key', 'Your decryption key is not base64url-encoded and therefore invalid. This makes decrypting the file and filename impossible.');
       return;
     }
 
@@ -32,9 +39,7 @@ document.addEventListener('DOMContentLoaded', async (event) => {
         ["encrypt", "decrypt"]
       )
     } catch (e) {
-      document.getElementById('error-box-head').textContent = 'Invalid key';
-      document.getElementById('error-box-text').textContent = 'Cannot construct decryption key because it is corrupt or missing. This makes decrypting the file and filename impossible.';
-      document.getElementById('error-box').style.display = 'flex';
+      displayError('Invalid key', 'Cannot construct decryption key because it is corrupt or missing. This makes decrypting the file and filename impossible.');
       return;
     }
 
@@ -51,9 +56,7 @@ document.addEventListener('DOMContentLoaded', async (event) => {
       d_filename = new TextDecoder().decode(d_filename_bytes);
       document.getElementById('dl-filename').textContent = d_filename;
     } catch (e) {
-      document.getElementById('error-box-head').textContent = 'Could not decrypt filename';
-      document.getElementById('error-box-text').textContent = 'Your decryption key is probably corrupt.';
-      document.getElementById('error-box').style.display = 'flex';
+      displayError('Could not decrypt filename', 'Your decryption key is probably corrupt.');
       return;
     }
 
