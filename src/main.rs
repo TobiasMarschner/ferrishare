@@ -144,7 +144,7 @@ async fn custom_tracing(
     let method = request.method();
 
     // Create the http_request span out of this info.
-    let span = tracing::info_span!("http_request", socket_ip = %client, real_ip = eip.pretty_print(), path, query, ?method);
+    let span = tracing::info_span!("http_request", socket_address = %client, real_ip = eip.pretty_print(), path, query, ?method);
 
     // Instrument the rest of the stack with this span.
     async move {
