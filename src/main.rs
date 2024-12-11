@@ -212,8 +212,8 @@ async fn main() -> ExitCode {
             eprintln!(
                 "\nIf you haven't already, configure the app by running it with the '--init' flag:"
             );
-            eprintln!("  docker compose run -it [TODOTODO] --init     (for Docker Compose)");
-            eprintln!("  cargo run -- --init                          (for cargo)");
+            eprintln!("  docker compose run --rm -it ferrishare --init  (for Docker Compose)");
+            eprintln!("  cargo run -- --init                            (for cargo)");
 
             eprintln!("\nExiting!");
             return ExitCode::FAILURE;
@@ -226,8 +226,8 @@ async fn main() -> ExitCode {
             eprintln!("Failed to parse configuration file at {DATA_PATH}/config.toml: {e}");
 
             eprintln!("\nIf your config file is causing trouble, consider regenerating it by running the app with the '--init' flag:");
-            eprintln!("  docker compose run -it [TODOTODO] --init     (for Docker Compose)");
-            eprintln!("  cargo run -- --init                          (for cargo)");
+            eprintln!("  docker compose run --rm -it ferrishare --init  (for Docker Compose)");
+            eprintln!("  cargo run -- --init                            (for cargo)");
 
             eprintln!("\nExiting!");
             return ExitCode::FAILURE;

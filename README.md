@@ -55,6 +55,8 @@ In the instructions presented below we will be using a very simple Traefik setup
 2. Create a folder for the application on your machine and `cd` into it.
     - For example: `mkdir ferrishare; cd ferrishare`
 3. Download a copy of the repository's [`docker-compose.yml`](docker-compose.yml) into said folder
+    - In it is an example setup hosting FerriShare behind Traefik on `localhost`.
+      The compose-file is commented to help you better understand how to adapt it to your needs.
 4. Download all of the images by invoking `docker compose pull`
 5. **Configuration**: Invoke `docker compose run --rm -it ferrishare --init`
     - This will start FerriShare's interactive configuration wizard that will guide you through all options and create all necessary files in the `./data`-subdirectory.
