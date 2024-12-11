@@ -73,6 +73,8 @@ Refer to the [building locally from source](#📝-from-source-2) instructions pr
 
 ## 📐 Architectural Notes
 
+TODO general notes on how FerriShare is structured
+
 ### 📁 Repository Structure
 
 | Path | Purpose |
@@ -139,6 +141,14 @@ MacOS and Windows have not been tested, although the former *might* work.
 
 Note that resources served on the `/static/`-endpoint are served with an infinite cache policy.
 During local development, you may want to disable browser caching to ensure your changes are always reflected in the browser.
+
+## License
+
+TODO
+
+## Contributing
+
+TODO
 
 ---
 

@@ -15,31 +15,35 @@
     - [x] All uploads expire after 15 minutes
     - [x] Appropriate info-message on all pages
   - [x] Remove the Mutex and tera-reload on each request
-  - [ ] Look at all remaining TODOs in the sources.
+  - [x] Look at all remaining TODOs in the sources.
+    - [ ] Remember to update the repostiory link in the top-level module to the GH-link once that's live.
 - [ ] Consider using a normal user (1000:1000) instead of root within the container?
 - [ ] Forge
   - Currently all developement takes place internally, but this has to move to GitHub to be easily found and contributed to.
   - [ ] Figure out how to do releases and container distribution on there.
   - [ ] Set up a mirror to `git.tobiasm.dev`.
-- [ ] Code Documentation
-  - [ ] All modules and high-level functions must be documented
-  - [ ] Obviously `cargo docs` does the trick, but where and how do we host these?
+- [x] Code Documentation
+  - [x] All modules and high-level functions must be documented
+  - [x] Obviously `cargo docs` does the trick, but where and how do we host these?
+    - We'll upload it to crates.io, that'll help us host the docs.
 - [ ] Usage Documentation
   - Maybe we'll just put all this in the repository's README?
-  - [ ] Name and Featurelist
-    - [ ] Cryptographic Notes
+  - [x] Name and Featurelist
+    - [x] Cryptographic Notes
+      - [ ] Maybe include notes for the backend, too?
   - [ ] Screenshots / GIFs demonstrating use (show Desktop and Mobile)
-  - [ ] Installation instructions
-    - [ ] with Docker and without Docker
-    - [ ] interactive configuration wizard
-    - [ ] Note about the Reverse-Proxy requirement
-    - [ ] Big fat note about cryptosystem security
-  - [ ] Build instructions
-    - [ ] With and without Docker
+  - [x] Installation instructions
+    - [x] with Docker and without Docker
+    - [x] interactive configuration wizard
+      - [ ] The wizard is mentioned, but not really broken down.
+    - [x] Note about the Reverse-Proxy requirement
+    - [x] Big fat note about cryptosystem security
+  - [x] Build instructions
+    - [x] With and without Docker
   - [ ] Structure of this Repository + Architectural Notes
     - [ ] Rust Backend with on-the-fly templating (tera)
     - [ ] sqlite-database (sqlx)
     - [ ] Tailwind compiled separately
-    - [ ] Outline the different components, where they reside, and what they're for.
+    - [x] Outline the different components, where they reside, and what they're for.
   - [ ] License Information
   - [ ] Contributing Information
