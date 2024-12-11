@@ -89,8 +89,8 @@ Refer to the [building locally from source](#📝-from-source-2) instructions pr
 
 - Files are encyrpted with AES-GCM providing both confidentiality and integrity thanks to its AEAD nature.
 - The [WebCrypto-API]() provided by the browser is used to actually perform the en- and decryption.
-    - The key is generated with ``, which uses a strong CSPRNG.
-    - IVs / nonces are randomly generated using strong CSPRNGS. IVs are never reused.
+    - The key is generated with `window.crypto.subtle.generateKey(...)`, which uses a strong CSPRNG.
+    - IVs / nonces are randomly generated with a strong CSPRNG by using `window.crypto.getRandomValues(...)`. IVs are never reused.
 - Each key is used to encrypt two messages: The filedata and the filename.
     - This generates two random IVs, putting the chance of an IV collision at 1 in 2^96. (negligible)
 - The maximum safe message length with AES-GCM is 2^39 - 256 bits ≈ 64 GB.
