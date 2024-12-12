@@ -1,14 +1,14 @@
 {
   "name": "ferrishare",
   "version": "0.1.0",
-  "description": "",
+  "description": "Simple, self-hostable filesharing application with builtin end-to-end encryption",
   "main": "",
   "scripts": {
     "dev:tw": "npx tailwindcss -i ./main.tw.css -o ./static/main.css --minify --watch",
     "build:tw": "npx tailwindcss -i ./main.tw.css -o ./static/main.css --minify"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Tobias Marschner <contact@tobiasm.dev> (https://tobiasm.dev/)",
+  "license": "MIT",
   "dependencies": {
     "tailwindcss": "^3.4.14"
   }

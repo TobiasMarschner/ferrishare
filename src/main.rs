@@ -1,8 +1,8 @@
-//! Simple, self-hostable filesharing application with builtin end-to-end-encryption
+//! Simple, self-hostable filesharing application with builtin end-to-end encryption
 //!
-//! This crate is not usable as-is, but is instead part of a larger application package.
-//! Check the project repository's README for details on how to install and use FerriShare:
-//! TODO
+//! This crate is not usable as-is, but is instead part of a larger application package.  
+//! Check the project repository's README for details on how to install and use FerriShare:  
+//! <https://github.com/TobiasMarschner/ferrishare>
 
 use axum::{
     extract::{ConnectInfo, DefaultBodyLimit, State},

@@ -1,7 +1,12 @@
 [package]
 name = "ferrishare"
 version = "0.1.0"
+authors = ["Tobias Marschner <contact@tobiasm.dev>"]
 edition = "2021"
+description = "Simple, self-hostable filesharing application with builtin end-to-end encryption"
+readme = "README.md"
+repository = "https://github.com/TobiasMarschner/ferrishare"
+license = "MIT"
 
 [dependencies]
 axum = { version = "0.7", features = ["http2", "multipart", "query", "macros", "tracing"] }
