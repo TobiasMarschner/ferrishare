@@ -165,14 +165,11 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
             "
   Site-wide administration password used at the '/admin'-URL.
 
-  There is only one admin password for the entire application.
-  To keep things simple there is no associated username or password.
-
   The admin panel allows you to view statistics on all uploaded files.
   It also allows you to delete files before they have expired.
   However, since the files are end-to-end-encrypted, you cannot download them.
 
-  This config-utility will create and store an argon2id-hash of your password.
+  An argon2id-hash of your password will be stored in the generated config.
 ",
         )
         .prompt()?;
