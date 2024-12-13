@@ -34,8 +34,10 @@ FerriShare is a simple, self-hostable and open-source<br>filesharing application
 
 #### Upload Page and Admin Link
 
+<p>
 <img height="680px" src="readme/upload_page.png" alt="Screenshot of the upload page">
 <img height="680px" src="readme/admin_link.png" alt="Screenshot of an uploaded file's admin page">
+</p>
 
 #### Site-wide Administration Panel
 
