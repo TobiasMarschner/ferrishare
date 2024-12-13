@@ -406,9 +406,10 @@ async fn main() -> ExitCode {
         .layer(compression)
         .layer(permanent_caching.clone());
 
-    // Fonts are permanently cached, but not compressed.
+    // Fonts and icons are permanently cached, but not compressed.
     let font_routers = Router::new()
         .nest_service("/font", ServeDir::new("font"))
+        .nest_service("/favicon", ServeDir::new("favicon"))
         .layer(timeout_small)
         .layer(permanent_caching);
 

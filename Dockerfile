@@ -59,6 +59,8 @@ RUN HASH_SUFFIX="$(sha256sum ./static/main.css | cut -d ' ' -f 1 | tail -c 9)" \
 # Copy in the subsetted fonts ready for production use.
 COPY ./font/MaterialSymbolsRounded-subset-*.woff2 ./font/
 COPY ./font/InterVariable-subset-*.woff2 ./font/
+# Copy in the favicon PNGs.
+COPY ./favicon/*.png ./favicon/
 # Copy in the compiled release binary.
 COPY --from=builder /app/target/release/ferrishare .
 EXPOSE 3000
