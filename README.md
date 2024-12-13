@@ -1,16 +1,10 @@
 <p align="center">
-<img width="320px" src="favicon/readme_logo.png" alt="FerriShare">
+<img width="320px" src="readme/readme_logo.png" alt="FerriShare">
 </p>
 
 <p align="center">
 FerriShare is a simple, self-hostable and open-source<br>filesharing application with builtin end-to-end-encryption
 </p>
-
-## Demo and Screenshots
-
-TODO Put screenshots or a video of the application here.
-
-<h3 align="center">You can test FerriShare on the <a href="https://ferrishare-demo.tobiasm.dev">demo instance</a>!</h3>
 
 ## ✨ Features
 
@@ -33,6 +27,19 @@ TODO Put screenshots or a video of the application here.
 - Accessible frontend with a **400 Lighthouse Score**
     - Templating is performed on the backend. JavaScript is only used when necessary.
     - Best practices: Font subsetting, permanent caching for static assets, response compression, ...
+
+## Demo and Screenshots
+
+<h3 align="center">You can test FerriShare on the <a href="https://ferrishare-demo.tobiasm.dev">official demo instance</a>!</h3>
+
+#### Upload Page and Admin Link
+
+<img height="680px" src="readme/upload_page.png" alt="Screenshot of the upload page">
+<img height="680px" src="readme/admin_link.png" alt="Screenshot of an uploaded file's admin page">
+
+#### Site-wide Administration Panel
+
+<img height="680px" src="readme/admin_panel.png" alt="Screenshot of an uploaded file's admin page">
 
 ## 📥 Installation and Configuration
 
