@@ -4,6 +4,9 @@ services:
     # If you'd like to build FerriShare from source,
     # clone the repository and run 'docker compose build'.
     build: .
+    # Otherwise, you can simply pull the prebuilt image from the
+    # GitHub Container Registry by invoking 'docker compose pull'.
+    image: ghcr.io/tobiasmarschner/ferrishare:latest
     # Give the container a recognizable name, makes management easier.
     container_name: ferrishare
     restart: unless-stopped

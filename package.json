@@ -1,6 +1,6 @@
 {
   "name": "ferrishare",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Simple, self-hostable filesharing application with builtin end-to-end encryption",
   "main": "",
   "scripts": {
