@@ -299,7 +299,7 @@ pub async fn download_page(
 
     // Extract several variables that we'll need in all cases.
     let filesize = row.filesize.to_string();
-    let filesize_pretty = pretty_print_bytes(row.filesize as usize);
+    let filesize_pretty = pretty_print_bytes(row.filesize as u64);
     let efn = format!("[{}]", row.e_filename.iter().join(", "));
     let iv_fd = format!("[{}]", row.iv_fd.iter().join(", "));
     let iv_fn = format!("[{}]", row.iv_fn.iter().join(", "));

@@ -60,7 +60,7 @@ pub async fn admin_page(
         .await?;
 
         // Determine how much storage space all uploaded files currently use.
-        let used_quota: usize = all_files.iter().map(|e| e.filesize as usize).sum();
+        let used_quota: u64 = all_files.iter().map(|e| e.filesize as u64).sum();
 
         #[derive(Debug, Serialize)]
         struct UploadedFile {
@@ -85,7 +85,7 @@ pub async fn admin_page(
                 let ets = DateTime::parse_from_rfc3339(&e.expiry_ts).ok();
                 UploadedFile {
                     efd_sha256sum: e.efd_sha256sum,
-                    formatted_filesize: pretty_print_bytes(e.filesize as usize),
+                    formatted_filesize: pretty_print_bytes(e.filesize as u64),
                     upload_ip_pretty: {
                         IpPrefix::from_str(&e.upload_ip)
                             .map(|v| v.pretty_print())

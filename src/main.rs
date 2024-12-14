@@ -357,15 +357,22 @@ async fn main() -> ExitCode {
     // Make sure all resources served here have hashes included in their request path.
     let permanent_caching = middleware::map_response(add_maximum_caching);
 
+    // Set the upload size limit for the upload_endpoint to the accepted filesize
+    // plus a generous 256 KiB for the other metadata.
+    // The default limit is 2MB, not enough for most configurations.
+    let upload_endpoint_limit: usize = match (aps.conf.maximum_filesize + 262144).try_into() {
+        Ok(v) => v,
+        Err(e) => {
+            tracing::error!("maximum filesize exceeds computer's bit-width: {e}");
+            return ExitCode::FAILURE;
+        },
+    };
     // Routers for up- and downloading the actual file payloads
     let file_routers = Router::new()
         .route(
             "/upload_endpoint",
             post(upload::upload_endpoint)
-                // Set the upload size limit for the upload_endpoint to the accepted filesize
-                // plus a generous 256 KiB for the other metadata.
-                // The default limit is 2MB, not enough for most configurations.
-                .layer(DefaultBodyLimit::max(aps.conf.maximum_filesize + 262144))
+                .layer(DefaultBodyLimit::max(upload_endpoint_limit))
                 // This ensures any IpPrefix can only upload one file at a time.
                 .layer(axum::middleware::from_fn_with_state(
                     aps.clone(),
@@ -508,7 +515,7 @@ pub fn has_expired(expiry_ts: &str) -> Result<bool, AppError> {
 }
 
 /// Takes a value in bytes and pretty prints it with a binary suffix.
-pub fn pretty_print_bytes(bytes: usize) -> String {
+pub fn pretty_print_bytes(bytes: u64) -> String {
     match bytes {
         0..1_024 => {
             format!("{} Bytes", bytes)

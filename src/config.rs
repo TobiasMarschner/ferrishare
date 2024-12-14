@@ -21,9 +21,9 @@ pub struct AppConfiguration {
     pub interface: String,
     pub proxy_depth: u64,
     pub admin_password_hash: String,
-    pub maximum_filesize: usize,
-    pub maximum_quota: usize,
-    pub maximum_uploads_per_ip: usize,
+    pub maximum_filesize: u64,
+    pub maximum_quota: u64,
+    pub maximum_uploads_per_ip: u64,
     pub daily_request_limit_per_ip: u64,
     pub log_level: String,
     pub enable_privacy_policy: bool,
@@ -49,11 +49,11 @@ impl AppConfiguration {
 ///    '25M' ->  25 MiB ->    26_214_400 Bytes
 ///   '250K' -> 250 KiB ->       256_000 Bytes
 ///     '5G' ->   5 GiB -> 5_368_709_120 Bytes
-fn transform_filesize_input(input: &str) -> Option<usize> {
+fn transform_filesize_input(input: &str) -> Option<u64> {
     // Split the string into number and suffix.
     let (number_str, suffix) = input.split_at(input.len() - 1);
     // Try to parse the number.
-    let number = number_str.parse::<usize>().ok();
+    let number = number_str.parse::<u64>().ok();
     // Next, try to parse the suffix and return the actual byte value.
     match suffix {
         "K" => number.and_then(|n| n.checked_mul(1024)),
@@ -221,7 +221,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
     let maximum_uploads_per_ip = Text::new("Maximum uploads per IP:")
         .with_initial_value("10")
         .with_validator(|v: &str| {
-            v.parse::<usize>()
+            v.parse::<u64>()
                 .map_or(Ok(Validation::Invalid("not a valid number".into())), |_| {
                     Ok(Validation::Valid)
                 })
@@ -240,7 +240,7 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
         )
         .prompt()?
         // Due to the validator this parse should never fail.
-        .parse::<usize>()
+        .parse::<u64>()
         .unwrap();
 
     let daily_request_limit_per_ip = Text::new("Daily request limit per IP:")

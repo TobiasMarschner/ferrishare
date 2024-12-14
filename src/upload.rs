@@ -83,7 +83,7 @@ pub async fn upload_endpoint(
             .await?;
 
     // Check if the user has hit their upload limit.
-    if uploads_by_eip as usize >= aps.conf.maximum_uploads_per_ip {
+    if uploads_by_eip as u64 >= aps.conf.maximum_uploads_per_ip {
         return AppError::err(StatusCode::TOO_MANY_REQUESTS, "your computer has reached the file upload limit; delete old files or wait for them to expire");
     }
 
@@ -123,7 +123,7 @@ pub async fn upload_endpoint(
                 e_filename = Some(Vec::from(field_data));
             }
             "e_filedata" => {
-                if field_data.len() > aps.conf.maximum_filesize {
+                if field_data.len() as u64 > aps.conf.maximum_filesize {
                     return AppError::err(StatusCode::BAD_REQUEST, "encrypted file is too large");
                 }
                 e_filedata = Some(Vec::from(field_data));
@@ -274,7 +274,7 @@ async fn maximum_quota_reached(aps: &AppState) -> Result<bool, AppError> {
     // Check if we've hit the global limit.
     // In order to stay *strictly* underneath the limit, this function returns true
     // if the remaining space on disk is smaller than the biggest possible file.
-    Ok(total_quota as usize
+    Ok(total_quota as u64
         >= aps
             .conf
             .maximum_quota
