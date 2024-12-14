@@ -163,10 +163,6 @@ During local development, you may want to disable browser caching to ensure your
 FerriShare is released under the terms of the [MIT License](LICENSE).
 Contributions are welcome!
 
-## Code Mirrors
-
-TODO
-
 ---
 
 **Where does the name come from?**  
