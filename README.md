@@ -6,7 +6,7 @@
 FerriShare is a simple, self-hostable and open-source<br>filesharing application with builtin end-to-end-encryption
 </p>
 
-## ✨ Features
+## Features
 
 - **Easily and securely share files with anyone** using a simple upload-page in your browser
     - **Files and filenames are encrypted** in your browser before being uploaded, and the key is stored in the download link's [fragment](https://en.wikipedia.org/wiki/URI_fragment) (the part after the `#`), which is never sent to the server
@@ -28,7 +28,7 @@ FerriShare is a simple, self-hostable and open-source<br>filesharing application
     - Templating is performed on the backend. JavaScript is only used when necessary.
     - Best practices: Font subsetting, permanent caching for static assets, response compression, ...
 
-## Demo and Screenshots
+## ✨ Demo and Screenshots
 
 <h3 align="center">You can test FerriShare on the <a href="https://ferrishare-demo.tobiasm.dev">official demo instance</a>!</h3>
 
@@ -51,7 +51,7 @@ FerriShare is a simple, self-hostable and open-source<br>filesharing application
 > **I cannot guarantee that the implementation or design of the system is secure.**  
 > You can review the [cryptographic architectural notes](#cryptography) provided further below, or directly examine the code responsible for [encrypting](templates/upload.js) and [decrypting files](templates/download.js).
 >
-> If you spot any issue, please let me know in the project's issue tracker.
+> If you spot any issues, please let me know in the project's issue tracker.
 
 **FerriShare must be run behind a [reverse proxy](https://en.wikipedia.org/wiki/Reverse_proxy).**
 There are two major reasons for this:
@@ -101,6 +101,7 @@ JavaScript is only served where required, specifically the upload and download e
 | **migrations/** | Schema files for the application's SQLite database |
 | **font/** | The project's latin and icon fonts -- check the folder's [README](font) for details |
 | **favicon/** | The project's favicon -- check the folder's [README](favicon) for details |
+| **readme/** | Screenshots and images for the README |
 | Cargo.toml, Cargo.lock | Rust project files defining dependencies and build behavior for the backend |
 | package.json, package-lock.json | npm project files used to setup the [Tailwind CLI](https://tailwindcss.com/docs/installation)
 | main.tw.css, tailwind.config.js | Main stylesheet and Tailwind config used to generate the CSS bundle |
