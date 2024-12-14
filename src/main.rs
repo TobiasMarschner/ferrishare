@@ -213,7 +213,7 @@ async fn main() -> ExitCode {
                 "\nIf you haven't already, configure the app by running it with the '--init' flag:"
             );
             eprintln!("  docker compose run --rm -it ferrishare --init  (for Docker Compose)");
-            eprintln!("  cargo run -- --init                            (for cargo)");
+            eprintln!("  cargo run --release -- --init                  (for cargo)");
 
             eprintln!("\nExiting!");
             return ExitCode::FAILURE;
@@ -227,7 +227,7 @@ async fn main() -> ExitCode {
 
             eprintln!("\nIf your config file is causing trouble, consider regenerating it by running the app with the '--init' flag:");
             eprintln!("  docker compose run --rm -it ferrishare --init  (for Docker Compose)");
-            eprintln!("  cargo run -- --init                            (for cargo)");
+            eprintln!("  cargo run --release -- --init                  (for cargo)");
 
             eprintln!("\nExiting!");
             return ExitCode::FAILURE;
