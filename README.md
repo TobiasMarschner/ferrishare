@@ -34,14 +34,12 @@ FerriShare is a simple, self-hostable and open-source<br>filesharing application
 
 #### Upload Page and Admin Link
 
-<p>
-<img height="680px" src="readme/upload_page.png" alt="Screenshot of the upload page">
-<img height="680px" src="readme/admin_link.png" alt="Screenshot of an uploaded file's admin page">
-</p>
+| ![Screenshot of the upload page](readme/upload_page.png) | ![Screenshot of an uploaded file's admin page](readme/admin_link.png) |
+| --- | --- |
 
 #### Site-wide Administration Panel
 
-<img height="680px" src="readme/admin_panel.png" alt="Screenshot of an uploaded file's admin page">
+![Screenshot of an uploaded file's admin page](readme/admin_panel.png)
 
 ## 📥 Installation and Configuration
 
@@ -64,6 +62,17 @@ Commonly used reverse-proxies include [Traefik](https://doc.traefik.io/traefik/)
 In the instructions presented below we will be using a very simple Traefik setup.
 
 ### With Docker (recommended)
+
+#### Architecture Support
+
+The repository provides prebuilt [Docker images](pkgs/container/ferrishare) on GitHub's Container Registry for the following architectures:
+- **`amd64`** a.k.a. **x86_64** for Intel and AMD processors
+- **`arm64`** a.k.a. **64-bit ARMv8** for modern ARM servers or SBCs (e.g. Raspberry Pis)
+- **`arm/v7`** a.k.a. **32-bit ARMv7** for older ARM processors (e.g. older Raspberry Pis)
+
+If your architecture is not on the list, you'll have to [build the image yourself](#with-docker-recommended-1).
+
+#### Setup Instructions
 
 1. Ensure both [Docker]() and [Docker Compose]() are setup and working on your machine.
     - Both rootful and [rootless](https://docs.docker.com/engine/security/rootless/) variants are supported
@@ -125,6 +134,7 @@ JavaScript is only served where required, specifically the upload and download e
 
 The instructions for building FerriShare with Docker are almost the same as the normal [installation and configuration instructions above](#with-docker-recommended), but with two main differences:
 - Instead of creating an empty folder, clone this repository and `cd` into it.
+    - Note that the repository makes use of [Git LFS](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage). Make sure it's setup on your system before cloning.
 - Invoke `docker compose build` instead of `docker compose pull`.
     - This causes docker compose to build the `ferrishare`-image locally from the repository sources instead of pulling them from the online registry.
 
@@ -135,7 +145,7 @@ The [actual Dockerfile](Dockerfile) is properly commented, check it out to under
 
 ### From Source
 
-Don't like Docker? No problem.
+Don't want to use Docker? No problem.
 
 You will need a Linux box, as all the instructions are written for a Linux machine.
 MacOS and Windows have not been tested, although the former *might* work.
@@ -158,6 +168,15 @@ MacOS and Windows have not been tested, although the former *might* work.
 
 Note that resources served on the `/static/`-endpoint are served with an infinite cache policy.
 During local development, you may want to disable browser caching to ensure your changes are always reflected in the browser.
+
+## Documentation
+
+**Installation** is fully documented in this README.
+
+**Configuration** is documented in FerriShare itself through its interactive configuration wizard that can be invoked with the `--init`-flag.
+
+The **source code** itself is properly documented, but the docs aren't hosted online.
+If you'd like to browse the module-level documentation you can clone the repository and invoke `cargo doc --no-deps --open`, assuming Rust is setup on your system.
 
 ## License and Contributing
 

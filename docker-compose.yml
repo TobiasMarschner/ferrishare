@@ -21,7 +21,7 @@ services:
     # This tells Traefik to make the `ferrishare` service accessible on localhost.
     # Refer to Traefik's documentation for more details on how to label and route services.
     labels:
-      - "traefik.http.routers.fileshare.rule=Host(`localhost`)"
+      - "traefik.http.routers.ferrishare.rule=Host(`localhost`)"
   # The required reverse-proxy (refer to README for more details on why)
   # In this example we're using Traefik, but any reverse-proxy works.
   reverse-proxy:
