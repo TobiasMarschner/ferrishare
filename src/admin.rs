@@ -59,6 +59,13 @@ pub async fn admin_page(
         .fetch_all(&aps.db)
         .await?;
 
+        // Filter out files that have technically expired but were not yet cleaned up by the
+        // automatic cleanup task.
+        let all_files = all_files
+            .into_iter()
+            .filter(|e| !has_expired(&e.expiry_ts).unwrap_or(false))
+            .collect::<Vec<_>>();
+
         // Determine how much storage space all uploaded files currently use.
         let used_quota: u64 = all_files.iter().map(|e| e.filesize as u64).sum();
 
