@@ -932,7 +932,7 @@ checksum = "486f806e73c5707928240ddc295403b1b93c96a02038563881c4a2fd84b81ac4"
 
 [[package]]
 name = "ferrishare"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "argon2",
