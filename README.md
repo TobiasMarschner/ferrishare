@@ -32,10 +32,9 @@ FerriShare is a simple, self-hostable and open-source<br>filesharing application
 
 <h3 align="center">You can test FerriShare on the <a href="https://ferrishare-demo.tobiasm.dev">official demo instance</a>!</h3>
 
-#### Upload Page and Admin Link
+#### Left to right: Upload Page, Public Download Page, Private Admin Page
 
-| ![Screenshot of the upload page](readme/upload_page.png) | ![Screenshot of an uploaded file's admin page](readme/admin_link.png) |
-| --- | --- |
+![Screenshot of an uploaded file's admin page](readme/upload_download_pages.png)
 
 #### Site-wide Administration Panel
 
@@ -65,7 +64,7 @@ In the instructions presented below we will be using a very simple Traefik setup
 
 #### Architecture Support
 
-The repository provides prebuilt [Docker images](pkgs/container/ferrishare) on GitHub's Container Registry for the following architectures:
+The repository provides prebuilt [Docker images](https://github.com/TobiasMarschner/ferrishare/pkgs/container/ferrishare) on GitHub's Container Registry for the following architectures:
 - **`amd64`** a.k.a. **x86_64** for Intel and AMD processors
 - **`arm64`** a.k.a. **64-bit ARMv8** for modern ARM servers or SBCs (e.g. Raspberry Pis)
 - **`arm/v7`** a.k.a. **32-bit ARMv7** for older ARM processors (e.g. older Raspberry Pis)
@@ -97,7 +96,7 @@ Refer to the [building locally from source](#from-source-1) instructions provide
 
 ## Architectural Notes
 
-FerriShare is built as traditional Multi-Page Application (MPA) where templating is performed fully on the backend.
+FerriShare is built as a traditional Multi-Page Application (MPA) where templating is performed fully on the backend.
 In that sense there is no real separation of frontend and backend, they're intertwined.
 JavaScript is only served where required, specifically the upload and download endpoints as that's where the client-side encryption takes place.
 
@@ -133,8 +132,9 @@ JavaScript is only served where required, specifically the upload and download e
 ### With Docker (recommended)
 
 The instructions for building FerriShare with Docker are almost the same as the normal [installation and configuration instructions above](#with-docker-recommended), but with two main differences:
-- Instead of creating an empty folder, clone this repository and `cd` into it.
-    - Note that the repository makes use of [Git LFS](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage). Make sure it's setup on your system before cloning.
+- Instead of creating an empty folder, grab a copy of the source code. You have two options:
+    - Go to the [releases page](https://github.com/TobiasMarschner/ferrishare/releases), download the *Source code* archive for the release you want to run, extract it and `cd` into it.
+    - Clone the repository and `cd` into it. **Important**: This repository uses [Git LFS](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage) to store large binary assets. Make sure Git LFS is setup and installed on your machine before cloning.
 - Invoke `docker compose build` instead of `docker compose pull`.
     - This causes docker compose to build the `ferrishare`-image locally from the repository sources instead of pulling them from the online registry.
 
@@ -151,7 +151,9 @@ You will need a Linux box, as all the instructions are written for a Linux machi
 MacOS and Windows have not been tested, although the former *might* work.
 
 1. Make sure you have [Rust](https://www.rust-lang.org/tools/install) and [Node with npm](https://nodejs.org/en/download/package-manager/all) setup on your machine.
-2. Clone the repository and `cd` into it
+2. Grab a copy of the source code. You have two options:
+    - Go to the [releases page](https://github.com/TobiasMarschner/ferrishare/releases), download the *Source code* archive for the release you want to run, extract it and `cd` into it.
+    - Clone the repository and `cd` into it. **Important**: This repository uses [Git LFS](https://docs.github.com/en/repositories/working-with-files/managing-large-files/installing-git-large-file-storage) to store large binary assets. Make sure Git LFS is setup and installed on your machine before cloning.
 3. Install all Node dependencies by invoking `npm install`
     - This installs the [Tailwind CLI](https://tailwindcss.com/docs/installation), which is required to build the CSS bundle of the app
 4. Build the CSS bundle by invoking `npm run build:tw`
