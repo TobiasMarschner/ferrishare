@@ -8,7 +8,7 @@ FerriShare is a simple, self-hostable and open-source<br>filesharing application
 
 ## Features
 
-- **Easily and securely share files with anyone** using a simple upload-page in your browser
+- **Securely share files with anyone** using a simple drag-and-drop upload-page in your browser
     - **Files and filenames are encrypted** in your browser before being uploaded, and the key is stored in the download link's [fragment](https://en.wikipedia.org/wiki/URI_fragment) (the part after the `#`), which is never sent to the server
     - The server cannot decrypt or view the contents of the file
     - **Files automatically expire** after a chosen duration (1 hour, 1 day or 1 week)
