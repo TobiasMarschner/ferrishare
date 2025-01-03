@@ -82,9 +82,9 @@ fn validate_filesize_input(input: &str) -> Result<Validation, CustomUserError> {
 fn validate_max_filesize_input(input: &str) -> Result<Validation, CustomUserError> {
     match transform_filesize_input(input) {
         Some(v) => match v {
-            0..=68719476704 => Ok(Validation::Valid),
+            0..=WEBCRYPTO_MAX_FILESIZE => Ok(Validation::Valid),
             _ => Ok(Validation::Invalid(
-                "Filesize too large to use safely with AES-GCM. Must be smaller than 64GiB.".into(),
+                "Filesize too large. Choose a value smaller or equal to 2GiB.".into(),
             )),
         },
         None => Ok(Validation::Invalid(
@@ -182,17 +182,16 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
             "
   Maximum filesize that users can upload and store on the server.
 
-  Please bear in mind that uploaded files are first streamed to memory,
-  hashed, and then stored on disk. This can cause problems if you
-  accept files that are larger than your RAM.
-
-  The used encryption cipher (AES-GCM) mandates that this value must not be
-  larger than 2^39 - 256 bits = 68719476704 Bytes ~= 64 GiB.
+  Due to limitations of the WebCrypto-API used on the frontend this
+  is currently limited to 2GiB. Additionally, please bear in mind
+  that uploaded files are first streamed to memory, hashed,
+  and then stored on disk. This can cause problems if you accept
+  files that are larger than your RAM.
 
   The prompt uses suffixes 'K', 'M' and 'G' which are read as binary suffixes:
-     '25M' ->  25 MiB ->    26_214_400 Bytes
     '250K' -> 250 KiB ->       256_000 Bytes
-      '5G' ->   5 GiB -> 5_368_709_120 Bytes
+     '25M' ->  25 MiB ->    26_214_400 Bytes
+      '1G' ->   1 GiB -> 1_073_741_824 Bytes
 ",
         )
         .prompt()?;
@@ -211,8 +210,8 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
   then uploads would be disabled once on-disk storage exceeds 4.5 GiB.
 
   The prompt uses suffixes 'K', 'M' and 'G' which are read as binary suffixes:
-     '25M' ->  25 MiB ->    26_214_400 Bytes
     '250K' -> 250 KiB ->       256_000 Bytes
+     '25M' ->  25 MiB ->    26_214_400 Bytes
       '5G' ->   5 GiB -> 5_368_709_120 Bytes
 ",
         )

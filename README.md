@@ -125,6 +125,7 @@ JavaScript is only served where required, specifically the upload and download e
 - Each key is used to encrypt two messages: The filedata and the filename.
     - This generates two random IVs, putting the chance of an IV collision at 1 in 2^96. (negligible)
 - The maximum safe message length with AES-GCM is 2^39 - 256 bits ≈ 64 GB.
+    - However, the WebCrypto-API limits the maximum message length to just 2GiB.
     - This limit for the maximum filesize is enforced during configuration setup.
 
 ## 🛠️ Building Locally

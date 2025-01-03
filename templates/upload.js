@@ -28,43 +28,57 @@ async function uploadFile() {
   let filedata = await file.arrayBuffer();
   let filename = encoder.encode(file.name);
 
-  // Generate a random IVs for encryption. (always 96 bits)
-  let iv_fd = window.crypto.getRandomValues(new Uint8Array(12));
-  let iv_fn = window.crypto.getRandomValues(new Uint8Array(12));
+  let iv_fn;
+  let iv_fd;
+  let e_filename;
+  let e_filedata;
+  let key_b64url;
 
-  // Generate a random AES key to use for encryption.
-  let key = await window.crypto.subtle.generateKey(
-    {
-      name: "AES-GCM",
-      length: 256,
-    },
-    true,
-    ["encrypt", "decrypt"],
-  );
+  try {
+    // Generate random IVs for encryption. (always exactly 96 bits)
+    iv_fn = window.crypto.getRandomValues(new Uint8Array(12));
+    iv_fd = window.crypto.getRandomValues(new Uint8Array(12));
 
-  // Encrypt the filedata and the filename.
-  let e_filedata = await window.crypto.subtle.encrypt(
-    {
-      name: "AES-GCM",
-      iv: iv_fd
-    },
-    key,
-    filedata
-  );
+    // Generate a random AES key to use for encryption.
+    let key = await window.crypto.subtle.generateKey(
+      {
+        name: "AES-GCM",
+        length: 256,
+      },
+      true,
+      ["encrypt", "decrypt"],
+    );
 
-  let e_filename = await window.crypto.subtle.encrypt(
-    {
-      name: "AES-GCM",
-      iv: iv_fn
-    },
-    key,
-    filename
-  );
+    // Encrypt the filename.
+    e_filename = await window.crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: iv_fn
+      },
+      key,
+      filename
+    );
 
-  // Export the AES-GCM key to base64url.
-  let key_b64url = b64u_encBytes(new Uint8Array(
-    await window.crypto.subtle.exportKey("raw", key)
-  ));
+    // Encrypt the filedata.
+    e_filedata = await window.crypto.subtle.encrypt(
+      {
+        name: "AES-GCM",
+        iv: iv_fd
+      },
+      key,
+      filedata
+    );
+
+    // Export the AES-GCM key to base64url.
+    key_b64url = b64u_encBytes(new Uint8Array(
+      await window.crypto.subtle.exportKey("raw", key)
+    ));
+
+  } catch (e) {
+    updateInfoBox("error", "Failed to encrypt file, upload cancelled");
+    console.log(e);
+    return;
+  }
 
   // Append all the data that's supposed to go to the server.
   formData.append("e_filedata", new Blob([e_filedata]));
@@ -140,7 +154,11 @@ document.getElementById("fs-file").addEventListener("change", (e) => {
     document.getElementById("filesubmit-details").style.display = "flex";
     document.getElementById("fs-filename").textContent = e.target.files[0].name;
     document.getElementById("fs-filesize").textContent = (e.target.files[0].size / 1048576).toFixed(2) + " MiB";
-    if (e.target.files[0].size > max_filesize) {
+    // Subtract 32 from the maximum filesize here for two reasons:
+    // - The WebCrypto-API appends a 16 byte authentication tag to the ciphertext.
+    //   This could cause files to pass the check here but fail the size check on the backend.
+    // - Near the 2GiB limit filesizes of 2GiB - 16B cause issues while 2GiB - 32B work fine.
+    if (e.target.files[0].size > max_filesize - 32) {
       document.getElementById('fs-expiry-fieldset').style.display = 'none';
       document.getElementById('fs-submit').style.display = 'none';
       updateInfoBox('error', "File too large! The maximum supported filesize is {{ max_filesize }}. Please choose a smaller file.");

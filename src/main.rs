@@ -110,6 +110,9 @@ const DATA_PATH: &str = "./data";
 /// Path to the application's SQLite-database
 const DB_URL: &str = "sqlite://data/sqlite.db";
 
+/// Currently supported maximum filesize due to WebCrypto limitations.
+const WEBCRYPTO_MAX_FILESIZE: u64 = 2147483648;
+
 /// Custom middleware for tracing HTTP requests.
 ///
 /// I have intentionally chosen not to use tower_http::trace::TraceLayer.
@@ -220,7 +223,7 @@ async fn main() -> ExitCode {
         }
     };
 
-    let app_config: AppConfiguration = match toml::from_str(&config_string) {
+    let mut app_config: AppConfiguration = match toml::from_str(&config_string) {
         Ok(v) => v,
         Err(e) => {
             eprintln!("Failed to parse configuration file at {DATA_PATH}/config.toml: {e}");
@@ -242,6 +245,12 @@ async fn main() -> ExitCode {
         .init();
 
     tracing::info!("read config from {DATA_PATH}/config.toml");
+
+    // Limit the maximum filesize if need be and emit a warning in that case.
+    if app_config.maximum_filesize > WEBCRYPTO_MAX_FILESIZE {
+        app_config.maximum_filesize = WEBCRYPTO_MAX_FILESIZE;
+        tracing::warn!("Your maximum filesize is too large and has been lowered to 2GiB. The WebCrypto-API used on the frontend does not allow larger messages.");
+    }
 
     // Create the database if it doesn't already exist.
     if !Sqlite::database_exists(DB_URL).await.unwrap_or(false) {
