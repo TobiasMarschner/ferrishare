@@ -42,10 +42,15 @@
   </ul>
   <form id="filesubmit" class="hidden flex-col gap-8">
     <input class="hidden" type="file" id="fs-file">
-    <button type="button" id="fs-filebutton" class="btn-primary">
-      <span class="matsym" aria-hidden="true">folder_open</span>
-      Select a File
-    </button>
+    <div class="flex flex-col gap-2">
+      <button type="button" id="fs-filebutton" class="btn-primary">
+        <span class="matsym" aria-hidden="true">folder_open</span>
+        <span>Select a File</span>
+      </button>
+      <p class="text-center text-sm text-zinc-600">
+        You can also drag-and-drop a file onto the page.
+      </p>
+    </div>
     <div id="filesubmit-details" class="hidden flex-col gap-8">
       <ul class="flex flex-col gap-4">
         <li class="flex items-center gap-4">

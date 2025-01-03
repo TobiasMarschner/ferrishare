@@ -1,3 +1,5 @@
+let selected_file;
+
 async function uploadFile() {
   // Determine the expiry time.
   if (!document.querySelector("input[type='radio'][name='expires']:checked")) {
@@ -8,10 +10,9 @@ async function uploadFile() {
   let duration = document.querySelector("input[type='radio'][name='expires']:checked").value;
 
   // Grab the file selected by the user.
-  let file = document.getElementById("fs-file").files[0];
   let formData = new FormData();
 
-  if (!file) {
+  if (!selected_file) {
     updateInfoBox("error", "No file selected");
     return;
   }
@@ -25,8 +26,8 @@ async function uploadFile() {
 
   // Extract and encode the raw file data and its filename.
   let encoder = new TextEncoder();
-  let filedata = await file.arrayBuffer();
-  let filename = encoder.encode(file.name);
+  let filedata = await selected_file.arrayBuffer();
+  let filename = encoder.encode(selected_file.name);
 
   let iv_fn;
   let iv_fd;
@@ -149,25 +150,52 @@ document.getElementById("fs-filebutton").addEventListener("click", (event) => {
   document.getElementById("fs-file").click();
 });
 
-document.getElementById("fs-file").addEventListener("change", (e) => {
-  if (e.target.files[0]) {
-    document.getElementById("filesubmit-details").style.display = "flex";
-    document.getElementById("fs-filename").textContent = e.target.files[0].name;
-    document.getElementById("fs-filesize").textContent = (e.target.files[0].size / 1048576).toFixed(2) + " MiB";
-    // Subtract 32 from the maximum filesize here for two reasons:
-    // - The WebCrypto-API appends a 16 byte authentication tag to the ciphertext.
-    //   This could cause files to pass the check here but fail the size check on the backend.
-    // - Near the 2GiB limit filesizes of 2GiB - 16B cause issues while 2GiB - 32B work fine.
-    if (e.target.files[0].size > max_filesize - 32) {
-      document.getElementById('fs-expiry-fieldset').style.display = 'none';
-      document.getElementById('fs-submit').style.display = 'none';
-      updateInfoBox('error', "File too large! The maximum supported filesize is {{ max_filesize }}. Please choose a smaller file.");
-    } else {
-      document.getElementById('fs-expiry-fieldset').style.display = 'block';
-      document.getElementById('fs-submit').style.display = 'block';
-      updateInfoBox('invisible');
-    }
+// Process a selected file (either from the file-dialog or a drag-event).
+function processFile(arg_file) {
+  document.getElementById("filesubmit-details").style.display = "flex";
+  document.getElementById("fs-filename").textContent = arg_file.name;
+  document.getElementById("fs-filesize").textContent = (arg_file.size / 1048576).toFixed(2) + " MiB";
+  // Subtract 32 from the maximum filesize here for two reasons:
+  // - The WebCrypto-API appends a 16 byte authentication tag to the ciphertext.
+  //   This could cause files to pass the check here but fail the size check on the backend.
+  // - Near the 2GiB limit filesizes of 2GiB - 16B cause issues while 2GiB - 32B work fine.
+  if (arg_file.size > max_filesize - 32) {
+    document.getElementById('fs-expiry-fieldset').style.display = 'none';
+    document.getElementById('fs-submit').style.display = 'none';
+    updateInfoBox('error', "File too large! The maximum supported filesize is {{ max_filesize }}. Please choose a smaller file.");
+  } else {
+    document.getElementById('fs-expiry-fieldset').style.display = 'block';
+    document.getElementById('fs-submit').style.display = 'block';
+    selected_file = arg_file;
+    updateInfoBox('invisible');
   }
+}
+
+document.getElementById("fs-file").addEventListener("change", (e) => {
+  // Process the selected file if it exists.
+  if (e.target.files[0]) {
+    processFile(e.target.files[0]);
+  }
+});
+
+document.querySelector("body").addEventListener("drop", (e) => {
+  // Prevent the browser's default behavior, i.e don't open the file.
+  e.preventDefault();
+
+  // Don't do anything if the file-select button is disabled.
+  if (document.getElementById("fs-filebutton").disabled) {
+    return;
+  }
+
+  // Process the selected file if it exists.
+  if (e.dataTransfer.items[0] && e.dataTransfer.items[0].kind === "file") {
+    processFile(e.dataTransfer.items[0].getAsFile());
+  }
+});
+
+document.querySelector("body").addEventListener("dragover", (e) => {
+  // Prevent the browser's default behavior, i.e don't open the file.
+  e.preventDefault();
 });
 
 document.getElementById("fs-success-download-copy").addEventListener("click", (_) => {
