@@ -42,7 +42,7 @@ Here is the list of all icon names used in the project:
 - visibility_off
 - warning
 
-The file `MaterialSymbolsRounded.woff` contains **all rounded symbols** and was sourced from the [offical GitHub repository](https://github.com/google/material-design-icons/tree/master/variablefont).
+The file `MaterialSymbolsRounded.woff` contains **all rounded symbols** and can be sourced from the [offical GitHub repository](https://github.com/google/material-design-icons/tree/master/variablefont).
 It is useful during development where new icons can directly be added in the frontend, but is completely untenable in production as it is 4.5MB large.
 
 For production, a subsetted version of the font should be used.
@@ -57,6 +57,7 @@ Should you want to add new icons to the project, add their identifier to the lis
 ## Inter
 
 The venerable [Inter](https://rsms.me/inter/) typeface is used for the actual user interface.
+You can source the unsubsetted `InterVariable.woff2` from the repository's latest [release archive](https://github.com/rsms/inter/releases).
 
 It is used everywhere *except* for the actual filename itself, which always falls back to the user system's font-stack.
 In the interest of keeping bundle sizes low, we ship a subsetted version of Inter that removes all the glyphs the app's UI doesn't need.
