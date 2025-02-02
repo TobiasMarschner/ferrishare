@@ -76,10 +76,13 @@
   {% endif %}
   <footer class="flex flex-col items-center mt-8 sm:mt-4 gap-4 sm:gap-2 p-4 bg-zinc-300 text-zinc-600">
     <p class="text-center text-balance">
-      running <a class="classic-link" href="https://github.com/TobiasMarschner/ferrishare">FerriShare</a> v{{ global_crate_version }}-{{ global_git_hash }}</p>
+      running <a class="classic-link" href="https://github.com/TobiasMarschner/ferrishare">FerriShare</a> v{{ global_crate_version }}-{{ global_git_hash }}
+    </p>
+    {% if demo_mode %}
     <p class="text-center text-balance">
       built with <a class="classic-link" href="https://www.rust-lang.org/">Rust</a> and &#x2665; by <a class="classic-link" href="https://tobiasm.dev">Tobias Marschner</a>
     </p>
+    {% endif %}
     {% if enable_privacy_policy or enable_legal_notice %}
       <ul class="flex flex-wrap items-center justify-center gap-y-2 gap-x-6">
         {% if enable_privacy_policy %}
