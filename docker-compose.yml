@@ -6,7 +6,7 @@ services:
     build: .
     # Otherwise, you can simply pull the prebuilt image from the
     # GitHub Container Registry by invoking 'docker compose pull'.
-    image: ghcr.io/tobiasmarschner/ferrishare:latest
+    image: ghcr.io/tobiasmarschner/ferrishare:1
     # Give the container a recognizable name, makes management easier.
     container_name: ferrishare
     restart: unless-stopped
