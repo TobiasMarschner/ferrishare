@@ -29,16 +29,18 @@ async function uploadFile() {
   let filedata = await selected_file.arrayBuffer();
   let filename = encoder.encode(selected_file.name);
 
-  let iv_fn;
-  let iv_fd;
+  let iv_filename;
+  let iv_filedata;
   let e_filename;
   let e_filedata;
   let key_b64url;
 
   try {
-    // Generate random IVs for encryption. (always exactly 96 bits)
-    iv_fn = window.crypto.getRandomValues(new Uint8Array(12));
-    iv_fd = window.crypto.getRandomValues(new Uint8Array(12));
+    // Generate deterministic IVs (always exactly 96 bits)
+    // For AES-GCM, deterministic IVs with an atomic counter are recommended over random IVs:
+    // https://crypto.stackexchange.com/a/84359
+    iv_filename = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    iv_filedata = new Uint8Array([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
     // Generate a random AES key to use for encryption.
     let key = await window.crypto.subtle.generateKey(
@@ -54,7 +56,7 @@ async function uploadFile() {
     e_filename = await window.crypto.subtle.encrypt(
       {
         name: "AES-GCM",
-        iv: iv_fn
+        iv: iv_filename
       },
       key,
       filename
@@ -64,7 +66,7 @@ async function uploadFile() {
     e_filedata = await window.crypto.subtle.encrypt(
       {
         name: "AES-GCM",
-        iv: iv_fd
+        iv: iv_filedata
       },
       key,
       filedata
@@ -84,8 +86,8 @@ async function uploadFile() {
   // Append all the data that's supposed to go to the server.
   formData.append("e_filedata", new Blob([e_filedata]));
   formData.append("e_filename", new Blob([e_filename]));
-  formData.append("iv_fd", new Blob([iv_fd]));
-  formData.append("iv_fn", new Blob([iv_fn]));
+  formData.append("iv_fd", new Blob([iv_filedata]));
+  formData.append("iv_fn", new Blob([iv_filename]));
   formData.append("duration", duration);
 
   // I'd love to use fetch for modern posting,
@@ -146,7 +148,7 @@ document.getElementById("filesubmit").addEventListener("submit", (event) => {
 });
 
 // Pass through click events on the "select a file" button to the actual file input that is hidden.
-document.getElementById("fs-filebutton").addEventListener("click", (event) => {
+document.getElementById("fs-filebutton").addEventListener("click", (_) => {
   document.getElementById("fs-file").click();
 });
 

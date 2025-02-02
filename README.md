@@ -121,9 +121,8 @@ JavaScript is only served where required, specifically the upload and download e
 - Files are encyrpted with AES-GCM providing both confidentiality and integrity thanks to its AEAD nature.
 - The [WebCrypto-API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) provided by the browser is used to actually perform the en- and decryption.
     - The key is generated with `window.crypto.subtle.generateKey(...)`, which uses a strong CSPRNG.
-    - IVs / nonces are randomly generated with a strong CSPRNG by using `window.crypto.getRandomValues(...)`. IVs are never reused.
-- Each key is used to encrypt two messages: The filedata and the filename.
-    - This generates two random IVs, putting the chance of an IV collision at 1 in 2^96. (negligible)
+    - IVs are chosen deterministically and are never reused.
+        - Two messages are encrypted with the key: The filename, using IV `0`, and the filedata, using IV `1`.
 - The maximum safe message length with AES-GCM is 2^39 - 256 bits ≈ 64 GB.
     - However, the WebCrypto-API limits the maximum message length to just 2GiB.
     - This limit for the maximum filesize is enforced during configuration setup.
