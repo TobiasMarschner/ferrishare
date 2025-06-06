@@ -18,6 +18,7 @@ use sqlx::{migrate::MigrateDatabase, FromRow, Sqlite, SqlitePool};
 use std::{
     collections::{HashMap, HashSet},
     net::SocketAddr,
+    path::PathBuf,
     process::ExitCode,
     sync::Arc,
     time::Duration,
@@ -51,7 +52,7 @@ pub struct AppState {
     ///
     /// [SqlitePool] is internally wrapped in an [Arc], so no need to wrap it here
     db: SqlitePool,
-    /// Immutable global configuration for FerriShare, read during startup from {DATA_PATH}/config.toml
+    /// Immutable global configuration for FerriShare, read during startup from 'config.toml'
     conf: Arc<AppConfiguration>,
     /// Table keeping track of the number of requests made by each IpPrefix for rate limiting
     rate_limiter: Arc<RwLock<HashMap<IpPrefix, u64>>>,
@@ -106,6 +107,8 @@ pub const MINIFY_CFG: minify_html::Cfg = minify_html::Cfg {
 /// - All uploaded files in 'uploaded_files/'
 /// - User templates in 'user_templates/'
 const DATA_PATH: &str = "./data";
+
+const DEFAULT_CONFIG_PATH: &str = "./data/config.toml";
 
 /// Path to the application's SQLite-database
 const DB_URL: &str = "sqlite://data/sqlite.db";
@@ -181,6 +184,10 @@ struct Args {
     /// an argon2id-hash and manually creating one (e.g. with the 'argon2' CLI) is quite annoying.
     #[arg(long)]
     init: bool,
+
+    /// Override the default config file path, for both normal operation and the interactive setup mode.
+    #[arg(long, default_value = DEFAULT_CONFIG_PATH,value_name="FILE")]
+    config_file: PathBuf,
 }
 
 /// The application's main starting point
@@ -194,9 +201,10 @@ async fn main() -> ExitCode {
         });
 
     // Parse cmd-line arguments and check whether we're (re-)creating the config.toml.
-    if Args::parse().init {
+    let args = Args::parse();
+    if args.init {
         // Set up config and exit immediately.
-        match config::setup_config() {
+        match config::setup_config(&args.config_file) {
             Ok(_) => {
                 return ExitCode::SUCCESS;
             }
@@ -207,10 +215,13 @@ async fn main() -> ExitCode {
     }
 
     // Try to open and parse the configuration.
-    let config_string = match std::fs::read_to_string(format!("{DATA_PATH}/config.toml")) {
+    let config_string = match std::fs::read_to_string(&args.config_file) {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("Failed to open configuration file at {DATA_PATH}/config.toml: {e}");
+            eprintln!(
+                "Failed to open configuration file at {:?}: {}",
+                args.config_file, e
+            );
 
             eprintln!(
                 "\nIf you haven't already, configure the app by running it with the '--init' flag:"
@@ -226,7 +237,10 @@ async fn main() -> ExitCode {
     let mut app_config: AppConfiguration = match toml::from_str(&config_string) {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("Failed to parse configuration file at {DATA_PATH}/config.toml: {e}");
+            eprintln!(
+                "Failed to parse configuration file at {:?}: {e}",
+                args.config_file
+            );
 
             eprintln!("\nIf your config file is causing trouble, consider regenerating it by running the app with the '--init' flag:");
             eprintln!("  docker compose run --rm -it ferrishare --init  (for Docker Compose)");
@@ -244,7 +258,7 @@ async fn main() -> ExitCode {
         .with_max_level(app_config.translate_log_level())
         .init();
 
-    tracing::info!("read config from {DATA_PATH}/config.toml");
+    tracing::info!("read config from {:?}", args.config_file);
 
     // Limit the maximum filesize if need be and emit a warning in that case.
     if app_config.maximum_filesize > WEBCRYPTO_MAX_FILESIZE {

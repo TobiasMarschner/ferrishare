@@ -1,6 +1,10 @@
 //! Guided setup and configuration wizard to make deployment as easy as possible
 
-use std::{fs::File, io::Write, path::PathBuf};
+use std::{
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use anyhow::anyhow;
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
@@ -11,7 +15,7 @@ use tracing::Level;
 
 use crate::*;
 
-/// Global configuration for the entire application read from '{DATA_PATH}/config.toml'.
+/// Global configuration for the entire application read from 'config.toml'.
 ///
 /// Curious what all the options do? Simply go through the interactive setup wizard by invoking the
 /// application with the '--init' flag and the displayed help text should answer your questions.
@@ -103,8 +107,8 @@ fn format_filesize_input(input: &str) -> String {
 }
 
 /// The application's interactive configuration wizard started with the '--init' flag.
-pub fn setup_config() -> Result<(), anyhow::Error> {
-    eprintln!("Setting up new configuration at '{DATA_PATH}/config.toml'");
+pub fn setup_config(config_path: &Path) -> Result<(), anyhow::Error> {
+    eprintln!("Setting up new configuration at {config_path:?}");
     eprintln!("On setup completion, any previously present config file will be overwritten");
     eprintln!("Templates in '{DATA_PATH}/user_templates/' will remain untouched.");
     eprintln!("Interactively prompting for all settings ...\n");
@@ -374,10 +378,9 @@ pub fn setup_config() -> Result<(), anyhow::Error> {
     };
 
     // Serialize to TOML and write to disk as 'config.toml'.
-    File::create(format!("{DATA_PATH}/config.toml"))?
-        .write_all(toml::to_string(&app_config)?.as_bytes())?;
+    File::create(config_path)?.write_all(toml::to_string(&app_config)?.as_bytes())?;
 
-    eprintln!("Successfully wrote config to '{DATA_PATH}/config.toml'.");
+    eprintln!("Successfully wrote config to {config_path:?}.");
     eprintln!("You can now launch the app.");
 
     Ok(())
