@@ -159,10 +159,7 @@ pub async fn ip_prefix_ratelimiter(
     // Acquire a writing reference to the rate-limiter.
     let mut rl = aps.rate_limiter.write().await;
     // Insert the key if it wasn't already there and update its counter.
-    let counter = *rl
-        .entry(eip)
-        .and_modify(|v| *v += 1)
-        .or_insert(1);
+    let counter = *rl.entry(eip).and_modify(|v| *v += 1).or_insert(1);
     // Drop our borrow, or we can only process one request at a time, lol.
     drop(rl);
     // Rate limit, if need be.

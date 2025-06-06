@@ -374,7 +374,7 @@ async fn main() -> ExitCode {
         Err(e) => {
             tracing::error!("maximum filesize exceeds computer's bit-width: {e}");
             return ExitCode::FAILURE;
-        },
+        }
     };
     // Routers for up- and downloading the actual file payloads
     let file_routers = Router::new()
