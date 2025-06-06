@@ -4,4 +4,3 @@
 /data
 sqlite.*
 /.sqlx
-/.direnv
