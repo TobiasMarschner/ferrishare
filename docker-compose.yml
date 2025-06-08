@@ -16,6 +16,10 @@ services:
     #   user_templates/*  => User-configurable templates
     #   sqlite.db         => Application database
     #   uploaded_files/*  => Encrypted files uploaded by users
+    # If desired, you can change the location of the config file with the '--config-file' CLI flag.
+    # In that case, remember to provide a dedicated volume-mount for the file, too.
+    # In Docker Compose you can provide the CLI flag like this:
+    #command: ["--config-file", "/path/to/your/config.toml"]
     volumes:
       - "./data:/app/data"
     # This tells Traefik to make the `ferrishare` service accessible on localhost.
