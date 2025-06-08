@@ -446,10 +446,10 @@ async fn main() -> ExitCode {
     // Combine all Routers into one big router and add the global middlewares and state here.
     // Logging and rate-limiting apply to all routes indiscriminately.
     let app = Router::new()
-        .nest("/", normal_routers)
-        .nest("/", file_routers)
-        .nest("/", font_routers)
-        .nest("/", static_routers)
+        .merge(normal_routers)
+        .merge(file_routers)
+        .merge(font_routers)
+        .merge(static_routers)
         .layer(custom_tracing)
         .layer(rate_limiter)
         .with_state(aps)
