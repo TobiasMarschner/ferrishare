@@ -9,7 +9,6 @@ use std::{
 use anyhow::anyhow;
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use inquire::{validator::Validation, Confirm, CustomUserError, Password, Select, Text};
-use rand::rngs::OsRng;
 use serde::{Deserialize, Serialize};
 use tracing::Level;
 
@@ -355,7 +354,10 @@ pub fn setup_config(config_path: &Path) -> Result<(), anyhow::Error> {
         argon2::Version::default(),
         argon2::Params::new(32768, 4, 1, None).map_err(|e| anyhow!(e.to_string()))?,
     )
-    .hash_password(admin_password.as_bytes(), &SaltString::generate(&mut OsRng))
+    .hash_password(
+        admin_password.as_bytes(),
+        &SaltString::generate(&mut argon2::password_hash::rand_core::OsRng),
+    )
     .map_err(|e| anyhow!(e.to_string()))?
     .to_string();
 

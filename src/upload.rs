@@ -9,7 +9,7 @@ use axum::{
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use chrono::{prelude::Utc, SubsecRound, TimeDelta};
 use minify_html::minify;
-use rand::prelude::*;
+use rand::{prelude::*, rng};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 use tokio::io::AsyncWriteExt;
@@ -180,7 +180,7 @@ pub async fn upload_endpoint(
     let efd_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(&e_filedata));
 
     // Generate a random admin password out of 256 bits of strong entropy.
-    let admin_key_bytes = thread_rng().gen::<[u8; 32]>();
+    let admin_key_bytes = rng().random::<[u8; 32]>();
     let admin_key = URL_SAFE_NO_PAD.encode(admin_key_bytes);
 
     // Also generate a hash of this password using sha256 for storage in the databse.

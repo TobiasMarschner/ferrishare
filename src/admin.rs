@@ -13,7 +13,7 @@ use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use chrono::{prelude::Utc, DateTime, TimeDelta};
 use cookie::{time::Duration, Cookie};
 use minify_html::minify;
-use rand::prelude::*;
+use rand::{prelude::*, rng};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use sqlx::FromRow;
@@ -172,7 +172,7 @@ pub async fn admin_login(
     }
 
     // Create a new session.
-    let session_id_bytes = thread_rng().gen::<[u8; 32]>();
+    let session_id_bytes = rng().random::<[u8; 32]>();
     let session_id = URL_SAFE_NO_PAD.encode(session_id_bytes);
 
     // Use the sha256-digest in the databse.

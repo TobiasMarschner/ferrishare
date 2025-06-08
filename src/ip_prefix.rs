@@ -100,7 +100,6 @@ impl IpPrefix {
 #[derive(Debug, PartialEq, Eq)]
 pub struct ExtractIpPrefix(pub IpPrefix);
 
-#[axum::async_trait]
 impl<S> FromRequestParts<S> for ExtractIpPrefix
 where
     AppState: FromRef<S>,

@@ -9,7 +9,7 @@ repository = "https://github.com/TobiasMarschner/ferrishare"
 license = "MIT"
 
 [dependencies]
-axum = { version = "0.7", features = ["http2", "multipart", "query", "macros", "tracing"] }
+axum = { version = "0", features = ["http2", "multipart", "query", "macros", "tracing"] }
 axum-extra = { version = "0", features = ["cookie"]}
 itertools = "0"
 serde = { version = "1", features = ["derive"] }

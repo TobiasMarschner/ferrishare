@@ -83,11 +83,11 @@ impl AppState {
 /// CSS- and JS-minification are enabled, while some more aggressive
 /// and non-compliant settings for HTML minifacation have been disabled.
 pub const MINIFY_CFG: minify_html::Cfg = minify_html::Cfg {
-    do_not_minify_doctype: true,
-    ensure_spec_compliant_unquoted_attribute_values: true,
+    minify_doctype: false,
+    allow_noncompliant_unquoted_attribute_values: false,
     keep_closing_tags: true,
     keep_html_and_head_opening_tags: true,
-    keep_spaces_between_attributes: true,
+    allow_removing_spaces_between_attributes: false,
     keep_comments: false,
     keep_input_type_text_attr: false,
     keep_ssi_comments: false,
@@ -97,6 +97,7 @@ pub const MINIFY_CFG: minify_html::Cfg = minify_html::Cfg {
     minify_js: true,
     remove_bangs: false,
     remove_processing_instructions: false,
+    allow_optimal_entities: false,
 };
 
 /// Path where all app-specific data will be stored.
