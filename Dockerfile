@@ -29,7 +29,7 @@ COPY . .
 RUN VCS_REF="$(git rev-parse --short=10 HEAD)" cargo build --release
 
 # The app uses Tailwind CSS for its styles. This requires a build step.
-FROM node AS node-builder
+FROM node:23-bookworm AS node-builder
 WORKDIR /app
 # Copy over package.json and package-lock.json. Should the deps change
 # a redownload and rebuild will be triggered. Otherwise, they'll stay cached.
