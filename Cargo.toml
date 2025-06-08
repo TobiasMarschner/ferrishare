@@ -21,7 +21,7 @@ tracing = { version = "0" }
 tracing-subscriber = { version = "0", features = ["env-filter"] }
 anyhow = { version = "1" }
 tera = "1"
-minify-html = "0"
+minify-html = "=0.15.0"
 cookie = { version = "0" }
 sqlx = { version = "0", features = [ "runtime-tokio", "sqlite" ] }
 chrono = { version = "0" }
