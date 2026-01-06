@@ -45,6 +45,6 @@ services:
     # of the running `ferrishare` container and automatically establish the routes.
     volumes:
       # Rootful mode (default):
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      # - "/var/run/docker.sock:/var/run/docker.sock:ro"
       # Rootless mode:
-      # - "/run/user/1000/docker.sock:/var/run/docker.sock:ro"
+      - "/run/user/1000/docker.sock:/var/run/docker.sock:ro"

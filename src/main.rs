@@ -5,11 +5,7 @@
 //! <https://github.com/TobiasMarschner/ferrishare>
 
 use axum::{
-    extract::{ConnectInfo, DefaultBodyLimit, State},
-    middleware::{self, Next},
-    response::{Html, IntoResponse, Response},
-    routing::{get, post},
-    Router,
+    Router, extract::{ConnectInfo, DefaultBodyLimit, State}, http::StatusCode, middleware::{self, Next}, response::{Html, IntoResponse, Response}, routing::{get, post}
 };
 use clap::Parser;
 use itertools::Itertools;
@@ -349,7 +345,7 @@ async fn main() -> ExitCode {
     // Create all of the middlewares the app uses.
 
     // Small timeouts for all the "normal" routes that don't deal with files.
-    let timeout_small = TimeoutLayer::new(Duration::from_secs(30));
+    let timeout_small = TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT, Duration::from_secs(30));
 
     // Big timeout for file uploads and downloads.
     // The up- and download uses a longer timeout than the default 30s on the usual routes.
@@ -357,7 +353,7 @@ async fn main() -> ExitCode {
     // However, the minimum timeout is always set to 120s.
     let file_endpoint_timeout_duration =
         std::cmp::max(120, aps.conf.maximum_filesize as u64 / 17476);
-    let timeout_big = TimeoutLayer::new(Duration::from_secs(file_endpoint_timeout_duration));
+    let timeout_big = TimeoutLayer::with_status_code(StatusCode::REQUEST_TIMEOUT, Duration::from_secs(file_endpoint_timeout_duration));
     tracing::info!(
         "setting file endpoint timeout to {} seconds",
         file_endpoint_timeout_duration

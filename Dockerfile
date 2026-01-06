@@ -45,7 +45,7 @@ COPY ./tailwind.config.js .
 RUN npm run build:tw
 
 # With all builds done, we now move to set up the container for FerriShare itself.
-FROM debian:12-slim
+FROM debian:13-slim
 WORKDIR /app
 # Copy in the frontend templates.
 COPY ./templates/ ./templates/
