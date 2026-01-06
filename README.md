@@ -28,7 +28,7 @@ FerriShare is a simple, self-hostable and open-source<br>filesharing application
     - Templating is performed on the backend. JavaScript is only used when necessary.
     - Best practices: Font subsetting, permanent caching for static assets, response compression, ...
 
-## ✨ Demo and Screenshots
+## Demo and Screenshots
 
 <h3 align="center">You can test FerriShare on the <a href="https://ferrishare-demo.tobiasm.dev">official demo instance</a>!</h3>
 
@@ -40,7 +40,7 @@ FerriShare is a simple, self-hostable and open-source<br>filesharing application
 
 ![Screenshot of an uploaded file's admin page](readme/admin_panel.png)
 
-## 📥 Installation and Configuration
+## Installation and Configuration
 
 > [!WARNING]  
 > While I have taken great care to correctly deploy the cryptographic primitives used in this project, I am not an expert in cryptography and this project has not been independently audited.
@@ -127,7 +127,7 @@ JavaScript is only served where required, specifically the upload and download e
     - However, the WebCrypto-API limits the maximum message length to just 2GiB.
     - This limit for the maximum filesize is enforced during configuration setup.
 
-## 🛠️ Building Locally
+## Building Locally
 
 ### With Docker (recommended)
 
