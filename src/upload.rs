@@ -75,25 +75,7 @@ pub async fn upload_endpoint(
         )
     })?;
 
-    // Find out how many files this user has already uploaded.
-    let uploads_by_eip: i64 =
-        sqlx::query_scalar("SELECT COUNT(*) FROM uploaded_files WHERE upload_ip = ?;")
-            .bind(eip.to_string())
-            .fetch_one(&aps.db)
-            .await?;
-
-    // Check if the user has hit their upload limit.
-    if uploads_by_eip as u64 >= aps.conf.maximum_uploads_per_ip {
-        return AppError::err(StatusCode::TOO_MANY_REQUESTS, "your computer has reached the file upload limit; delete old files or wait for them to expire");
-    }
-
-    // Check if the server has hit its quota limits.
-    if maximum_quota_reached(&aps).await? {
-        return AppError::err(
-            StatusCode::INSUFFICIENT_STORAGE,
-            "server has reached maximum storage capacity; please try again later",
-        );
-    }
+    check_upload_allowed(&aps, &eip).await?;
 
     let mut e_filename: Option<Vec<u8>> = None;
     let mut e_filedata: Option<Vec<u8>> = None;
@@ -171,13 +153,75 @@ pub async fn upload_endpoint(
     let iv_fn = iv_fn.ok_or_else(|| AppError::new(StatusCode::BAD_REQUEST, "no iv_fn provided"))?;
     let hour_duration = hour_duration
         .ok_or_else(|| AppError::new(StatusCode::BAD_REQUEST, "no duration provided"))?;
-    let filesize = e_filedata.len() as i64;
-    let upload_ip = eip.to_string();
 
     // Compute the sha256sum of the encrypted data.
     // Likelihood of collision is ridiculously small, so we can ignore it here.
     // We'll use its base64url-encoding as the URL to identify the file.
     let efd_sha256sum = URL_SAFE_NO_PAD.encode(Sha256::digest(&e_filedata));
+
+    // Store the file using asynchronous IO.
+    tokio::fs::File::create(format!("{DATA_PATH}/uploaded_files/{efd_sha256sum}"))
+        .await
+        .map_err(|e| AppError::new500(format!("failed to create file on disk: {e}")))?
+        .write_all(&e_filedata)
+        .await
+        .map_err(|e| {
+            AppError::new500(format!("failed to write encrypted filedata to disk: {e}"))
+        })?;
+
+    let response = register_upload(
+        &aps,
+        &eip,
+        efd_sha256sum,
+        &e_filename,
+        iv_fd,
+        iv_fn,
+        e_filedata.len() as i64,
+        hour_duration,
+    )
+    .await?;
+
+    Ok((StatusCode::CREATED, Json(response)))
+}
+
+/// Check the per-IP upload limit and the global storage quota before accepting an upload.
+pub async fn check_upload_allowed(aps: &AppState, eip: &IpPrefix) -> Result<(), AppError> {
+    // Find out how many files this user has already uploaded.
+    let uploads_by_eip: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM uploaded_files WHERE upload_ip = ?;")
+            .bind(eip.to_string())
+            .fetch_one(&aps.db)
+            .await?;
+
+    // Check if the user has hit their upload limit.
+    if uploads_by_eip as u64 >= aps.conf.maximum_uploads_per_ip {
+        return AppError::err(StatusCode::TOO_MANY_REQUESTS, "your computer has reached the file upload limit; delete old files or wait for them to expire");
+    }
+
+    // Check if the server has hit its quota limits.
+    if maximum_quota_reached(aps).await? {
+        return AppError::err(
+            StatusCode::INSUFFICIENT_STORAGE,
+            "server has reached maximum storage capacity; please try again later",
+        );
+    }
+
+    Ok(())
+}
+
+/// Record a file that has already been stored at `uploaded_files/{efd_sha256sum}`.
+#[allow(clippy::too_many_arguments)]
+pub async fn register_upload(
+    aps: &AppState,
+    eip: &IpPrefix,
+    efd_sha256sum: String,
+    e_filename: &[u8],
+    iv_fd: [u8; 12],
+    iv_fn: [u8; 12],
+    filesize: i64,
+    hour_duration: i64,
+) -> Result<UploadFileResponse, AppError> {
+    let upload_ip = eip.to_string();
 
     // Generate a random admin password out of 256 bits of strong entropy.
     let admin_key_bytes = rng().random::<[u8; 32]>();
@@ -217,16 +261,6 @@ pub async fn upload_endpoint(
         .ok_or_else(|| AppError::new500("failed to apply duration to current timestamp"))?
         .to_rfc3339();
 
-    // Store the file using asynchronous IO.
-    tokio::fs::File::create(format!("{DATA_PATH}/uploaded_files/{efd_sha256sum}"))
-        .await
-        .map_err(|e| AppError::new500(format!("failed to create file on disk: {e}")))?
-        .write_all(&e_filedata)
-        .await
-        .map_err(|e| {
-            AppError::new500(format!("failed to write encrypted filedata to disk: {e}"))
-        })?;
-
     // Then, add the row to the database.
     sqlx::query("INSERT INTO uploaded_files (efd_sha256sum, admin_key_sha256sum, e_filename, iv_fd, iv_fn, filesize, upload_ip, upload_ts, expiry_ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);")
         .bind(&efd_sha256sum)
@@ -249,13 +283,10 @@ pub async fn upload_endpoint(
         "succesfully created new file"
     );
 
-    Ok((
-        StatusCode::CREATED,
-        Json(UploadFileResponse {
-            efd_sha256sum,
-            admin_key,
-        }),
-    ))
+    Ok(UploadFileResponse {
+        efd_sha256sum,
+        admin_key,
+    })
 }
 
 #[derive(Debug, Serialize)]

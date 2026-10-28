@@ -10,7 +10,6 @@ async function uploadFile() {
   let duration = document.querySelector("input[type='radio'][name='expires']:checked").value;
 
   // Grab the file selected by the user.
-  let formData = new FormData();
 
   if (!selected_file) {
     updateInfoBox("error", "No file selected");
@@ -83,61 +82,98 @@ async function uploadFile() {
     return;
   }
 
-  // Append all the data that's supposed to go to the server.
-  formData.append("e_filedata", new Blob([e_filedata]));
-  formData.append("e_filename", new Blob([e_filename]));
-  formData.append("iv_fd", new Blob([iv_filedata]));
-  formData.append("iv_fn", new Blob([iv_filename]));
-  formData.append("duration", duration);
+  // Send the file over a WebSocket in chunks.
+  // A single request body could exceed the size limit of a reverse proxy, such as Cloudflare's.
+  const e_filedata_bytes = new Uint8Array(e_filedata);
+  const chunk_size = 1024 * 1024;
+  const ws = new WebSocket(`${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/upload_ws`);
+  ws.binaryType = "arraybuffer";
+  let finished = false;
 
-  // I'd love to use fetch for modern posting,
-  // but if we want a regularly updating progress indicator we're stuck with XHR.
-  let xhr = new XMLHttpRequest();
-  xhr.open("POST", "/upload_endpoint");
+  ws.onopen = () => {
+    ws.send(JSON.stringify({
+      e_filename: b64u_encBytes(new Uint8Array(e_filename)),
+      iv_fd: b64u_encBytes(iv_filedata),
+      iv_fn: b64u_encBytes(iv_filename),
+      duration: duration,
+      filesize: e_filedata_bytes.length,
+    }));
+  };
 
-  xhr.onerror = () => {
-    updateInfoBox("error", "Error during file upload")
-  }
-
-  xhr.onload = () => {
-    if (xhr.status == 201) {
-      // Close the normal display box and transition to the successbox.
-      // document.getElementById("infobox").style.display = 'none';
-      // document.getElementById("successbox").style.display = 'flex';
-      updateInfoBox('success', "Upload successful!");
-
-      let response = JSON.parse(xhr.response);
-
-      // Construct the download and admin links.
-      const dl_link = `${location.protocol}//${location.host}/file?hash=${response.efd_sha256sum}#key=${key_b64url}`;
-      const adm_link = `${location.protocol}//${location.host}/file?hash=${response.efd_sha256sum}&admin=${response.admin_key}#key=${key_b64url}`;
-
-      // Set them up in the result boxes.
-      document.getElementById("fs-success-download-input").value = dl_link;
-      document.getElementById("fs-success-download-link").href = dl_link;
-
-      document.getElementById("fs-success-admin-input").value = adm_link;
-      document.getElementById("fs-success-admin-link").href = adm_link;
-
-      // And make those boxes visible.
-      document.getElementById("fs-success-download-box").style.display = "flex";
-      document.getElementById("fs-success-admin-box").style.display = "flex";
+  ws.onmessage = async (event) => {
+    const message = JSON.parse(event.data);
+    if (message.error) {
+      finished = true;
+      updateInfoBox("error", message.error);
+    } else if (message.ready) {
+      await sendChunks(ws, e_filedata_bytes, chunk_size);
     } else {
-      updateInfoBox("error", xhr.responseText);
+      finished = true;
+      showUploadLinks(message, key_b64url);
     }
-  }
+  };
 
-  xhr.upload.onprogress = (event) => {
-    let progress = (event.loaded / event.total) * 100;
+  ws.onclose = () => {
+    if (!finished) {
+      updateInfoBox("error", "Error during file upload");
+    }
+  };
+}
+
+// Send the data in chunks, keeping only a few MB queued in the browser at a time.
+async function sendChunks(ws, data, chunk_size) {
+  const total = data.length;
+  let sent = 0;
+  const reportProgress = () => {
+    const done = sent - ws.bufferedAmount;
+    const progress = total === 0 ? 100 : (done / total) * 100;
     document.getElementById("infobox-pbar-inner").style.width = progress.toString() + "%";
-    if (event.loaded < event.total) {
-      updateInfoBox("inprogress", `Uploading ${(event.loaded / 1000000).toFixed(2)} / ${(event.total / 1000000).toFixed(2)} MB (${progress.toFixed(0)}%)`);
+    if (done < total) {
+      updateInfoBox("inprogress", `Uploading ${(done / 1000000).toFixed(2)} / ${(total / 1000000).toFixed(2)} MB (${progress.toFixed(0)}%)`);
     } else {
       updateInfoBox("inprogress", `Processing`);
     }
+  };
+
+  while (sent < total) {
+    if (ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+    if (ws.bufferedAmount > 4 * chunk_size) {
+      reportProgress();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      continue;
+    }
+    const end = Math.min(sent + chunk_size, total);
+    ws.send(data.subarray(sent, end));
+    sent = end;
   }
 
-  xhr.send(formData);
+  while (ws.readyState === WebSocket.OPEN && ws.bufferedAmount > 0) {
+    reportProgress();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  reportProgress();
+}
+
+function showUploadLinks(response, key_b64url) {
+  // Close the normal display box and transition to the successbox.
+  updateInfoBox('success', "Upload successful!");
+
+  // Construct the download and admin links.
+  const dl_link = `${location.protocol}//${location.host}/file?hash=${response.efd_sha256sum}#key=${key_b64url}`;
+  const adm_link = `${location.protocol}//${location.host}/file?hash=${response.efd_sha256sum}&admin=${response.admin_key}#key=${key_b64url}`;
+
+  // Set them up in the result boxes.
+  document.getElementById("fs-success-download-input").value = dl_link;
+  document.getElementById("fs-success-download-link").href = dl_link;
+
+  document.getElementById("fs-success-admin-input").value = adm_link;
+  document.getElementById("fs-success-admin-link").href = adm_link;
+
+  // And make those boxes visible.
+  document.getElementById("fs-success-download-box").style.display = "flex";
+  document.getElementById("fs-success-admin-box").style.display = "flex";
 }
 
 document.getElementById("filesubmit").addEventListener("submit", (event) => {

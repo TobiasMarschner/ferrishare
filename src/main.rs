@@ -38,6 +38,7 @@ mod download;
 mod error_handling;
 mod ip_prefix;
 mod upload;
+mod upload_ws;
 
 /// The application's global state that is passed to every request handler
 #[derive(Debug, Clone)]
@@ -398,6 +399,8 @@ async fn main() -> ExitCode {
                     upload::upload_endpoint_wrapper,
                 )),
         )
+        // Chunked uploads that fit through proxies limiting the request body size.
+        .route("/upload_ws", get(upload_ws::upload_ws_endpoint))
         .route("/download_endpoint", get(download::download_endpoint))
         .layer(timeout_big);
 
